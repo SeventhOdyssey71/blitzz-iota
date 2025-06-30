@@ -1,0 +1,11 @@
+[package]
+name = "Iota"
+edition = "2024.stable"
+
+[dependencies]
+Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "mainnet" }
+
+[addresses]
+Iota = "0x0"
+iota_std = "0x1"
+iota = "0x2"
