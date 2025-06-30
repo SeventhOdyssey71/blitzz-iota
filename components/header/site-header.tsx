@@ -46,12 +46,12 @@ export function SiteHeader() {
                   Trade <ChevronDown className="w-4 h-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white border-gray-200">
-                <DropdownMenuItem asChild>
-                  <Link href="/" className="text-gray-700 hover:bg-gray-100">Swap</Link>
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl">
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">
+                  <Link href="/">Swap</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">Limit Order</DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">DCA</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">Limit Order</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">DCA</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -61,10 +61,10 @@ export function SiteHeader() {
                   Earn <ChevronDown className="w-4 h-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white border-gray-200">
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">Pools</DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">Farms</DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">Vaults</DropdownMenuItem>
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl">
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">Pools</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">Farms</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">Vaults</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -78,8 +78,8 @@ export function SiteHeader() {
                   Bridge <ChevronDown className="w-4 h-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white border-gray-200">
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">Cross Chain</DropdownMenuItem>
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl">
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">Cross Chain</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -89,29 +89,29 @@ export function SiteHeader() {
                   More <ChevronDown className="w-4 h-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white border-gray-200 w-48">
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">
-                  <User className="w-4 h-4 mr-2" />
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl w-48">
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">
+                  <User className="w-4 h-4 mr-2 text-gray-400" />
                   Compensation
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">
-                  <TrendingUp className="w-4 h-4 mr-2" />
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">
+                  <TrendingUp className="w-4 h-4 mr-2 text-gray-400" />
                   Buy Crypto
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">
-                  <BarChart3 className="w-4 h-4 mr-2" />
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">
+                  <BarChart3 className="w-4 h-4 mr-2 text-gray-400" />
                   Launchpad
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">
-                  <Settings className="w-4 h-4 mr-2" />
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">
+                  <Settings className="w-4 h-4 mr-2 text-gray-400" />
                   IOTA Terminal
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">
-                  <BarChart3 className="w-4 h-4 mr-2" />
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">
+                  <BarChart3 className="w-4 h-4 mr-2 text-gray-400" />
                   Stats
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-700 hover:bg-gray-100">
-                  <Info className="w-4 h-4 mr-2" />
+                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-cyan-500/20 focus:bg-cyan-500/20 focus:text-white transition-all">
+                  <Info className="w-4 h-4 mr-2 text-gray-400" />
                   Docs
                 </DropdownMenuItem>
               </DropdownMenuContent>

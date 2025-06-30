@@ -185,6 +185,22 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Remove number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Dropdown menu hover glow */
+[role="menuitem"]:hover {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
 /* Card hover effects */
 .card-hover {
   transition: all 0.2s ease;

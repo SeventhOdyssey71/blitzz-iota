@@ -13,7 +13,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
 import { useTokenPrice } from '@/hooks/use-token-price';
 import { useWalletBalance } from '@/hooks/use-wallet-balance';
 import { calculateSwapOutput } from '@/lib/services/price-feed';
@@ -122,26 +121,14 @@ export function SwapInterface() {
               <div className="space-y-4">
                 <h4 className="font-semibold text-white">Transaction Settings</h4>
                 <div>
-                  <label className="text-sm text-gray-400">Slippage Tolerance</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex gap-1">
-                      {[0.1, 0.5, 1.0].map((value) => (
-                        <Button
-                          key={value}
-                          variant={slippage === value ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setSlippage(value)}
-                          className={slippage === value ? 'bg-cyan-500 text-black' : 'bg-white/10 text-white border-white/10'}
-                        >
-                          {value}%
-                        </Button>
-                      ))}
-                    </div>
+                  <label className="text-sm text-gray-400">Slippage Tolerance (%)</label>
+                  <div className="flex items-center gap-2 mt-2">
                     <Input
                       type="number"
                       value={slippage}
                       onChange={(e) => setSlippage(parseFloat(e.target.value) || 0)}
-                      className="w-20 bg-white/5 border-white/10 text-white"
+                      className="w-full bg-white/5 border-white/10 text-white"
+                      placeholder="0.5"
                       step="0.1"
                       min="0"
                       max="50"
@@ -181,7 +168,7 @@ export function SwapInterface() {
               placeholder="0.0"
               value={inputAmount}
               onChange={(e) => setInputAmount(e.target.value)}
-              className="bg-transparent border-none text-3xl font-bold text-white p-0 h-auto mono"
+              className="bg-transparent border-none text-3xl font-bold text-white p-0 h-auto mono focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               type="number"
               min="0"
               step="any"
