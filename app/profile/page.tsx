@@ -225,7 +225,7 @@ export default function ProfilePage() {
                     size={20}
                   />
                 </div>
-                <span className="text-sm text-gray-400">xIOTA</span>
+                <span className="text-sm text-gray-400">xBLITZ</span>
               </div>
               <p className="text-2xl font-bold text-white mono">${formatNumber(portfolioStats.xCETUS, 2)}</p>
             </div>

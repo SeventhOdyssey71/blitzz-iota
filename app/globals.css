@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -198,7 +198,7 @@ input[type="number"] {
 
 /* Dropdown menu hover glow */
 [role="menuitem"]:hover {
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+  /* Glow is now handled inline with Tailwind classes */
 }
 
 /* Card hover effects */

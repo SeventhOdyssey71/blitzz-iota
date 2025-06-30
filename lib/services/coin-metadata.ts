@@ -86,7 +86,7 @@ export const KNOWN_COINS: Record<string, CoinMetadata> = {
     name: 'IOTA',
     symbol: 'IOTA',
     description: 'The native token of the IOTA network',
-    iconUrl: 'https://assets-cdn.trustwallet.com/blockchains/iota/info/logo.png',
+    iconUrl: 'https://avatars.githubusercontent.com/u/20126597?s=280&v=4',
   },
   // Add staked IOTA
   '0x3::staking_pool::StakedIota': {

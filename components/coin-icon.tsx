@@ -15,7 +15,7 @@ export function CoinIcon({ symbol, iconUrl, size = 24, className = '', coinType 
   // Map of supported symbols to their specific external logo URLs
   const supportedIcons: Record<string, string> = {
     // IOTA - Using Trust Wallet CDN
-    IOTA: 'https://assets-cdn.trustwallet.com/blockchains/iota/info/logo.png',
+    IOTA: 'https://avatars.githubusercontent.com/u/20126597?s=280&v=4',
     // USDC - Using Trust Wallet CDN (Ethereum contract address)
     USDC: 'https://assets-cdn.trustwallet.com/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
     // USDT - Using Trust Wallet CDN (Ethereum contract address)

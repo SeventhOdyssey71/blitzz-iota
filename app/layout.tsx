@@ -14,6 +14,11 @@ export const metadata: Metadata = {
   title: 'Iota - IOTA DeFi Platform',
   description: 'Decentralized Finance Platform on IOTA',
   generator: 'Iota',
+  icons: {
+    icon: '/larplogo.png',
+    shortcut: '/larplogo.png',
+    apple: '/larplogo.png',
+  },
 }
 
 export default function RootLayout({
