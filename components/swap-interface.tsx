@@ -34,8 +34,8 @@ interface Token {
 export function SwapInterface() {
   const currentAccount = useCurrentAccount();
   const isConnected = !!currentAccount;
-  const [inputToken, setInputToken] = useState<Token>(SUPPORTED_COINS.USDC);
-  const [outputToken, setOutputToken] = useState<Token>(SUPPORTED_COINS.IOTA);
+  const [inputToken, setInputToken] = useState<Token>(SUPPORTED_COINS.IOTA);
+  const [outputToken, setOutputToken] = useState<Token>(SUPPORTED_COINS.stIOTA);
   const [inputAmount, setInputAmount] = useState('');
   const [slippage, setSlippage] = useState(0.5);
   const [showTokenSelect, setShowTokenSelect] = useState<'input' | 'output' | null>(null);

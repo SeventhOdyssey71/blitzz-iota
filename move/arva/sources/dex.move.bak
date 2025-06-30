@@ -1,0 +1,198 @@
+module Blitz::dex {
+    use iota::coin::{Self, Coin};
+    use iota::balance::{Self, Balance};
+    use iota::object::{Self, UID};
+    use iota::tx_context::{Self, TxContext};
+    use iota::transfer;
+    use iota::event;
+    use Blitz::math;
+
+    const EInsufficientLiquidity: u64 = 1;
+    const EInvalidSwapAmount: u64 = 2;
+    const ESlippageTooHigh: u64 = 3;
+
+    public struct Pool<phantom CoinA, phantom CoinB> has key {
+        id: UID,
+        reserve_a: Balance<CoinA>,
+        reserve_b: Balance<CoinB>,
+        lp_supply: u64,
+        fee_percentage: u64,
+    }
+
+    public struct LPToken<phantom CoinA, phantom CoinB> has key, store {
+        id: UID,
+        pool_id: object::ID,
+        amount: u64,
+    }
+
+    public struct SwapEvent has copy, drop {
+        pool_id: object::ID,
+        amount_in: u64,
+        amount_out: u64,
+        is_a_to_b: bool,
+    }
+
+    public struct LiquidityEvent has copy, drop {
+        pool_id: object::ID,
+        amount_a: u64,
+        amount_b: u64,
+        lp_tokens: u64,
+        is_add: bool,
+    }
+
+    public entry fun create_pool<CoinA, CoinB>(
+        coin_a: Coin<CoinA>,
+        coin_b: Coin<CoinB>,
+        fee_percentage: u64,
+        ctx: &mut TxContext
+    ) {
+        let amount_a = coin::value(&coin_a);
+        let amount_b = coin::value(&coin_b);
+        
+        let lp_supply = math::sqrt(amount_a * amount_b);
+        
+        let pool = Pool<CoinA, CoinB> {
+            id: object::new(ctx),
+            reserve_a: coin::into_balance(coin_a),
+            reserve_b: coin::into_balance(coin_b),
+            lp_supply,
+            fee_percentage,
+        };
+
+        let pool_id = object::id(&pool);
+        
+        let lp_token = LPToken<CoinA, CoinB> {
+            id: object::new(ctx),
+            pool_id,
+            amount: lp_supply,
+        };
+
+        event::emit(LiquidityEvent {
+            pool_id,
+            amount_a,
+            amount_b,
+            lp_tokens: lp_supply,
+            is_add: true,
+        });
+
+        transfer::share_object(pool);
+        transfer::transfer(lp_token, tx_context::sender(ctx));
+    }
+
+    public entry fun add_liquidity<CoinA, CoinB>(
+        pool: &mut Pool<CoinA, CoinB>,
+        coin_a: Coin<CoinA>,
+        coin_b: Coin<CoinB>,
+        ctx: &mut TxContext
+    ) {
+        let amount_a = coin::value(&coin_a);
+        let amount_b = coin::value(&coin_b);
+        
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        
+        let lp_tokens = if (pool.lp_supply == 0) {
+            math::sqrt(amount_a * amount_b)
+        } else {
+            let lp_from_a = (amount_a * pool.lp_supply) / reserve_a;
+            let lp_from_b = (amount_b * pool.lp_supply) / reserve_b;
+            math::min(lp_from_a, lp_from_b)
+        };
+
+        balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
+        balance::join(&mut pool.reserve_b, coin::into_balance(coin_b));
+        pool.lp_supply = pool.lp_supply + lp_tokens;
+
+        let lp_token = LPToken<CoinA, CoinB> {
+            id: object::new(ctx),
+            pool_id: object::id(pool),
+            amount: lp_tokens,
+        };
+
+        event::emit(LiquidityEvent {
+            pool_id: object::id(pool),
+            amount_a,
+            amount_b,
+            lp_tokens,
+            is_add: true,
+        });
+
+        transfer::transfer(lp_token, tx_context::sender(ctx));
+    }
+
+    public entry fun swap_a_to_b<CoinA, CoinB>(
+        pool: &mut Pool<CoinA, CoinB>,
+        coin_a: Coin<CoinA>,
+        min_amount_out: u64,
+        ctx: &mut TxContext
+    ) {
+        let amount_in = coin::value(&coin_a);
+        assert!(amount_in > 0, EInvalidSwapAmount);
+
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        
+        let amount_in_with_fee = amount_in * (10000 - pool.fee_percentage) / 10000;
+        let amount_out = (amount_in_with_fee * reserve_b) / (reserve_a + amount_in_with_fee);
+        
+        assert!(amount_out >= min_amount_out, ESlippageTooHigh);
+        assert!(amount_out < reserve_b, EInsufficientLiquidity);
+
+        balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
+        let coin_b = coin::from_balance(balance::split(&mut pool.reserve_b, amount_out), ctx);
+
+        event::emit(SwapEvent {
+            pool_id: object::id(pool),
+            amount_in,
+            amount_out,
+            is_a_to_b: true,
+        });
+
+        transfer::public_transfer(coin_b, tx_context::sender(ctx));
+    }
+
+    public entry fun swap_b_to_a<CoinA, CoinB>(
+        pool: &mut Pool<CoinA, CoinB>,
+        coin_b: Coin<CoinB>,
+        min_amount_out: u64,
+        ctx: &mut TxContext
+    ) {
+        let amount_in = coin::value(&coin_b);
+        assert!(amount_in > 0, EInvalidSwapAmount);
+
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        
+        let amount_in_with_fee = amount_in * (10000 - pool.fee_percentage) / 10000;
+        let amount_out = (amount_in_with_fee * reserve_a) / (reserve_b + amount_in_with_fee);
+        
+        assert!(amount_out >= min_amount_out, ESlippageTooHigh);
+        assert!(amount_out < reserve_a, EInsufficientLiquidity);
+
+        balance::join(&mut pool.reserve_b, coin::into_balance(coin_b));
+        let coin_a = coin::from_balance(balance::split(&mut pool.reserve_a, amount_out), ctx);
+
+        event::emit(SwapEvent {
+            pool_id: object::id(pool),
+            amount_in,
+            amount_out,
+            is_a_to_b: false,
+        });
+
+        transfer::public_transfer(coin_a, tx_context::sender(ctx));
+    }
+
+    public fun get_reserves<CoinA, CoinB>(pool: &Pool<CoinA, CoinB>): (u64, u64) {
+        (balance::value(&pool.reserve_a), balance::value(&pool.reserve_b))
+    }
+
+    public fun get_amount_out(
+        amount_in: u64,
+        reserve_in: u64,
+        reserve_out: u64,
+        fee_percentage: u64
+    ): u64 {
+        let amount_in_with_fee = amount_in * (10000 - fee_percentage) / 10000;
+        (amount_in_with_fee * reserve_out) / (reserve_in + amount_in_with_fee)
+    }
+}

@@ -1,4 +1,6 @@
-import { getIotaClient } from '@/lib/iota/client';
+'use client';
+
+import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
 
 interface CoinMetadata {
   id: string;
@@ -24,7 +26,10 @@ export async function getCoinMetadata(coinType: string): Promise<CoinMetadata | 
   }
 
   try {
-    const client = getIotaClient();
+    const client = getIotaClientSafe();
+    if (!client) {
+      return null;
+    }
     const metadata = await client.getCoinMetadata({ coinType });
 
     if (metadata) {

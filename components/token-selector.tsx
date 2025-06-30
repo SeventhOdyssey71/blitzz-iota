@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -161,6 +162,9 @@ export function TokenSelector({ open, onClose, onSelect, selectedToken }: TokenS
       <DialogContent className="max-w-md bg-black border-white/10 text-white">
         <DialogHeader>
           <DialogTitle className="text-white font-bold text-xl">Select a token</DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Choose a token to swap or view your balances
+          </DialogDescription>
         </DialogHeader>
 
         <div className="relative">

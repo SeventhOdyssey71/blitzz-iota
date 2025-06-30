@@ -73,7 +73,7 @@ export function SiteHeader() {
             </DropdownMenu>
 
             <Button variant="ghost" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium">
-              xIOTA
+              xBLITZ
             </Button>
 
             <DropdownMenu>

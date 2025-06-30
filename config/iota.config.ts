@@ -23,7 +23,7 @@ export const DEFAULT_NETWORK = 'testnet';
 
 export const blitz_PACKAGE_ID = {
   mainnet: '0x0', // To be deployed
-  testnet: '0x0', // To be deployed
+  testnet: '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202', // Deployed
   devnet: '0x0', // To be deployed
 };
 
@@ -58,8 +58,18 @@ export const SUPPORTED_COINS = {
     symbol: 'WBTC',
     name: 'Wrapped Bitcoin',
   },
+  stIOTA: {
+    type: '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA',
+    decimals: 9,
+    symbol: 'stIOTA',
+    name: 'Staked IOTA',
+  },
 };
 
 export const POOL_CREATION_FEE = 1000000; // 0.001 IOTA
 export const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 export const DEFAULT_DEADLINE = 20; // 20 minutes
+
+// Staking Pool Configuration
+export const STAKING_POOL_ADDRESS = '0xbb039632ab28afa6b123a537acd03c1988e665170c75e06ee81bf996d1426021';
+export const STIOTA_TYPE = '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA';

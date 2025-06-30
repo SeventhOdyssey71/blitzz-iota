@@ -1,10 +1,17 @@
+'use client';
+
 import { IotaClient } from '@iota/iota-sdk/client';
 import { IOTA_NETWORKS, DEFAULT_NETWORK } from '@/config/iota.config';
 
 // Use a singleton pattern for the client
-const clients: Record<string, IotaClient> = {};
+let clients: Record<string, IotaClient> | null = null;
 
 export function getIotaClient(network: keyof typeof IOTA_NETWORKS = DEFAULT_NETWORK): IotaClient {
+  // Initialize clients object lazily
+  if (!clients) {
+    clients = {};
+  }
+  
   if (!clients[network]) {
     const rpcUrl = IOTA_NETWORKS[network].rpcUrl;
     clients[network] = new IotaClient({ url: rpcUrl });

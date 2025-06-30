@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const MOVE_DIR = path.join(__dirname, '../move/blitz');
+const MOVE_DIR = path.join(__dirname, '../move/arva');
 const CONFIG_FILE = path.join(__dirname, '../config/iota.config.ts');
 
 async function deployContracts() {

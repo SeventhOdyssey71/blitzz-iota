@@ -1,0 +1,20 @@
+module Blitz::math {
+    public fun min(a: u64, b: u64): u64 {
+        if (a < b) { a } else { b }
+    }
+    
+    public fun max(a: u64, b: u64): u64 {
+        if (a > b) { a } else { b }
+    }
+    
+    public fun sqrt(x: u64): u64 {
+        if (x == 0) return 0;
+        let z = x;
+        let y = (z + 1) / 2;
+        while (y < z) {
+            z = y;
+            y = (x / z + z) / 2;
+        };
+        z
+    }
+}

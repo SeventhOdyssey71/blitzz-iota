@@ -1,5 +1,8 @@
-import { getIotaClient } from '@/lib/iota/client';
-import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
+'use client';
+
+import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { blitz_PACKAGE_ID, SUPPORTED_COINS, STAKING_POOL_ADDRESS, STIOTA_TYPE } from '@/config/iota.config';
+import { findMockPool, getAllMockPools } from './mock-pools';
 
 export interface PoolInfo {
   poolId: string;
@@ -30,8 +33,56 @@ export class PoolDiscovery {
     coinTypeB: string,
     network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'
   ): Promise<PoolInfo | null> {
-    const client = getIotaClient();
+    console.log('Finding pool for pair:', { coinTypeA, coinTypeB });
+    const client = getIotaClientSafe();
+    
+    // Return mock data if client is not available (SSR)
+    if (!client) {
+      const mockPool = findMockPool(coinTypeA, coinTypeB);
+      return mockPool;
+    }
+    
+    // Special handling for IOTA <-> stIOTA staking pool
+    const iotaType = SUPPORTED_COINS.IOTA.type;
+    const stIotaType = SUPPORTED_COINS.stIOTA.type;
+    
+    const isStakingPair = (coinTypeA === iotaType && coinTypeB === stIotaType) ||
+        (coinTypeA === stIotaType && coinTypeB === iotaType);
+    
+    console.log('Is staking pair:', isStakingPair, {
+      iotaType,
+      stIotaType,
+      coinTypeA,
+      coinTypeB,
+      match1: coinTypeA === iotaType && coinTypeB === stIotaType,
+      match2: coinTypeA === stIotaType && coinTypeB === iotaType
+    });
+    
+    if (isStakingPair) {
+      // Return swap pool data for IOTA <-> stIOTA
+      console.log('Returning IOTA/stIOTA swap pool data');
+      return {
+        poolId: STAKING_POOL_ADDRESS,
+        coinTypeA: SUPPORTED_COINS.IOTA.type,
+        coinTypeB: SUPPORTED_COINS.stIOTA.type,
+        reserveA: BigInt(1000000000000), // Mock 1000 IOTA
+        reserveB: BigInt(1000000000000), // Mock 1000 stIOTA
+        lpSupply: BigInt(1000000000000),
+        feePercentage: 10, // 0.1% fee
+      };
+    }
+    
     const packageId = blitz_PACKAGE_ID[network];
+
+    // Use mock pools if package is not deployed
+    if (packageId === '0x0') {
+      const mockPool = findMockPool(coinTypeA, coinTypeB);
+      if (mockPool) {
+        POOL_CACHE.set(`${mockPool.coinTypeA}-${mockPool.coinTypeB}`, mockPool);
+        lastCacheUpdate = Date.now();
+      }
+      return mockPool;
+    }
 
     // Check cache first
     const cacheKey = `${coinTypeA}-${coinTypeB}`;
@@ -138,9 +189,14 @@ export class PoolDiscovery {
   static async findAllPools(
     network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'
   ): Promise<PoolInfo[]> {
-    const client = getIotaClient();
+    const client = getIotaClientSafe();
     const packageId = blitz_PACKAGE_ID[network];
     const pools: PoolInfo[] = [];
+
+    // Use mock pools if package is not deployed or client not available
+    if (packageId === '0x0' || !client) {
+      return getAllMockPools();
+    }
 
     try {
       // Get all supported coin types
@@ -172,6 +228,25 @@ export class PoolDiscovery {
 
     let outputAmount: bigint;
     let priceImpact: number;
+
+    // Special handling for staking pool
+    if (pool.poolId === STAKING_POOL_ADDRESS) {
+      // For staking pool, use simple exchange rate
+      const amountAfterFee = (inputAmount * feeMultiplier) / feeDivisor;
+      
+      if (isAToB) {
+        // IOTA -> stIOTA (staking)
+        outputAmount = pool.reserveA > 0 ? (amountAfterFee * pool.reserveB) / pool.reserveA : amountAfterFee;
+      } else {
+        // stIOTA -> IOTA (unstaking)
+        outputAmount = pool.reserveB > 0 ? (amountAfterFee * pool.reserveA) / pool.reserveB : amountAfterFee;
+      }
+      
+      // No price impact for staking
+      priceImpact = 0;
+      
+      return { outputAmount, priceImpact };
+    }
 
     if (isAToB) {
       // Swap A to B
@@ -210,10 +285,13 @@ export class PoolDiscovery {
     inputAmount: bigint,
     network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'
   ): Promise<SwapRoute | null> {
+    console.log('Finding best route:', { inputToken, outputToken, inputAmount: inputAmount.toString() });
+    
     // Direct route
     const directPool = await this.findPoolsForPair(inputToken, outputToken, network);
     
     if (directPool) {
+      console.log('Direct pool found:', directPool);
       const isAToB = directPool.coinTypeA === inputToken;
       const { outputAmount, priceImpact } = this.calculateOutputAmount(
         directPool,
@@ -228,6 +306,8 @@ export class PoolDiscovery {
         priceImpact,
         path: [inputToken, outputToken],
       };
+    } else {
+      console.log('No direct pool found');
     }
 
     // Multi-hop routes (through IOTA as intermediary)
