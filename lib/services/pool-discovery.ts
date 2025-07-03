@@ -27,6 +27,16 @@ const POOL_CACHE: Map<string, PoolInfo> = new Map();
 const CACHE_DURATION = 30000; // 30 seconds
 let lastCacheUpdate = 0;
 
+// Clean up cache periodically to prevent memory leaks
+const MAX_CACHE_SIZE = 100;
+function cleanupCache() {
+  if (POOL_CACHE.size > MAX_CACHE_SIZE) {
+    // Clear the cache if it gets too large
+    POOL_CACHE.clear();
+    lastCacheUpdate = 0;
+  }
+}
+
 export class PoolDiscovery {
   static async findPoolsForPair(
     coinTypeA: string,
@@ -78,6 +88,7 @@ export class PoolDiscovery {
     if (packageId === '0x0') {
       const mockPool = findMockPool(coinTypeA, coinTypeB);
       if (mockPool) {
+        cleanupCache();
         POOL_CACHE.set(`${mockPool.coinTypeA}-${mockPool.coinTypeB}`, mockPool);
         lastCacheUpdate = Date.now();
       }

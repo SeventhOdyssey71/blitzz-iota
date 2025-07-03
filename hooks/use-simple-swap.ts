@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '@iota/dapp-kit';
 import { parseTokenAmount } from '@/lib/utils/format';
 import { toast } from 'sonner';
-import { TransactionBuilder } from '@/lib/iota/transaction-builder';
 import { PoolDiscovery } from '@/lib/services/pool-discovery';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { CoinStruct } from '@iota/iota-sdk/client';

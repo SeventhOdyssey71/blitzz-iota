@@ -52,13 +52,37 @@ export function SwapInterface() {
   const { balance: outputBalance, formatted: outputBalanceFormatted } = useWalletBalance(outputToken.type);
 
   // Calculate swap output
-  const swapCalculation = inputAmount && inputPrice && outputPrice
-    ? calculateSwapOutput(
-        parseFloat(inputAmount),
-        inputPrice.price,
-        outputPrice.price,
-        slippage
-      )
+  const swapCalculation = inputAmount && parseFloat(inputAmount) > 0
+    ? (() => {
+        // For IOTA <-> stIOTA swaps, use 1:1 rate (minus fees)
+        const isStakingSwap = 
+          (inputToken.type === SUPPORTED_COINS.IOTA.type && outputToken.type === SUPPORTED_COINS.stIOTA.type) ||
+          (inputToken.type === SUPPORTED_COINS.stIOTA.type && outputToken.type === SUPPORTED_COINS.IOTA.type);
+        
+        if (isStakingSwap) {
+          const inputAmountNum = parseFloat(inputAmount);
+          const feePercentage = 0.1; // 0.1% fee
+          const outputAmount = inputAmountNum * (1 - feePercentage / 100);
+          const minimumReceived = outputAmount * (1 - slippage / 100);
+          
+          return {
+            outputAmount: outputAmount.toString(),
+            minimumReceived: minimumReceived.toString(),
+            priceImpact: 0, // No price impact for staking
+            route: [inputToken.symbol, outputToken.symbol],
+          };
+        }
+        
+        // For other swaps, use price-based calculation
+        return inputPrice && outputPrice
+          ? calculateSwapOutput(
+              parseFloat(inputAmount),
+              inputPrice.price,
+              outputPrice.price,
+              slippage
+            )
+          : null;
+      })()
     : null;
 
   const handleSwap = async () => {
@@ -285,7 +309,17 @@ export function SwapInterface() {
       ) : (
         <Button
           className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-xl font-semibold text-lg tracking-wide transition-all"
-          onClick={() => document.querySelector<HTMLButtonElement>('[aria-label="Connect Wallet"]')?.click()}
+          onClick={() => {
+            // Find and click the wallet connect button
+            const walletButton = document.querySelector('button[data-wallet-button]') || 
+                               document.querySelector('button:has(.wallet-icon)') ||
+                               document.querySelector('button[aria-label*="wallet" i]');
+            if (walletButton instanceof HTMLElement) {
+              walletButton.click();
+            } else {
+              toast.error('Unable to find wallet button. Please use the wallet button in the header.');
+            }
+          }}
         >
           Connect Wallet
         </Button>

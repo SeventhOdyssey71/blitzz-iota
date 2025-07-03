@@ -67,6 +67,7 @@ export function WalletButtonV2() {
           onClick={handleConnect}
           className="btn-primary px-5 py-2 rounded-xl font-medium tracking-wide"
           aria-label="Connect Wallet"
+          data-wallet-button="connect"
         >
           <Wallet className="w-4 h-4 mr-2" />
           Connect Wallet
