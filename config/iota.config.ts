@@ -36,7 +36,7 @@ export const SUPPORTED_COINS = {
     iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
   },
   stIOTA: {
-    type: '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA',
+    type: '0x3::staking_pool::StakedIota',
     decimals: 9,
     symbol: 'stIOTA',
     name: 'Staked IOTA',
@@ -56,5 +56,5 @@ export const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 export const DEFAULT_DEADLINE = 20; // 20 minutes
 
 // Staking Pool Configuration
-export const STAKING_POOL_ADDRESS = '0xbb039632ab28afa6b123a537acd03c1988e665170c75e06ee81bf996d1426021';
-export const STIOTA_TYPE = '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA';
+export const STAKING_POOL_ADDRESS = '0x3';
+export const STIOTA_TYPE = '0x3::staking_pool::StakedIota';
