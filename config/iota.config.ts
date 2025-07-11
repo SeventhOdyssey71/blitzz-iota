@@ -47,7 +47,7 @@ export const SUPPORTED_COINS = {
     decimals: 6,
     symbol: 'vUSD',
     name: 'Native USD',
-    iconUrl: 'https://raw.githubusercontent.com/iotaledger/iota/main/apps/icons/src/usdc.svg',
+    iconUrl: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg',
   },
 };
 

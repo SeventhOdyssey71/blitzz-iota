@@ -17,16 +17,6 @@ interface CoinBalance {
 }
 
 const getCoinInfo = (coinType: string) => {
-  // Check if it's IOTA
-  if (coinType === '0x2::iota::IOTA') {
-    return {
-      symbol: 'IOTA',
-      name: 'IOTA',
-      decimals: 9,
-      iconUrl: '/icons/iota.svg',
-    };
-  }
-  
   // Check supported coins
   const supportedCoin = Object.values(SUPPORTED_COINS).find(
     coin => coin.type === coinType
@@ -36,7 +26,8 @@ const getCoinInfo = (coinType: string) => {
     return supportedCoin;
   }
   
-  // Extract coin name from type
+  // This shouldn't happen since we filter to supported coins only
+  // But just in case, return a default
   const parts = coinType.split('::');
   const coinName = parts[parts.length - 1];
   
