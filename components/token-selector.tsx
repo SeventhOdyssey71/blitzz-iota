@@ -16,7 +16,7 @@ import { useAllBalances } from '@/hooks/use-wallet-balance';
 import { formatBalance } from '@/lib/utils/format';
 import { useTokenPrices } from '@/hooks/use-token-price';
 import { CoinIcon } from '@/components/coin-icon';
-import { getMultipleCoinMetadata, KNOWN_COINS } from '@/lib/services/coin-metadata';
+// Removed unused imports
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface Token {
@@ -47,81 +47,28 @@ export function TokenSelector({ open, onClose, onSelect, selectedToken }: TokenS
   // Fetch metadata for all coins when balances are loaded
   useEffect(() => {
     async function fetchTokenMetadata() {
-      if (!balances || balances.length === 0) return;
-      
       setIsLoadingMetadata(true);
       try {
-        // Get unique coin types from balances
-        const coinTypes = [...new Set(balances.map(b => b.coinType))];
-        
-        // Fetch metadata for all coins
-        const metadataRecord = await getMultipleCoinMetadata(coinTypes);
-        
-        // Map metadata to token format
-        const fetchedTokens = Object.entries(metadataRecord).map(([coinType, meta]) => ({
-          symbol: meta.symbol,
-          type: coinType,
-          decimals: meta.decimals,
-          name: meta.name,
-          iconUrl: meta.iconUrl,
-        }));
-        
-        // Check for known coins first
-        const knownTokens = coinTypes.map(coinType => {
-          const knownCoin = KNOWN_COINS[coinType];
-          if (knownCoin) {
-            return {
-              symbol: knownCoin.symbol,
-              type: coinType,
-              decimals: knownCoin.decimals,
-              name: knownCoin.name,
-              iconUrl: knownCoin.iconUrl,
-            };
-          }
-          return null;
-        }).filter(Boolean);
-        
-        // Combine fetched and known tokens
-        const allTokens = [...fetchedTokens];
-        knownTokens.forEach(known => {
-          if (!allTokens.some(t => t.type === known.type)) {
-            allTokens.push(known);
-          }
-        });
-        
-        // Also include supported coins that might not be in wallet
+        // Only use supported coins
         const supportedTokens = Object.values(SUPPORTED_COINS).map(coin => ({
-          ...coin,
+          symbol: coin.symbol,
+          type: coin.type,
+          decimals: coin.decimals,
+          name: coin.name,
+          iconUrl: coin.iconUrl,
         }));
         
-        supportedTokens.forEach(supported => {
-          if (!allTokens.some(t => t.type === supported.type)) {
-            allTokens.push(supported);
-          }
-        });
-        
-        setTokens(allTokens);
+        setTokens(supportedTokens);
       } catch (error) {
         console.error('Failed to fetch token metadata:', error);
-        // Fallback to basic token list
-        const fallbackTokens = balances.map(b => {
-          const parts = b.coinType.split('::');
-          const symbol = parts[parts.length - 1];
-          return {
-            symbol,
-            type: b.coinType,
-            decimals: 9,
-            name: symbol,
-          };
-        });
-        setTokens(fallbackTokens);
+        setTokens([]);
       } finally {
         setIsLoadingMetadata(false);
       }
     }
 
     fetchTokenMetadata();
-  }, [balances]);
+  }, []);
 
   // Get balance for a token
   const getTokenBalance = (tokenType: string) => {
@@ -132,13 +79,10 @@ export function TokenSelector({ open, onClose, onSelect, selectedToken }: TokenS
     return formatBalance(balance.totalBalance, decimals);
   };
 
-  // Filter tokens based on search - only show IOTA, stIOTA, and vUSD
-  const allowedSymbols = ['IOTA', 'stIOTA', 'vUSD'];
+  // Filter tokens based on search
   const filteredTokens = tokens.filter(token => 
-    allowedSymbols.includes(token.symbol) && (
-      token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      token.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    token.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   // Sort tokens by balance (highest first)
