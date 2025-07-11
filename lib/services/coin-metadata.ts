@@ -93,9 +93,9 @@ export const KNOWN_COINS: Record<string, CoinMetadata> = {
     description: 'The native token of the IOTA network',
     iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
   },
-  // stIOTA - Staked IOTA
-  '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA': {
-    id: '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202',
+  // stIOTA - Staked IOTA (official IOTA staking pool)
+  '0x3::staking_pool::StakedIota': {
+    id: '0x3',
     decimals: 9,
     name: 'Staked IOTA',
     symbol: 'stIOTA',
