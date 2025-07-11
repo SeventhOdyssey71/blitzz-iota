@@ -91,56 +91,24 @@ export const KNOWN_COINS: Record<string, CoinMetadata> = {
     name: 'IOTA',
     symbol: 'IOTA',
     description: 'The native token of the IOTA network',
-    iconUrl: 'https://avatars.githubusercontent.com/u/20126597?s=280&v=4',
+    iconUrl: 'https://cryptologos.cc/logos/iota-iota-logo.svg',
   },
-  // Add staked IOTA
-  '0x3::staking_pool::StakedIota': {
-    id: '0x3',
+  // stIOTA - Staked IOTA
+  '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA': {
+    id: '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202',
     decimals: 9,
     name: 'Staked IOTA',
     symbol: 'stIOTA',
     description: 'Staked IOTA token',
-    iconUrl: '/tokens/stiota.png', // Staked IOTA icon - keep local as no CDN available
+    iconUrl: 'https://cryptologos.cc/logos/iota-iota-logo.svg',
   },
-  '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN': {
-    id: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf',
-    decimals: 6,
-    name: 'USD Coin',
-    symbol: 'USDC',
-    description: 'USD Coin on IOTA',
-    iconUrl: 'https://assets-cdn.trustwallet.com/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
-  },
-  '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN': {
-    id: '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c',
-    decimals: 6,
-    name: 'Tether USD',
-    symbol: 'USDT',
-    description: 'Tether USD on IOTA',
-    iconUrl: 'https://assets-cdn.trustwallet.com/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png',
-  },
-  '0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5::coin::COIN': {
-    id: '0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5',
-    decimals: 8,
-    name: 'Wrapped Ether',
-    symbol: 'WETH',
-    description: 'Wrapped Ether on IOTA',
-    iconUrl: 'https://assets-cdn.trustwallet.com/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png',
-  },
-  '0x027792d9fed7f9844eb4839566001bb6f6cb4804f66aa2da6fe1ee242d896881::coin::COIN': {
-    id: '0x027792d9fed7f9844eb4839566001bb6f6cb4804f66aa2da6fe1ee242d896881',
-    decimals: 8,
-    name: 'Wrapped Bitcoin',
-    symbol: 'WBTC',
-    description: 'Wrapped Bitcoin on IOTA',
-    iconUrl: 'https://assets-cdn.trustwallet.com/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png',
-  },
-  // Additional common tokens
+  // vUSD - Native USD
   '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
     id: '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55',
     decimals: 6,
-    name: 'Virtue USD',
+    name: 'Native USD',
     symbol: 'vUSD',
-    description: 'Virtue USD stablecoin',
-    iconUrl: '/tokens/vusd.png', // Keep local as no CDN available
+    description: 'Native USD',
+    iconUrl: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg',
   },
 };

@@ -33,36 +33,21 @@ export const SUPPORTED_COINS = {
     decimals: 9,
     symbol: 'IOTA',
     name: 'IOTA',
-  },
-  USDC: {
-    type: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',
-    decimals: 6,
-    symbol: 'USDC',
-    name: 'USD Coin',
-  },
-  USDT: {
-    type: '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN',
-    decimals: 6,
-    symbol: 'USDT',
-    name: 'Tether USD',
-  },
-  WETH: {
-    type: '0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5::coin::COIN',
-    decimals: 8,
-    symbol: 'WETH',
-    name: 'Wrapped Ether',
-  },
-  WBTC: {
-    type: '0x027792d9fed7f9844eb4839566001bb6f6cb4804f66aa2da6fe1ee242d896881::coin::COIN',
-    decimals: 8,
-    symbol: 'WBTC',
-    name: 'Wrapped Bitcoin',
+    iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
   },
   stIOTA: {
     type: '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA',
     decimals: 9,
     symbol: 'stIOTA',
     name: 'Staked IOTA',
+    iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
+  },
+  vUSD: {
+    type: '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT',
+    decimals: 6,
+    symbol: 'vUSD',
+    name: 'Native USD',
+    iconUrl: 'https://raw.githubusercontent.com/iotaledger/iota/main/apps/icons/src/usdc.svg',
   },
 };
 

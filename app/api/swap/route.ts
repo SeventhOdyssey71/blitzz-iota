@@ -2,23 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Mock pool data for demo
 const MOCK_POOLS = {
-  'IOTA-USDC': {
+  'IOTA-stIOTA': {
+    id: '0xbb039632ab28afa6b123a537acd03c1988e665170c75e06ee81bf996d1426021',
+    reserveA: BigInt('10000000000000'), // 10,000 IOTA
+    reserveB: BigInt('9900000000000'), // 9,900 stIOTA (1.01 exchange rate)
+    fee: 10, // 0.1%
+  },
+  'IOTA-vUSD': {
     id: '0x1234567890abcdef',
-    reserveA: BigInt('1000000000000'), // 1000 IOTA
-    reserveB: BigInt('284700000'), // 284.7 USDC
+    reserveA: BigInt('5000000000000'), // 5,000 IOTA
+    reserveB: BigInt('1500000000'), // 1,500 vUSD (assuming $0.30 per IOTA)
     fee: 30, // 0.3%
   },
-  'IOTA-USDT': {
+  'stIOTA-vUSD': {
     id: '0xabcdef1234567890',
-    reserveA: BigInt('800000000000'), // 800 IOTA
-    reserveB: BigInt('227760000'), // 227.76 USDT
-    fee: 30,
-  },
-  'USDC-USDT': {
-    id: '0xfedcba0987654321',
-    reserveA: BigInt('500000000'), // 500 USDC
-    reserveB: BigInt('500050000'), // 500.05 USDT
-    fee: 10, // 0.1% for stablecoins
+    reserveA: BigInt('3000000000000'), // 3,000 stIOTA
+    reserveB: BigInt('900000000'), // 900 vUSD
+    fee: 30, // 0.3%
   },
 };
 

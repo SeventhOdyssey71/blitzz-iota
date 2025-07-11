@@ -92,7 +92,6 @@ export function TokenSelector({ open, onClose, onSelect, selectedToken }: TokenS
         // Also include supported coins that might not be in wallet
         const supportedTokens = Object.values(SUPPORTED_COINS).map(coin => ({
           ...coin,
-          iconUrl: undefined,
         }));
         
         supportedTokens.forEach(supported => {
@@ -133,10 +132,13 @@ export function TokenSelector({ open, onClose, onSelect, selectedToken }: TokenS
     return formatBalance(balance.totalBalance, decimals);
   };
 
-  // Filter tokens based on search
+  // Filter tokens based on search - only show IOTA, stIOTA, and vUSD
+  const allowedSymbols = ['IOTA', 'stIOTA', 'vUSD'];
   const filteredTokens = tokens.filter(token => 
-    token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    token.name.toLowerCase().includes(searchQuery.toLowerCase())
+    allowedSymbols.includes(token.symbol) && (
+      token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      token.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   );
   
   // Sort tokens by balance (highest first)

@@ -14,35 +14,25 @@ export const MOCK_POOLS: PoolInfo[] = [
     lpSupply: BigInt(10000000000000),
     feePercentage: 10, // 0.1%
   },
-  // IOTA <-> USDC pool
+  // IOTA <-> vUSD pool
   {
     poolId: '0x' + 'b'.repeat(64),
     coinTypeA: SUPPORTED_COINS.IOTA.type,
-    coinTypeB: SUPPORTED_COINS.USDC.type,
+    coinTypeB: SUPPORTED_COINS.vUSD.type,
     reserveA: BigInt(5000000000000),  // 5,000 IOTA
-    reserveB: BigInt(15000000000),    // 15,000 USDC (assuming $3 per IOTA)
+    reserveB: BigInt(1500000000),     // 1,500 vUSD (assuming $0.30 per IOTA)
     lpSupply: BigInt(5000000000000),
     feePercentage: 30, // 0.3%
   },
-  // IOTA <-> USDT pool
+  // stIOTA <-> vUSD pool
   {
     poolId: '0x' + 'c'.repeat(64),
-    coinTypeA: SUPPORTED_COINS.IOTA.type,
-    coinTypeB: SUPPORTED_COINS.USDT.type,
-    reserveA: BigInt(3000000000000),  // 3,000 IOTA
-    reserveB: BigInt(9000000000),     // 9,000 USDT
+    coinTypeA: SUPPORTED_COINS.stIOTA.type,
+    coinTypeB: SUPPORTED_COINS.vUSD.type,
+    reserveA: BigInt(3000000000000),  // 3,000 stIOTA
+    reserveB: BigInt(900000000),      // 900 vUSD (assuming $0.30 per stIOTA)
     lpSupply: BigInt(3000000000000),
     feePercentage: 30, // 0.3%
-  },
-  // USDC <-> USDT pool
-  {
-    poolId: '0x' + 'd'.repeat(64),
-    coinTypeA: SUPPORTED_COINS.USDC.type,
-    coinTypeB: SUPPORTED_COINS.USDT.type,
-    reserveA: BigInt(50000000000),    // 50,000 USDC
-    reserveB: BigInt(50000000000),    // 50,000 USDT
-    lpSupply: BigInt(50000000000),
-    feePercentage: 10, // 0.1% for stable pairs
   },
 ];
 
