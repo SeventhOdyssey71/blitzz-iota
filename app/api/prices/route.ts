@@ -1,15 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+// Blockberry API configuration
+const BLOCKBERRY_API_BASE = 'https://api.blockberry.one/iota/v1';
+const BLOCKBERRY_API_KEY = process.env.BLOCKBERRY_API_KEY || '';
 
 // ONLY 3 SUPPORTED TOKENS
-const TOKEN_MAPPINGS: Record<string, string> = {
-  'IOTA': 'iota',
-  'stIOTA': 'iota', // Use IOTA price for stIOTA
-  'vUSD': 'usd-coin', // vUSD is pegged to USD
+const TOKEN_INFO: Record<string, { type: string; decimals: number }> = {
+  'IOTA': {
+    type: '0x2::iota::IOTA',
+    decimals: 9,
+  },
+  'stIOTA': {
+    type: '0x3::staking_pool::StakedIota',
+    decimals: 9,
+  },
+  'vUSD': {
+    type: '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT',
+    decimals: 6,
+  },
 };
 
 const SUPPORTED_TOKENS = ['IOTA', 'stIOTA', 'vUSD'];
+
+async function fetchBlockberryPrice(coinType: string): Promise<any> {
+  try {
+    const response = await fetch(
+      `${BLOCKBERRY_API_BASE}/coins/${encodeURIComponent(coinType)}`,
+      {
+        headers: {
+          'X-API-KEY': BLOCKBERRY_API_KEY,
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`Blockberry API returned ${response.status} for ${coinType}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to fetch Blockberry data for ${coinType}:`, error);
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,65 +58,69 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({}, { status: 200 });
     }
 
-    // Get unique coin IDs to fetch
-    const uniqueCoinIds = [...new Set(symbols.map(symbol => TOKEN_MAPPINGS[symbol]).filter(Boolean))];
-    const coinIds = uniqueCoinIds.join(',');
-
     // Initialize prices object
     const prices: Record<string, any> = {};
     
-    // If we have coin IDs to fetch, get from CoinGecko
-    if (coinIds) {
-      const response = await fetch(
-        `${COINGECKO_API}/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true`,
-        {
-          next: { revalidate: 30 }, // Cache for 30 seconds
+    // Fetch prices for each token
+    await Promise.all(symbols.map(async (symbol) => {
+      const tokenInfo = TOKEN_INFO[symbol];
+      if (!tokenInfo) return;
+
+      // For vUSD, always return stable price
+      if (symbol === 'vUSD') {
+        prices[symbol] = {
+          symbol,
+          price: 1.0,
+          change24h: 0,
+          volume24h: 0,
+          marketCap: 0,
+        };
+
+        // Try to get market data from Blockberry
+        const blockberryData = await fetchBlockberryPrice(tokenInfo.type);
+        if (blockberryData && blockberryData.market_data) {
+          prices[symbol].volume24h = blockberryData.market_data.volume_24h || 0;
+          prices[symbol].marketCap = blockberryData.market_data.market_cap || 0;
         }
-      ).catch(() => null);
+        return;
+      }
 
-      if (response && response.ok) {
-        const data = await response.json();
-
-        // Map prices for each requested symbol
-        for (const symbol of symbols) {
-          const coinId = TOKEN_MAPPINGS[symbol];
-          
-          if (coinId && data[coinId]) {
-            // Special handling for vUSD - always $1
-            if (symbol === 'vUSD') {
-              prices[symbol] = {
-                symbol,
-                price: 1.0,
-                change24h: 0,
-                volume24h: data[coinId].usd_24h_vol || 0,
-                marketCap: data[coinId].usd_market_cap || 0,
-              };
-            } else {
-              prices[symbol] = {
-                symbol,
-                price: data[coinId].usd || 0,
-                change24h: data[coinId].usd_24h_change || 0,
-                volume24h: data[coinId].usd_24h_vol || 0,
-                marketCap: data[coinId].usd_market_cap || 0,
-              };
-            }
+      // Fetch from Blockberry
+      const blockberryData = await fetchBlockberryPrice(tokenInfo.type);
+      
+      if (blockberryData && blockberryData.market_data) {
+        const marketData = blockberryData.market_data;
+        
+        // For stIOTA, use IOTA price if no direct price
+        let price = marketData.current_price || 0;
+        if (symbol === 'stIOTA' && !price) {
+          // If no direct price, use IOTA price
+          const iotaData = await fetchBlockberryPrice(TOKEN_INFO['IOTA'].type);
+          if (iotaData && iotaData.market_data) {
+            price = iotaData.market_data.current_price || 0.2847;
           }
         }
-      }
-    }
 
-    // Add fallback data for any missing tokens
-    const fallbackPrices: Record<string, any> = {
-      'IOTA': { symbol: 'IOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
-      'stIOTA': { symbol: 'stIOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
-      'vUSD': { symbol: 'vUSD', price: 1.0, change24h: 0, volume24h: 1234567890, marketCap: 25678901234 },
-    };
-
-    for (const symbol of symbols) {
-      if (!prices[symbol] && fallbackPrices[symbol]) {
-        prices[symbol] = fallbackPrices[symbol];
+        prices[symbol] = {
+          symbol,
+          price: price || 0.2847, // Fallback price
+          change24h: marketData.price_change_percentage_24h || 0,
+          volume24h: marketData.volume_24h || 0,
+          marketCap: marketData.market_cap || 0,
+        };
+      } else {
+        // Fallback prices
+        const fallbackPrices: Record<string, any> = {
+          'IOTA': { symbol: 'IOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
+          'stIOTA': { symbol: 'stIOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
+          'vUSD': { symbol: 'vUSD', price: 1.0, change24h: 0, volume24h: 1234567890, marketCap: 25678901234 },
+        };
+        
+        if (fallbackPrices[symbol]) {
+          prices[symbol] = fallbackPrices[symbol];
+        }
       }
-    }
+    }));
 
     return NextResponse.json(prices, {
       headers: {
