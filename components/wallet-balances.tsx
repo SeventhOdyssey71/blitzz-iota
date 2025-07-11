@@ -115,7 +115,13 @@ export function WalletBalances() {
         </div>
       ) : (
         <div className="space-y-2">
-          {balances.map((balance: CoinBalance) => {
+          {balances
+            .filter((balance: CoinBalance) => {
+              // Only show supported coins
+              const supportedTypes = Object.values(SUPPORTED_COINS).map(coin => coin.type);
+              return supportedTypes.includes(balance.coinType);
+            })
+            .map((balance: CoinBalance) => {
             const coinInfo = getCoinInfo(balance.coinType);
             const formattedBalance = formatBalance(
               balance.totalBalance,

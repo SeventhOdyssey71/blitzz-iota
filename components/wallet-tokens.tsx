@@ -57,8 +57,12 @@ export function WalletTokens() {
       const tokenData: WalletToken[] = [];
       let total = 0;
 
+      // Filter to only show supported coins
+      const supportedTypes = Object.values(SUPPORTED_COINS).map(coin => coin.type);
+      const filteredBalances = balances.filter(balance => supportedTypes.includes(balance.coinType));
+      
       // Process each coin type
-      for (const balance of balances) {
+      for (const balance of filteredBalances) {
         const token: WalletToken = {
           coinType: balance.coinType,
           balance: BigInt(balance.totalBalance),
@@ -90,13 +94,8 @@ export function WalletTokens() {
             let name = symbol;
             let iconUrl = null;
             
-            if (symbol.toLowerCase().includes('iota')) {
-              iconUrl = '/tokens/iota.png';
-              name = symbol.replace(/([A-Z])/g, ' $1').trim();
-            } else if (symbol.toLowerCase() === 'vusd' || symbol.toLowerCase() === 'vsd') {
-              iconUrl = '/tokens/vusd.png';
-              name = 'Virtue USD';
-            }
+            // Skip unknown tokens since we're filtering to supported coins only
+            continue;
             
             token.metadata = {
               decimals: 9,
