@@ -16,55 +16,18 @@ interface PriceCache {
 const CACHE_DURATION = 30000; // 30 seconds
 const priceCache: PriceCache = {};
 
-// Blockberry API configuration
-const BLOCKBERRY_API_BASE = 'https://api.blockberry.one/iota/v1';
-const BLOCKBERRY_API_KEY = process.env.BLOCKBERRY_API_KEY || '';
+// CoinGecko API for real prices
+const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 
-// Token configuration for Blockberry
-const TOKEN_INFO: Record<string, { type: string; decimals: number; iconUrl?: string }> = {
-  'IOTA': {
-    type: '0x2::iota::IOTA',
-    decimals: 9,
-    iconUrl: 'https://api.blockberry.one/iota/icon/0x2::iota::IOTA',
-  },
-  'stIOTA': {
-    type: '0x3::staking_pool::StakedIota',
-    decimals: 9,
-    iconUrl: 'https://api.blockberry.one/iota/icon/0x3::staking_pool::StakedIota',
-  },
-  'vUSD': {
-    type: '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT',
-    decimals: 6,
-    iconUrl: 'https://api.blockberry.one/iota/icon/0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT',
-  },
+// Token ID mapping for CoinGecko - ONLY 3 SUPPORTED TOKENS
+const TOKEN_MAPPINGS: Record<string, string> = {
+  'IOTA': 'iota',
+  'stIOTA': 'iota', // Use IOTA price for stIOTA
+  'vUSD': 'usd-coin', // vUSD is pegged to USD
 };
 
 // Supported tokens only
 const SUPPORTED_TOKENS = ['IOTA', 'stIOTA', 'vUSD'];
-
-async function fetchBlockberryPrice(coinType: string): Promise<any> {
-  try {
-    const response = await fetch(
-      `${BLOCKBERRY_API_BASE}/coins/${encodeURIComponent(coinType)}`,
-      {
-        headers: {
-          'X-API-KEY': BLOCKBERRY_API_KEY,
-          'Accept': 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`Blockberry API returned ${response.status} for ${coinType}`);
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`Failed to fetch Blockberry data for ${coinType}:`, error);
-    return null;
-  }
-}
 
 export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> {
   // Only support our 3 tokens
@@ -87,62 +50,51 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
       return cached.data;
     }
 
-    const tokenInfo = TOKEN_INFO[symbol];
-    if (!tokenInfo) {
+    const coinId = TOKEN_MAPPINGS[symbol];
+    if (!coinId) {
+      return fallbackPrices[symbol];
+    }
+
+    // Fetch from CoinGecko with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const response = await fetch(
+      `${COINGECKO_API}/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true`,
+      { signal: controller.signal }
+    ).catch(() => null);
+    
+    clearTimeout(timeoutId);
+
+    if (!response || !response.ok) {
+      console.warn(`Failed to fetch price for ${symbol}, using fallback`);
+      return fallbackPrices[symbol];
+    }
+
+    const data = await response.json();
+    const priceData = data[coinId];
+
+    if (!priceData) {
       return fallbackPrices[symbol];
     }
 
     // For vUSD, always return stable price
     if (symbol === 'vUSD') {
-      const tokenPrice: TokenPrice = {
+      return {
         symbol: 'vUSD',
         price: 1.0,
         change24h: 0,
-        volume24h: 0,
-        marketCap: 0,
+        volume24h: priceData.usd_24h_vol || 0,
+        marketCap: priceData.usd_market_cap || 0,
       };
-
-      // Try to get market data from Blockberry
-      const blockberryData = await fetchBlockberryPrice(tokenInfo.type);
-      if (blockberryData && blockberryData.market_data) {
-        tokenPrice.volume24h = blockberryData.market_data.volume_24h || 0;
-        tokenPrice.marketCap = blockberryData.market_data.market_cap || 0;
-      }
-
-      priceCache[symbol] = {
-        data: tokenPrice,
-        timestamp: Date.now(),
-      };
-
-      return tokenPrice;
-    }
-
-    // Fetch from Blockberry API
-    const blockberryData = await fetchBlockberryPrice(tokenInfo.type);
-    
-    if (!blockberryData || !blockberryData.market_data) {
-      console.warn(`No market data from Blockberry for ${symbol}, using fallback`);
-      return fallbackPrices[symbol];
-    }
-
-    const marketData = blockberryData.market_data;
-    
-    // For stIOTA, use IOTA price with exchange rate if available
-    let price = marketData.current_price || 0;
-    if (symbol === 'stIOTA' && !price) {
-      // If no direct price, use IOTA price
-      const iotaData = await fetchBlockberryPrice(TOKEN_INFO['IOTA'].type);
-      if (iotaData && iotaData.market_data) {
-        price = iotaData.market_data.current_price || fallbackPrices['IOTA'].price;
-      }
     }
 
     const tokenPrice: TokenPrice = {
       symbol,
-      price: price || fallbackPrices[symbol].price,
-      change24h: marketData.price_change_percentage_24h || 0,
-      volume24h: marketData.volume_24h || 0,
-      marketCap: marketData.market_cap || 0,
+      price: priceData.usd || 0,
+      change24h: priceData.usd_24h_change || 0,
+      volume24h: priceData.usd_24h_vol || 0,
+      marketCap: priceData.usd_market_cap || 0,
     };
 
     // Update cache
@@ -210,12 +162,6 @@ export async function getMultipleTokenPrices(symbols: string[]): Promise<Record<
     
     return prices;
   }
-}
-
-// Get token icon URL from Blockberry
-export function getTokenIconUrl(symbol: string): string {
-  const tokenInfo = TOKEN_INFO[symbol];
-  return tokenInfo?.iconUrl || '';
 }
 
 // Calculate swap output amount
