@@ -51,17 +51,6 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        // Special handling for stIOTA - use IOTA price
-        if (symbols.includes('stIOTA') && data['iota']) {
-          prices['stIOTA'] = {
-            symbol: 'stIOTA',
-            price: data['iota'].usd || 0,
-            change24h: data['iota'].usd_24h_change || 0,
-            volume24h: data['iota'].usd_24h_vol || 0,
-            marketCap: data['iota'].usd_market_cap || 0,
-          };
-        }
-        
         // Special handling for vUSD - stable at $1
         if (symbols.includes('vUSD')) {
           prices['vUSD'] = {

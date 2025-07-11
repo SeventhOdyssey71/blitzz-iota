@@ -91,7 +91,7 @@ export const KNOWN_COINS: Record<string, CoinMetadata> = {
     name: 'IOTA',
     symbol: 'IOTA',
     description: 'The native token of the IOTA network',
-    iconUrl: 'https://cryptologos.cc/logos/iota-iota-logo.svg',
+    iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
   },
   // stIOTA - Staked IOTA
   '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202::simple_staking::StakedIOTA': {
@@ -100,7 +100,7 @@ export const KNOWN_COINS: Record<string, CoinMetadata> = {
     name: 'Staked IOTA',
     symbol: 'stIOTA',
     description: 'Staked IOTA token',
-    iconUrl: 'https://cryptologos.cc/logos/iota-iota-logo.svg',
+    iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
   },
   // vUSD - Native USD
   '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {

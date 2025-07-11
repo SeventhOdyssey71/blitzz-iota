@@ -22,6 +22,8 @@ const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 // Token ID mapping for CoinGecko
 const TOKEN_MAPPINGS: Record<string, string> = {
   'IOTA': 'iota',
+  'stIOTA': 'iota', // Use IOTA price for stIOTA
+  'vUSD': 'usd-coin', // Use USD price for vUSD
   'USDC': 'usd-coin',
   'USDT': 'tether',
   'WETH': 'ethereum',
@@ -32,6 +34,8 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
   // Define fallback prices
   const fallbackPrices: Record<string, TokenPrice> = {
     'IOTA': { symbol: 'IOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
+    'stIOTA': { symbol: 'stIOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
+    'vUSD': { symbol: 'vUSD', price: 1.0, change24h: 0, volume24h: 1234567890, marketCap: 25678901234 },
     'USDC': { symbol: 'USDC', price: 0.9999, change24h: -0.01, volume24h: 1234567890, marketCap: 25678901234 },
     'USDT': { symbol: 'USDT', price: 1.0001, change24h: 0.02, volume24h: 9876543210, marketCap: 78901234567 },
     'WETH': { symbol: 'WETH', price: 2234.56, change24h: 1.23, volume24h: 234567890, marketCap: 234567890123 },

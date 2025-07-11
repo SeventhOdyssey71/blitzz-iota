@@ -14,13 +14,12 @@ export function CoinIcon({ symbol, iconUrl, size = 24, className = '', coinType 
 
   // Map of supported symbols to their specific logo URLs
   const supportedIcons: Record<string, string> = {
-    // IOTA - Using official IOTA logo
-    IOTA: 'https://cryptologos.cc/logos/iota-iota-logo.svg',
-    // stIOTA - Using IOTA logo with different color (we'll style it)
-    stIOTA: 'https://cryptologos.cc/logos/iota-iota-logo.svg',
+    // IOTA - Using official IOTA logo from explorer
+    IOTA: 'https://explorer.iota.org/images/iota-logo.svg',
+    // stIOTA - Using IOTA logo from explorer (we'll style it differently if needed)
+    stIOTA: 'https://explorer.iota.org/images/iota-logo.svg',
     // vUSD - Using a USD stable coin icon
     vUSD: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg',
-    VUSD: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg',
   };
 
   // Always use the specific logo for supported coins
