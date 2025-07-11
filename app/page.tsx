@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Settings, BarChart3 } from "lucide-react"
+import { Settings, BarChart3, ChevronDown, ArrowUpDown, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SwapInterface as NewSwapInterface } from "@/components/swap-interface"
 import { WalletTokens } from "@/components/wallet-tokens"
@@ -114,7 +114,7 @@ function LimitInterface() {
               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">$</span>
               </div>
-              <span className="text-black font-semibold">USDC</span>
+              <span className="text-black font-semibold">vUSD</span>
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </div>
           </div>
@@ -158,7 +158,7 @@ function LimitInterface() {
             <div className="text-gray-500 text-sm mb-2">Buy IOTA at rate</div>
             <div className="flex items-center gap-2">
               <Input value="0.2136" className="bg-transparent border-none text-black font-semibold p-0 h-auto" />
-              <span className="text-gray-500 text-sm">USDC</span>
+              <span className="text-gray-500 text-sm">vUSD</span>
             </div>
             <Badge variant="outline" className="border-gray-300 text-gray-500 text-xs mt-2">
               Market
@@ -231,7 +231,7 @@ function DCAInterface() {
               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">$</span>
               </div>
-              <span className="text-black font-semibold">USDC</span>
+              <span className="text-black font-semibold">vUSD</span>
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </div>
           </div>
@@ -316,11 +316,11 @@ function DCAInterface() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Input placeholder="0.0" className="bg-gray-200/50 border-gray-300 text-black" />
-              <div className="text-gray-500 text-xs mt-1">USDC per IOTA</div>
+              <div className="text-gray-500 text-xs mt-1">vUSD per IOTA</div>
             </div>
             <div>
               <Input placeholder="0.0" className="bg-gray-200/50 border-gray-300 text-black" />
-              <div className="text-gray-500 text-xs mt-1">USDC per IOTA</div>
+              <div className="text-gray-500 text-xs mt-1">vUSD per IOTA</div>
             </div>
           </div>
         </CardContent>
