@@ -33,21 +33,21 @@ export const SUPPORTED_COINS = {
     decimals: 9,
     symbol: 'IOTA',
     name: 'IOTA',
-    iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
+    iconUrl: 'https://api.blockberry.one/iota/icon/0x2::iota::IOTA',
   },
   stIOTA: {
     type: '0x3::staking_pool::StakedIota',
     decimals: 9,
     symbol: 'stIOTA',
     name: 'Staked IOTA',
-    iconUrl: 'https://explorer.iota.org/images/iota-logo.svg',
+    iconUrl: 'https://api.blockberry.one/iota/icon/0x3::staking_pool::StakedIota',
   },
   vUSD: {
     type: '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT',
     decimals: 6,
     symbol: 'vUSD',
     name: 'Native USD',
-    iconUrl: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg',
+    iconUrl: 'https://api.blockberry.one/iota/icon/0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT',
   },
 };
 
