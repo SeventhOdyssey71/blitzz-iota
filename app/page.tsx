@@ -15,7 +15,7 @@ export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
 
   return (
-    <div className="min-h-screen grid-pattern">
+    <div className="min-h-screen">
 
       <div className="px-6 py-8">
         <div className="max-w-7xl mx-auto">
