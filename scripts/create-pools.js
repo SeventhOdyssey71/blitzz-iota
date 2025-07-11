@@ -18,33 +18,33 @@ async function createPools() {
 
   console.log('📍 Using address:', address);
 
-  // Pool configurations
+  // Pool configurations - ONLY SUPPORTED TOKENS
   const pools = [
     {
-      name: 'IOTA/USDC',
+      name: 'IOTA/stIOTA',
       coinA: SUPPORTED_COINS.IOTA.type,
-      coinB: SUPPORTED_COINS.USDC.type,
-      amountA: '1000000000000', // 1000 IOTA
-      amountB: '1000000000', // 1000 USDC
+      coinB: SUPPORTED_COINS.stIOTA.type,
+      amountA: '10000000000000', // 10,000 IOTA
+      amountB: '9900000000000', // 9,900 stIOTA (1.01 exchange rate)
+      decimalsA: 9,
+      decimalsB: 9,
+    },
+    {
+      name: 'IOTA/vUSD',
+      coinA: SUPPORTED_COINS.IOTA.type,
+      coinB: SUPPORTED_COINS.vUSD.type,
+      amountA: '5000000000000', // 5,000 IOTA
+      amountB: '1500000000', // 1,500 vUSD
       decimalsA: 9,
       decimalsB: 6,
     },
     {
-      name: 'IOTA/USDT',
-      coinA: SUPPORTED_COINS.IOTA.type,
-      coinB: SUPPORTED_COINS.USDT.type,
-      amountA: '1000000000000', // 1000 IOTA
-      amountB: '1000000000', // 1000 USDT
+      name: 'stIOTA/vUSD',
+      coinA: SUPPORTED_COINS.stIOTA.type,
+      coinB: SUPPORTED_COINS.vUSD.type,
+      amountA: '3000000000000', // 3,000 stIOTA
+      amountB: '900000000', // 900 vUSD
       decimalsA: 9,
-      decimalsB: 6,
-    },
-    {
-      name: 'USDC/USDT',
-      coinA: SUPPORTED_COINS.USDC.type,
-      coinB: SUPPORTED_COINS.USDT.type,
-      amountA: '1000000000', // 1000 USDC
-      amountB: '1000000000', // 1000 USDT
-      decimalsA: 6,
       decimalsB: 6,
     },
   ];
@@ -92,7 +92,7 @@ async function createPools() {
         arguments: [
           coinAToAdd,
           coinBToAdd,
-          tx.pure.u64(30), // 0.3% fee
+          tx.pure.u64(pool.name === 'IOTA/stIOTA' ? 10 : 30), // 0.1% fee for staking pool, 0.3% for others
         ],
       });
 

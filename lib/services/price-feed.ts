@@ -19,27 +19,28 @@ const priceCache: PriceCache = {};
 // CoinGecko API for real prices
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 
-// Token ID mapping for CoinGecko
+// Token ID mapping for CoinGecko - ONLY 3 SUPPORTED TOKENS
 const TOKEN_MAPPINGS: Record<string, string> = {
   'IOTA': 'iota',
   'stIOTA': 'iota', // Use IOTA price for stIOTA
-  'vUSD': 'usd-coin', // Use USD price for vUSD
-  'USDC': 'usd-coin',
-  'USDT': 'tether',
-  'WETH': 'ethereum',
-  'WBTC': 'bitcoin',
+  'vUSD': 'usd-coin', // vUSD is pegged to USD
 };
 
+// Supported tokens only
+const SUPPORTED_TOKENS = ['IOTA', 'stIOTA', 'vUSD'];
+
 export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> {
-  // Define fallback prices
+  // Only support our 3 tokens
+  if (!SUPPORTED_TOKENS.includes(symbol)) {
+    console.warn(`Unsupported token: ${symbol}`);
+    return null;
+  }
+
+  // Define fallback prices for our supported tokens
   const fallbackPrices: Record<string, TokenPrice> = {
     'IOTA': { symbol: 'IOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
     'stIOTA': { symbol: 'stIOTA', price: 0.2847, change24h: 2.34, volume24h: 15234567, marketCap: 897654321 },
     'vUSD': { symbol: 'vUSD', price: 1.0, change24h: 0, volume24h: 1234567890, marketCap: 25678901234 },
-    'USDC': { symbol: 'USDC', price: 0.9999, change24h: -0.01, volume24h: 1234567890, marketCap: 25678901234 },
-    'USDT': { symbol: 'USDT', price: 1.0001, change24h: 0.02, volume24h: 9876543210, marketCap: 78901234567 },
-    'WETH': { symbol: 'WETH', price: 2234.56, change24h: 1.23, volume24h: 234567890, marketCap: 234567890123 },
-    'WBTC': { symbol: 'WBTC', price: 43567.89, change24h: -0.56, volume24h: 123456789, marketCap: 567890123456 },
   };
 
   try {
@@ -51,14 +52,7 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
 
     const coinId = TOKEN_MAPPINGS[symbol];
     if (!coinId) {
-      // Return mock data for unknown tokens
-      return fallbackPrices[symbol] || {
-        symbol,
-        price: 1.0,
-        change24h: 0,
-        volume24h: 0,
-        marketCap: 0,
-      };
+      return fallbackPrices[symbol];
     }
 
     // Fetch from CoinGecko with timeout
@@ -74,18 +68,26 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
 
     if (!response || !response.ok) {
       console.warn(`Failed to fetch price for ${symbol}, using fallback`);
-      // Don't throw, just continue to fallback
-      return fallbackPrices[symbol] || {
-        symbol,
-        price: 1.0,
-        change24h: 0,
-        volume24h: 0,
-        marketCap: 0,
-      };
+      return fallbackPrices[symbol];
     }
 
     const data = await response.json();
     const priceData = data[coinId];
+
+    if (!priceData) {
+      return fallbackPrices[symbol];
+    }
+
+    // For vUSD, always return stable price
+    if (symbol === 'vUSD') {
+      return {
+        symbol: 'vUSD',
+        price: 1.0,
+        change24h: 0,
+        volume24h: priceData.usd_24h_vol || 0,
+        marketCap: priceData.usd_market_cap || 0,
+      };
+    }
 
     const tokenPrice: TokenPrice = {
       symbol,
@@ -104,21 +106,13 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
     return tokenPrice;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
-    
-    // Return fallback price
-    return fallbackPrices[symbol] || {
-      symbol,
-      price: 1.0,
-      change24h: 0,
-      volume24h: 0,
-      marketCap: 0,
-    };
+    return fallbackPrices[symbol];
   }
 }
 
 export async function getMultipleTokenPrices(symbols: string[]): Promise<Record<string, TokenPrice>> {
-  // Filter out empty or invalid symbols
-  const validSymbols = symbols.filter(s => s && s.trim().length > 0);
+  // Filter to only supported tokens
+  const validSymbols = symbols.filter(s => SUPPORTED_TOKENS.includes(s));
   
   if (validSymbols.length === 0) {
     return {};
@@ -200,33 +194,56 @@ export function calculateSwapOutput(
     outputAmount: outputAfterFee,
     priceImpact,
     minimumReceived,
-    route: ['Direct'], // In real scenario, this would show routing path
+    route: ['Direct'],
   };
 }
 
-// Get pool liquidity info
+// Get pool liquidity info - ONLY SUPPORTED PAIRS
 export async function getPoolInfo(tokenA: string, tokenB: string) {
-  // In a real scenario, this would fetch from blockchain
-  // For now, return mock data
+  // Only support our token pairs
+  if (!SUPPORTED_TOKENS.includes(tokenA) || !SUPPORTED_TOKENS.includes(tokenB)) {
+    return {
+      tvl: 0,
+      volume24h: 0,
+      fee: 0.3,
+      apr: 0,
+      reserves: {
+        tokenA: 0,
+        tokenB: 0,
+      },
+    };
+  }
+
+  // Mock data for supported pairs
   const mockPools: Record<string, any> = {
-    'IOTA-USDC': {
-      tvl: 1234567,
-      volume24h: 234567,
+    'IOTA-stIOTA': {
+      tvl: 5000000,
+      volume24h: 500000,
+      fee: 0.1,
+      apr: 8.5,
+      reserves: {
+        tokenA: 10000000,
+        tokenB: 9900000,
+      },
+    },
+    'IOTA-vUSD': {
+      tvl: 3000000,
+      volume24h: 300000,
       fee: 0.3,
       apr: 12.5,
       reserves: {
-        tokenA: 2345678,
-        tokenB: 654321,
+        tokenA: 5000000,
+        tokenB: 1500000,
       },
     },
-    'IOTA-USDT': {
-      tvl: 987654,
-      volume24h: 123456,
+    'stIOTA-vUSD': {
+      tvl: 2000000,
+      volume24h: 200000,
       fee: 0.3,
       apr: 10.2,
       reserves: {
-        tokenA: 1234567,
-        tokenB: 345678,
+        tokenA: 3000000,
+        tokenB: 900000,
       },
     },
   };
