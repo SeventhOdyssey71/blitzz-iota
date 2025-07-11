@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import { getTokenIconUrl } from '@/lib/services/price-feed';
 
 interface CoinIconProps {
   symbol: string;
@@ -10,8 +9,18 @@ interface CoinIconProps {
 }
 
 export function CoinIcon({ symbol, iconUrl, size = 24, className = '', coinType }: CoinIconProps) {
-  // Get the icon URL from Blockberry API or use provided URL
-  const finalIconUrl = iconUrl || getTokenIconUrl(symbol);
+  // Map of supported symbols to their specific logo URLs
+  const supportedIcons: Record<string, string> = {
+    // IOTA - Using pools.finance URL
+    IOTA: 'https://app.pools.finance/assets/coins/iota.svg',
+    // stIOTA - Using pools.finance URL
+    stIOTA: 'https://app.pools.finance/assets/coins/stiota.svg',
+    // vUSD - Using pools.finance URL
+    vUSD: 'https://app.pools.finance/assets/coins/vusd.svg',
+  };
+
+  // Always use the specific logo for supported coins
+  const finalIconUrl = iconUrl || supportedIcons[symbol] || supportedIcons[symbol.toUpperCase()] || supportedIcons[symbol.toLowerCase()];
 
   if (!finalIconUrl) {
     // If no icon URL is found, use a placeholder
