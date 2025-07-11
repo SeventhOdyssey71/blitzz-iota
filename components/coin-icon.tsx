@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import { useState } from 'react';
 
 interface CoinIconProps {
   symbol: string;
@@ -10,38 +9,47 @@ interface CoinIconProps {
 }
 
 export function CoinIcon({ symbol, iconUrl, size = 24, className = '', coinType }: CoinIconProps) {
-  const [imageError, setImageError] = useState(false);
-
   // Map of supported symbols to their specific logo URLs
   const supportedIcons: Record<string, string> = {
-    // IOTA - Using official IOTA logo from explorer
+    // IOTA - Using official IOTA logo
     IOTA: 'https://explorer.iota.org/images/iota-logo.svg',
-    // stIOTA - Using IOTA logo from explorer (we'll style it differently if needed)
+    // stIOTA - Using IOTA logo (same as IOTA)
     stIOTA: 'https://explorer.iota.org/images/iota-logo.svg',
     // vUSD - Using a USD stable coin icon
     vUSD: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg',
   };
 
   // Always use the specific logo for supported coins
-  let finalIconUrl = iconUrl;
-  if (!finalIconUrl && supportedIcons[symbol]) {
-    finalIconUrl = supportedIcons[symbol];
-  }
+  const finalIconUrl = iconUrl || supportedIcons[symbol] || supportedIcons[symbol.toUpperCase()] || supportedIcons[symbol.toLowerCase()];
 
-  // Use generic coin icon only for unknown tokens
   if (!finalIconUrl) {
-    finalIconUrl = '/tokens/generic-coin.png';
+    // If no icon URL is found, throw an error or return a placeholder
+    console.warn(`No icon URL found for token: ${symbol}`);
+    // Use a data URL for a simple colored circle as placeholder
+    const placeholderSvg = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%23${symbol.charCodeAt(0).toString(16)}${symbol.charCodeAt(1 % symbol.length).toString(16)}${symbol.charCodeAt(2 % symbol.length).toString(16)}" /><text x="50" y="50" text-anchor="middle" dy=".3em" fill="white" font-size="40" font-weight="bold">${symbol.charAt(0).toUpperCase()}</text></svg>`;
+    
+    return (
+      <div className={`relative ${className}`} style={{ width: size, height: size }}>
+        <Image
+          src={placeholderSvg}
+          alt={`${symbol} logo`}
+          width={size}
+          height={size}
+          className="rounded-full object-cover"
+          unoptimized
+        />
+      </div>
+    );
   }
 
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       <Image
-        src={imageError ? '/tokens/generic-coin.png' : finalIconUrl}
+        src={finalIconUrl}
         alt={`${symbol} logo`}
         width={size}
         height={size}
         className="rounded-full object-cover"
-        onError={() => setImageError(true)}
         unoptimized
       />
     </div>
