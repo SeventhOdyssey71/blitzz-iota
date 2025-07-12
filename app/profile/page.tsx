@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useCurrentAccount } from '@iota/dapp-kit'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -42,8 +42,8 @@ export default function ProfilePage() {
   const [showUnknownCoins, setShowUnknownCoins] = useState(true)
   const [hideLowAssets, setHideLowAssets] = useState(false)
   
-  // Get symbols for price fetching
-  const symbols = enrichedBalances.map(b => b.symbol)
+  // Get symbols for price fetching - memoized to prevent unnecessary re-renders
+  const symbols = useMemo(() => enrichedBalances.map(b => b.symbol), [enrichedBalances])
   const { prices, isLoading: isLoadingPrices } = useTokenPrices(symbols)
   
   // Fetch metadata and enrich balances
@@ -90,17 +90,19 @@ export default function ProfilePage() {
     enrichBalances()
   }, [rawBalances])
   
-  // Update balances with prices
-  const balancesWithPrices = enrichedBalances.map(balance => {
-    const price = prices[balance.symbol]
-    const usdValue = price ? parseFloat(balance.balance) * price.price : undefined
-    return {
-      ...balance,
-      priceUsd: price?.price,
-      priceChange24h: price?.change24h,
-      usdValue,
-    }
-  })
+  // Update balances with prices - memoized to prevent infinite re-renders
+  const balancesWithPrices = useMemo(() => {
+    return enrichedBalances.map(balance => {
+      const price = prices[balance.symbol]
+      const usdValue = price ? parseFloat(balance.balance) * price.price : undefined
+      return {
+        ...balance,
+        priceUsd: price?.price,
+        priceChange24h: price?.change24h,
+        usdValue,
+      }
+    })
+  }, [enrichedBalances, prices])
   
   const isLoading = isLoadingBalances || isLoadingMetadata || isLoadingPrices
 
@@ -122,41 +124,52 @@ export default function ProfilePage() {
     SUPPORTED_COINS.stIOTA.type
   )
   
-  // Calculate liquidity value
-  const liquidityValue = lpTokens.length > 0 && poolInfo && poolInfo.lpSupply > 0
-    ? lpTokens.reduce((total, token) => {
-        const share = BigInt(token.amount) * BigInt(10000) / poolInfo.lpSupply
-        const iotaAmount = (poolInfo.reserveA * share) / BigInt(10000)
-        const stIotaAmount = (poolInfo.reserveB * share) / BigInt(10000)
-        const valueInUsd = (Number(iotaAmount + stIotaAmount) / 1e9) * 0.28 // Assuming $0.28 per IOTA
-        return total + valueInUsd
-      }, 0)
-    : 0
+  // Calculate liquidity value - memoized
+  const liquidityValue = useMemo(() => {
+    return lpTokens.length > 0 && poolInfo && poolInfo.lpSupply > 0
+      ? lpTokens.reduce((total, token) => {
+          const share = BigInt(token.amount) * BigInt(10000) / poolInfo.lpSupply
+          const iotaAmount = (poolInfo.reserveA * share) / BigInt(10000)
+          const stIotaAmount = (poolInfo.reserveB * share) / BigInt(10000)
+          const valueInUsd = (Number(iotaAmount + stIotaAmount) / 1e9) * 0.28 // Assuming $0.28 per IOTA
+          return total + valueInUsd
+        }, 0)
+      : 0
+  }, [lpTokens, poolInfo])
 
-  const portfolioStats = {
+  const portfolioStats = useMemo(() => ({
     walletHoldings: balancesWithPrices.reduce((sum, b) => sum + (b.usdValue || 0), 0),
     liquidity: liquidityValue,
     orders: 0,
     dca: 0
-  }
+  }), [balancesWithPrices, liquidityValue])
 
-  const filteredBalances = balancesWithPrices.filter(balance => {
-    const matchesSearch = balance.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         balance.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    const isKnown = balance.priceUsd !== undefined
-    const isLowValue = (balance.usdValue || 0) < 1
+  const filteredBalances = useMemo(() => {
+    return balancesWithPrices.filter(balance => {
+      const matchesSearch = balance.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           balance.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      const isKnown = balance.priceUsd !== undefined
+      const isLowValue = (balance.usdValue || 0) < 1
 
-    if (!showUnknownCoins && !isKnown) return false
-    if (hideLowAssets && isLowValue) return false
-    return matchesSearch
-  })
+      if (!showUnknownCoins && !isKnown) return false
+      if (hideLowAssets && isLowValue) return false
+      return matchesSearch
+    })
+  }, [balancesWithPrices, searchTerm, showUnknownCoins, hideLowAssets])
   
-  // Sort by USD value (highest first)
-  const sortedBalances = filteredBalances.sort((a, b) => {
-    const valueA = a.usdValue || 0
-    const valueB = b.usdValue || 0
-    return valueB - valueA
-  })
+  // Sort by USD value (highest first) - memoized
+  const sortedBalances = useMemo(() => {
+    return [...filteredBalances].sort((a, b) => {
+      const valueA = a.usdValue || 0
+      const valueB = b.usdValue || 0
+      return valueB - valueA
+    })
+  }, [filteredBalances])
+  
+  // Count of unknown coins - memoized
+  const unknownCoinsCount = useMemo(() => {
+    return balancesWithPrices.filter(b => !b.priceUsd).length
+  }, [balancesWithPrices])
 
   if (!account) {
     return (
@@ -298,7 +311,7 @@ export default function ProfilePage() {
                   id="show-unknown"
                 />
                 <label htmlFor="show-unknown" className="text-sm cursor-pointer text-gray-300">
-                  Show Unknown Coins <span className="mono">({balancesWithPrices.filter(b => !b.priceUsd).length || 0})</span>
+                  Show Unknown Coins <span className="mono">({unknownCoinsCount})</span>
                 </label>
               </div>
               
