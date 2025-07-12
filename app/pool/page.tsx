@@ -40,11 +40,29 @@ export default function PoolPage() {
   // This calculation is now moved below with the pools data
   // to avoid duplication
   
-  // Calculate actual TVL in USD
+  // Calculate actual values from pool data
   const iotaPrice = 0.28; // Current IOTA price
   const actualIotaStIotaTVL = iotaStIotaPool && (iotaStIotaPool.reserveA > 0 || iotaStIotaPool.reserveB > 0)
     ? (Number(iotaStIotaPool.reserveA) / 1e9 + Number(iotaStIotaPool.reserveB) / 1e9) * iotaPrice
-    : 560.00;
+    : 0.00;
+  
+  // Calculate actual volume from pool data if available
+  const actual24hVolume = iotaStIotaPool && (iotaStIotaPool.totalVolumeA || iotaStIotaPool.totalVolumeB)
+    ? (Number(iotaStIotaPool.totalVolumeA || 0) / 1e9 + Number(iotaStIotaPool.totalVolumeB || 0) / 1e9) * iotaPrice
+    : 0.00;
+  
+  // Calculate actual fees collected
+  const actualFeesCollected = iotaStIotaPool && (iotaStIotaPool.feesA || iotaStIotaPool.feesB)
+    ? (Number(iotaStIotaPool.feesA || 0) / 1e9 + Number(iotaStIotaPool.feesB || 0) / 1e9) * iotaPrice
+    : 0.00;
+  
+  // Calculate APR based on fees and TVL
+  const calculateAPR = (fees24h: number, tvl: number): number => {
+    if (tvl === 0) return 0;
+    const dailyReturn = fees24h / tvl;
+    const annualReturn = dailyReturn * 365;
+    return annualReturn * 100; // Convert to percentage
+  };
   
   // Pool data with realistic values
   const pools: PoolData[] = [
@@ -55,10 +73,10 @@ export default function PoolPage() {
       tokenASymbol: 'IOTA',
       tokenBSymbol: 'stIOTA',
       tvl: actualIotaStIotaTVL,
-      volume24h: actualIotaStIotaTVL * 0.1, // Assuming 10% daily volume
-      volume30d: actualIotaStIotaTVL * 3, // Assuming 30-day volume is 3x TVL
-      apr: 12.5,
-      fees24h: actualIotaStIotaTVL * 0.1 * 0.003 // 0.3% fee on daily volume
+      volume24h: actual24hVolume,
+      volume30d: actual24hVolume * 30, // Estimate 30-day volume
+      apr: calculateAPR(actualFeesCollected, actualIotaStIotaTVL),
+      fees24h: actualFeesCollected
     },
     {
       rank: 2,
