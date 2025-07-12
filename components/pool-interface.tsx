@@ -162,8 +162,53 @@ export function PoolInterface() {
     }
   };
   
+  // Check if user has liquidity
+  const hasLiquidity = poolInfo && poolInfo.lpSupply > 0;
+  
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {/* Your Position */}
+      {hasLiquidity && (
+        <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/20">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-white">Your Liquidity Position</CardTitle>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                Active Pool
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-400">Your Pool Share</p>
+                <p className="text-xl font-bold text-cyan-400">
+                  {poolInfo.lpSupply > 0 ? '100%' : '0%'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">IOTA Deposited</p>
+                <p className="text-xl font-bold text-white">
+                  {formatBalance(poolInfo.reserveA.toString(), 9, 2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">stIOTA Deposited</p>
+                <p className="text-xl font-bold text-white">
+                  {formatBalance(poolInfo.reserveB.toString(), 9, 2)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+              <p className="text-sm text-green-400 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                This pool is being used for IOTA/stIOTA swaps
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* Pool Stats */}
       <Card className="bg-black/40 border-white/10">
         <CardHeader>

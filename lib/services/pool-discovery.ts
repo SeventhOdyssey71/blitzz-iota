@@ -4,6 +4,7 @@ import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
 import { blitz_PACKAGE_ID, SUPPORTED_COINS, STAKING_POOL_ADDRESS, STIOTA_TYPE } from '@/config/iota.config';
 import { findMockPool, getAllMockPools } from './mock-pools';
 import { PoolTracker } from './pool-tracker';
+import { KNOWN_POOLS } from '@/config/known-pools';
 
 export interface PoolInfo {
   poolId: string;
@@ -112,14 +113,13 @@ export class PoolDiscovery {
     try {
       console.log('Searching for pool:', { coinTypeA, coinTypeB, packageId });
       
-      // Store created pool IDs for quick lookup
-      const KNOWN_POOLS: Record<string, string> = {
-        // Will be updated after pool creation
-        [`${SUPPORTED_COINS.IOTA.type}_${SUPPORTED_COINS.stIOTA.type}`]: '',
-      };
+      // First check known pools
+      const poolKey = `${coinTypeA}_${coinTypeB}`;
+      const reverseKey = `${coinTypeB}_${coinTypeA}`;
+      const knownPoolId = KNOWN_POOLS[network]?.[poolKey] || KNOWN_POOLS[network]?.[reverseKey];
       
-      // Check if we have a tracked pool ID
-      let poolId = PoolTracker.findPool(coinTypeA, coinTypeB);
+      // Then check tracked pools (from localStorage)
+      let poolId = knownPoolId || PoolTracker.findPool(coinTypeA, coinTypeB);
       
       if (poolId) {
         try {

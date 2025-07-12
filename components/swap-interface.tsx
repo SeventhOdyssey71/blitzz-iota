@@ -42,6 +42,28 @@ export function SwapInterface() {
   
   // Use the swap hook
   const { executeSwap, isSwapping } = useSimpleSwap();
+  
+  // Check if pool exists for current pair
+  const [poolExists, setPoolExists] = useState(false);
+  
+  useEffect(() => {
+    const checkPool = async () => {
+      try {
+        const { PoolDiscovery } = await import('@/lib/services/pool-discovery');
+        const pool = await PoolDiscovery.findPoolsForPair(
+          inputToken.type,
+          outputToken.type,
+          'testnet'
+        );
+        setPoolExists(!!pool);
+      } catch (error) {
+        console.error('Error checking pool:', error);
+        setPoolExists(false);
+      }
+    };
+    
+    checkPool();
+  }, [inputToken.type, outputToken.type]);
 
   // Fetch token prices
   const { price: inputPrice } = useTokenPrice(inputToken.symbol);
@@ -268,6 +290,15 @@ export function SwapInterface() {
         </CardContent>
       </Card>
 
+      {/* Pool Status */}
+      {poolExists && (
+        <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20 animate-fade-in">
+          <p className="text-sm text-green-400 text-center flex items-center justify-center gap-2">
+            <span>✓</span> Liquidity pool available for {inputToken.symbol}/{outputToken.symbol}
+          </p>
+        </div>
+      )}
+      
       {/* Swap Details */}
       {swapCalculation && inputPrice && outputPrice && (
         <Card className="bg-black/40 border-white/10 rounded-2xl animate-fade-in">
