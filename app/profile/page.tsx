@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useCurrentAccount } from '@iota/dapp-kit'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
+import { Switch as BaseSwitch } from '@/components/ui/switch'
+
+// Workaround for React 19 + Radix UI Switch infinite loop issue
+const Switch = React.memo(BaseSwitch)
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, Copy, ExternalLink, Wallet, Droplets, FileText, TrendingUp, BarChart3, Plus } from 'lucide-react'
