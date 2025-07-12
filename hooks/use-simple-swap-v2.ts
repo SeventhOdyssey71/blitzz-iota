@@ -24,13 +24,22 @@ interface SwapParams {
   slippage: number;
 }
 
+interface SwapResult {
+  success: boolean;
+  digest?: string;
+  error?: string | null;
+  executionTime?: number | null;
+  effects?: any;
+  events?: any;
+}
+
 export function useSimpleSwapV2() {
   const client = useIotaClient();
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const [isSwapping, setIsSwapping] = useState(false);
 
-  const executeSwap = async (params: SwapParams) => {
+  const executeSwap = async (params: SwapParams): Promise<SwapResult> => {
     if (!currentAccount) {
       toast.error('Please connect your wallet');
       return { success: false, error: 'Wallet not connected' };
@@ -180,8 +189,36 @@ export function useSimpleSwapV2() {
           {
             onSuccess: (result) => {
               console.log('Swap successful:', result);
-              toast.success('Swap executed successfully!');
-              resolve({ success: true, digest: result.digest, error: null });
+              
+              // Extract actual blockchain execution time if available
+              let executionTime = null;
+              if (result.effects) {
+                // Check if we have timestamp information in effects
+                const effects = result.effects as any;
+                
+                // IOTA provides gasUsed which can give us an idea of execution complexity
+                // and timestampMs for when the transaction was executed
+                if (effects.timestampMs) {
+                  // If we have creation time, calculate from request to execution
+                  const requestTime = Date.now();
+                  executionTime = requestTime - parseInt(effects.timestampMs);
+                } else if (effects.gasUsed) {
+                  // Estimate based on gas used (rough approximation)
+                  // Higher gas usage typically means more complex execution
+                  const gasUsed = parseInt(effects.gasUsed.computationCost || '0');
+                  // Convert gas to approximate seconds (very rough estimate)
+                  executionTime = Math.max(0.5, Math.min(gasUsed / 1000000, 5)) * 1000;
+                }
+              }
+              
+              resolve({ 
+                success: true, 
+                digest: result.digest, 
+                error: null,
+                executionTime,
+                effects: result.effects,
+                events: result.events
+              });
             },
             onError: (error) => {
               console.error('Swap failed:', error);
