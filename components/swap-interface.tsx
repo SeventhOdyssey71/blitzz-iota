@@ -19,7 +19,7 @@ import { calculateSwapOutput } from '@/lib/services/price-feed';
 import { formatTokenAmount } from '@/lib/utils/format';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 import { toast } from 'sonner';
-import { useSimpleSwap } from '@/hooks/use-simple-swap';
+import { useSimpleSwapV2 } from '@/hooks/use-simple-swap-v2';
 import { TokenSelector } from '@/components/token-selector';
 import { CoinIcon } from '@/components/coin-icon';
 
@@ -41,7 +41,7 @@ export function SwapInterface() {
   const [showTokenSelect, setShowTokenSelect] = useState<'input' | 'output' | null>(null);
   
   // Use the swap hook
-  const { executeSwap, isSwapping } = useSimpleSwap();
+  const { executeSwap, isSwapping } = useSimpleSwapV2();
   
   // Check if pool exists for current pair
   const [poolExists, setPoolExists] = useState(false);
@@ -147,8 +147,12 @@ export function SwapInterface() {
       // For IOTA, reserve some for gas
       if (inputToken.type === SUPPORTED_COINS.IOTA.type) {
         const balance = parseFloat(inputBalanceFormatted);
-        const gasReserve = 0.1; // Reserve 0.1 IOTA for gas
+        const gasReserve = 0.2; // Reserve 0.2 IOTA for gas (increased for safety)
         const maxAmount = Math.max(0, balance - gasReserve);
+        if (maxAmount <= 0) {
+          toast.error('Insufficient IOTA balance for swap (need gas fees)');
+          return;
+        }
         setInputAmount(maxAmount.toFixed(2));
       } else {
         setInputAmount(inputBalanceFormatted);
