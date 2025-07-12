@@ -182,7 +182,7 @@ function TokenRow({ token }: { token: WalletToken }) {
   const formattedBalance = token.metadata
     ? formatTokenAmount(
         Number(token.balance) / Math.pow(10, token.metadata.decimals),
-        6
+        2
       )
     : '0';
 
@@ -195,20 +195,13 @@ function TokenRow({ token }: { token: WalletToken }) {
           iconUrl={token.metadata?.iconUrl}
           size={40}
         />
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-white">{token.metadata?.symbol || 'UNKNOWN'}</span>
-            {token.coinObjectCount > 1 && (
-              <Badge variant="secondary" className="text-xs">
-                {token.coinObjectCount} objects
-              </Badge>
-            )}
-          </div>
+        <div className="flex-1">
+          <div className="font-semibold text-white">{token.metadata?.symbol || 'UNKNOWN'}</div>
           <div className="text-sm text-gray-400">{token.metadata?.name}</div>
         </div>
       </div>
       
-      <div className="text-right">
+      <div className="text-right ml-4">
         <div className="font-semibold text-white mono">{formattedBalance}</div>
         {token.price && token.usdValue !== undefined && (
           <>
@@ -222,7 +215,7 @@ function TokenRow({ token }: { token: WalletToken }) {
                 <TrendingDown className="w-3 h-3 text-red-500" />
               )}
               <span
-                className={`text-xs ${
+                className={`text-xs mono ${
                   token.price.change24h >= 0 ? 'text-green-500' : 'text-red-500'
                 }`}
               >

@@ -122,7 +122,15 @@ export function SwapInterface() {
 
   const handleMaxInput = () => {
     if (inputBalanceFormatted) {
-      setInputAmount(inputBalanceFormatted);
+      // For IOTA, reserve some for gas
+      if (inputToken.type === SUPPORTED_COINS.IOTA.type) {
+        const balance = parseFloat(inputBalanceFormatted);
+        const gasReserve = 0.1; // Reserve 0.1 IOTA for gas
+        const maxAmount = Math.max(0, balance - gasReserve);
+        setInputAmount(maxAmount.toFixed(2));
+      } else {
+        setInputAmount(inputBalanceFormatted);
+      }
     }
   };
 
@@ -240,7 +248,7 @@ export function SwapInterface() {
           </div>
           <div className="flex items-center justify-between">
             <div className="text-3xl font-bold text-white mono">
-              {swapCalculation ? formatTokenAmount(swapCalculation.outputAmount, 6) : '0.0'}
+              {swapCalculation ? formatTokenAmount(swapCalculation.outputAmount, 2) : '0.0'}
             </div>
             <Button
               variant="ghost"
@@ -267,7 +275,7 @@ export function SwapInterface() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Rate</span>
               <span className="text-white mono">
-                1 {inputToken.symbol} = {formatTokenAmount(outputPrice.price / inputPrice.price, 6)} {outputToken.symbol}
+                1 {inputToken.symbol} = {formatTokenAmount(outputPrice.price / inputPrice.price, 4)} {outputToken.symbol}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -279,7 +287,7 @@ export function SwapInterface() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Minimum Received</span>
               <span className="text-white mono">
-                {formatTokenAmount(swapCalculation.minimumReceived, 6)} {outputToken.symbol}
+                {formatTokenAmount(swapCalculation.minimumReceived, 2)} {outputToken.symbol}
               </span>
             </div>
             <div className="flex justify-between text-sm">

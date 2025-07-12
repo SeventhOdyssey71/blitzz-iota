@@ -55,7 +55,7 @@ export default function ProfilePage() {
         const metadata = await getMultipleCoinMetadata(coinTypes)
         
         const enriched = rawBalances.map(balance => {
-          const meta = metadata.find(m => m.id === balance.coinType)
+          const meta = metadata[balance.coinType]
           return {
             ...balance,
             symbol: meta?.symbol || balance.coinType.split('::').pop() || 'UNKNOWN',
@@ -324,7 +324,7 @@ export default function ProfilePage() {
                     <td className="text-right py-4 px-4">
                       {balance.priceUsd ? (
                         <div>
-                          <p className="font-medium text-white mono">${formatNumber(balance.priceUsd, 6)}</p>
+                          <p className="font-medium text-white mono">${formatNumber(balance.priceUsd, 4)}</p>
                           {balance.priceChange24h !== undefined && (
                             <p className={`text-xs mono ${balance.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                               {balance.priceChange24h >= 0 ? '+' : ''}{balance.priceChange24h.toFixed(2)}%

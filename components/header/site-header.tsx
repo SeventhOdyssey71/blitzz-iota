@@ -66,7 +66,9 @@ export function SiteHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl">
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">Pools</DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+                  <Link href="/pool">Pools</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">Farms</DropdownMenuItem>
                 <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">Vaults</DropdownMenuItem>
               </DropdownMenuContent>
