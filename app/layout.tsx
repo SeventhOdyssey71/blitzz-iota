@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import './dropdown-overrides.css'
 import { IotaProviders } from '@/lib/iota/providers'
 import { Toaster } from 'sonner'
 import { SiteHeader } from '@/components/header/site-header'
