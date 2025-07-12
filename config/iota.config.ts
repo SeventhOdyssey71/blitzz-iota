@@ -23,7 +23,7 @@ export const DEFAULT_NETWORK = 'testnet';
 
 export const blitz_PACKAGE_ID = {
   mainnet: '0x0', // To be deployed
-  testnet: '0xb5085c72c83a89607ef0e61ea7091121393d8dbe70e017fe8da17815b4ad0bb0', // Deployed with liquidity functions
+  testnet: '0x62b8cf324feb458dba7f9c8efba4bf6984eb737db51cc1b4aeade60763f6cc15', // Deployed with swap fees (0.3%)
   devnet: '0x0', // To be deployed
 } as const;
 
@@ -56,5 +56,5 @@ export const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 export const DEFAULT_DEADLINE = 20; // 20 minutes
 
 // Staking Pool Configuration
-export const STAKING_POOL_ADDRESS = '0x3';
+export const STAKING_POOL_ADDRESS = '0x84e639a0c59228c7351117caff34f4dc2a32a2cae620e2fd142165b431d9b064';
 export const STIOTA_TYPE = '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT';
