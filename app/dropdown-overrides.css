@@ -1,0 +1,16 @@
+/* Override dropdown menu item backgrounds */
+[role="menuitem"] {
+  background-color: transparent !important;
+}
+
+[role="menuitem"]:hover {
+  background-color: transparent !important;
+}
+
+[role="menuitem"]:focus {
+  background-color: transparent !important;
+}
+
+[role="menuitem"][data-highlighted] {
+  background-color: transparent !important;
+}

@@ -294,14 +294,6 @@ export function SwapInterface() {
         </CardContent>
       </Card>
 
-      {/* Pool Status */}
-      {poolExists && (
-        <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20 animate-fade-in">
-          <p className="text-sm text-green-400 text-center flex items-center justify-center gap-2">
-            <span>✓</span> Liquidity pool available for {inputToken.symbol}/{outputToken.symbol}
-          </p>
-        </div>
-      )}
       
       {/* Swap Details */}
       {swapCalculation && inputPrice && outputPrice && (

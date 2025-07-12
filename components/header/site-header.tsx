@@ -49,77 +49,77 @@ export function SiteHeader() {
           <nav className="hidden md:flex items-center justify-center gap-6">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium">
+                <button className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md flex items-center gap-1">
                   Trade <ChevronDown className="w-4 h-4 ml-1" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl">
-                <DropdownMenuItem asChild className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl [&>*]:bg-transparent [&>*:hover]:bg-transparent [&>*:focus]:bg-transparent">
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <Link href="/">Swap</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">Limit Order</DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">DCA</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">Limit Order</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">DCA</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium">
+                <button className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md flex items-center gap-1">
                   Earn <ChevronDown className="w-4 h-4 ml-1" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl">
-                <DropdownMenuItem asChild className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl [&>*]:bg-transparent [&>*:hover]:bg-transparent [&>*:focus]:bg-transparent">
+                <DropdownMenuItem asChild className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <Link href="/pool">Pools</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">Farms</DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">Vaults</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">Farms</DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">Vaults</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="ghost" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium">
+            <button className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md">
               xBLITZ
-            </Button>
+            </button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium">
+                <button className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md flex items-center gap-1">
                   Bridge <ChevronDown className="w-4 h-4 ml-1" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl">
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">Cross Chain</DropdownMenuItem>
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl [&>*]:bg-transparent [&>*:hover]:bg-transparent [&>*:focus]:bg-transparent">
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">Cross Chain</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             <DropdownMenu open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium">
+                <button className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md flex items-center gap-1">
                   More <ChevronDown className="w-4 h-4 ml-1" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl w-48">
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl w-48 [&>*]:bg-transparent [&>*:hover]:bg-transparent [&>*:focus]:bg-transparent">
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <User className="w-4 h-4 mr-2 text-gray-400" />
                   Compensation
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <TrendingUp className="w-4 h-4 mr-2 text-gray-400" />
                   Buy Crypto
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <BarChart3 className="w-4 h-4 mr-2 text-gray-400" />
                   Launchpad
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <Settings className="w-4 h-4 mr-2 text-gray-400" />
                   IOTA Terminal
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <BarChart3 className="w-4 h-4 mr-2 text-gray-400" />
                   Stats
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:bg-white/5 focus:bg-white/5 transition-all hover:shadow-[0_0_15px_rgba(0,212,255,0.15)]">
+                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <Info className="w-4 h-4 mr-2 text-gray-400" />
                   Docs
                 </DropdownMenuItem>
@@ -130,16 +130,14 @@ export function SiteHeader() {
           {/* Right Actions */}
           <div className="flex items-center justify-end gap-3">
             <Link href="/profile">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <button 
                 className={cn(
-                  "text-gray-400 hover:text-cyan-400 transition-colors",
+                  "text-gray-400 hover:text-cyan-400 transition-colors p-2 rounded-md",
                   pathname === '/profile' && "text-cyan-400"
                 )}
               >
                 <UserCircle className="w-5 h-5" />
-              </Button>
+              </button>
             </Link>
             <WalletButtonV2 />
           </div>
