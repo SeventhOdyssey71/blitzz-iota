@@ -93,9 +93,9 @@ export const KNOWN_COINS: Record<string, CoinMetadata> = {
     description: 'The native token of the IOTA network',
     iconUrl: 'https://app.pools.finance/assets/coins/iota.svg',
   },
-  // stIOTA - Staked IOTA (official IOTA staking pool)
-  '0x3::staking_pool::StakedIota': {
-    id: '0x3',
+  // stIOTA - Staked IOTA
+  '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT': {
+    id: '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3',
     decimals: 9,
     name: 'Staked IOTA',
     symbol: 'stIOTA',
@@ -103,8 +103,8 @@ export const KNOWN_COINS: Record<string, CoinMetadata> = {
     iconUrl: 'https://app.pools.finance/assets/coins/stiota.svg',
   },
   // vUSD - Native USD
-  '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
-    id: '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55',
+  '0x929065320c756b8a4a841deeed013bd748ee45a28629c4aaafc56d8948ebb081::vusd::VUSD': {
+    id: '0x929065320c756b8a4a841deeed013bd748ee45a28629c4aaafc56d8948ebb081',
     decimals: 6,
     name: 'Native USD',
     symbol: 'vUSD',

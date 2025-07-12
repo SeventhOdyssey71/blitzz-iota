@@ -3,6 +3,7 @@
 import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
 import { blitz_PACKAGE_ID, SUPPORTED_COINS, STAKING_POOL_ADDRESS, STIOTA_TYPE } from '@/config/iota.config';
 import { findMockPool, getAllMockPools } from './mock-pools';
+import { PoolTracker } from './pool-tracker';
 
 export interface PoolInfo {
   poolId: string;
@@ -69,17 +70,9 @@ export class PoolDiscovery {
     });
     
     if (isStakingPair) {
-      // Return swap pool data for IOTA <-> stIOTA
-      console.log('Returning IOTA/stIOTA swap pool data');
-      return {
-        poolId: STAKING_POOL_ADDRESS,
-        coinTypeA: SUPPORTED_COINS.IOTA.type,
-        coinTypeB: SUPPORTED_COINS.stIOTA.type,
-        reserveA: BigInt(1000000000000), // Mock 1000 IOTA
-        reserveB: BigInt(1000000000000), // Mock 1000 stIOTA
-        lpSupply: BigInt(1000000000000),
-        feePercentage: 10, // 0.1% fee
-      };
+      // For IOTA <-> stIOTA, use regular pool instead of staking
+      console.log('IOTA/stIOTA pair - checking for regular pool');
+      // Continue to regular pool lookup below
     }
     
     const packageId = blitz_PACKAGE_ID[network];
@@ -117,79 +110,59 @@ export class PoolDiscovery {
     }
 
     try {
-      // Query for Pool objects created by our package
-      const pools = await client.getOwnedObjects({
-        owner: packageId,
-        filter: {
-          StructType: `${packageId}::dex::Pool<${coinTypeA}, ${coinTypeB}>`,
-        },
-        options: {
-          showContent: true,
-        },
-      });
-
-      if (pools.data.length > 0) {
-        const poolObject = pools.data[0];
-        if (poolObject.data?.content?.dataType === 'moveObject') {
-          const fields = poolObject.data.content.fields as any;
+      console.log('Searching for pool:', { coinTypeA, coinTypeB, packageId });
+      
+      // Store created pool IDs for quick lookup
+      const KNOWN_POOLS: Record<string, string> = {
+        // Will be updated after pool creation
+        [`${SUPPORTED_COINS.IOTA.type}_${SUPPORTED_COINS.stIOTA.type}`]: '',
+      };
+      
+      // Check if we have a tracked pool ID
+      let poolId = PoolTracker.findPool(coinTypeA, coinTypeB);
+      
+      if (poolId) {
+        try {
+          const poolObject = await client.getObject({
+            id: poolId,
+            options: {
+              showContent: true,
+              showType: true,
+            },
+          });
           
-          const poolInfo: PoolInfo = {
-            poolId: poolObject.data.objectId,
-            coinTypeA,
-            coinTypeB,
-            reserveA: BigInt(fields.reserve_a || 0),
-            reserveB: BigInt(fields.reserve_b || 0),
-            lpSupply: BigInt(fields.lp_supply || 0),
-            feePercentage: Number(fields.fee_percentage || 30), // 0.3% default
-          };
-
-          // Update cache
-          POOL_CACHE.set(cacheKey, poolInfo);
-          lastCacheUpdate = Date.now();
-
-          return poolInfo;
+          if (poolObject.data?.content?.dataType === 'moveObject') {
+            const fields = poolObject.data.content.fields as any;
+            
+            // Parse the balance fields correctly
+            const reserveA = fields.reserve_a?.fields?.value || fields.reserve_a || '0';
+            const reserveB = fields.reserve_b?.fields?.value || fields.reserve_b || '0';
+            
+            const poolInfo: PoolInfo = {
+              poolId: poolObject.data.objectId,
+              coinTypeA,
+              coinTypeB,
+              reserveA: BigInt(reserveA),
+              reserveB: BigInt(reserveB),
+              lpSupply: BigInt(fields.lp_supply || 0),
+              feePercentage: 10, // 0.1% fee
+            };
+            
+            console.log('Found pool:', poolInfo);
+            
+            // Update cache
+            POOL_CACHE.set(cacheKey, poolInfo);
+            lastCacheUpdate = Date.now();
+            
+            return poolInfo;
+          }
+        } catch (err) {
+          console.error('Error fetching pool object:', err);
         }
       }
-
-      // Try reverse order
-      const reversePools = await client.getOwnedObjects({
-        owner: packageId,
-        filter: {
-          StructType: `${packageId}::dex::Pool<${coinTypeB}, ${coinTypeA}>`,
-        },
-        options: {
-          showContent: true,
-        },
-      });
-
-      if (reversePools.data.length > 0) {
-        const poolObject = reversePools.data[0];
-        if (poolObject.data?.content?.dataType === 'moveObject') {
-          const fields = poolObject.data.content.fields as any;
-          
-          const poolInfo: PoolInfo = {
-            poolId: poolObject.data.objectId,
-            coinTypeA: coinTypeB,
-            coinTypeB: coinTypeA,
-            reserveA: BigInt(fields.reserve_b || 0),
-            reserveB: BigInt(fields.reserve_a || 0),
-            lpSupply: BigInt(fields.lp_supply || 0),
-            feePercentage: Number(fields.fee_percentage || 30),
-          };
-
-          // Update cache
-          POOL_CACHE.set(reverseCacheKey, poolInfo);
-          lastCacheUpdate = Date.now();
-
-          return {
-            ...poolInfo,
-            coinTypeA,
-            coinTypeB,
-            reserveA: poolInfo.reserveB,
-            reserveB: poolInfo.reserveA,
-          };
-        }
-      }
+      
+      // Return null to trigger pool creation
+      return null;
     } catch (error) {
       console.error('Error finding pools:', error);
     }
@@ -234,60 +207,21 @@ export class PoolDiscovery {
     inputAmount: bigint,
     isAToB: boolean
   ): { outputAmount: bigint; priceImpact: number } {
-    const feeMultiplier = BigInt(10000 - pool.feePercentage);
-    const feeDivisor = BigInt(10000);
-
+    // Simplified swap with fixed rates
     let outputAmount: bigint;
-    let priceImpact: number;
-
-    // Special handling for staking pool
+    
+    // Special handling for staking pool (1:1 rate)
     if (pool.poolId === STAKING_POOL_ADDRESS) {
-      // For staking pool, use simple exchange rate
-      const amountAfterFee = (inputAmount * feeMultiplier) / feeDivisor;
-      
-      if (isAToB) {
-        // IOTA -> stIOTA (staking)
-        outputAmount = pool.reserveA > 0 ? (amountAfterFee * pool.reserveB) / pool.reserveA : amountAfterFee;
-      } else {
-        // stIOTA -> IOTA (unstaking)
-        outputAmount = pool.reserveB > 0 ? (amountAfterFee * pool.reserveA) / pool.reserveB : amountAfterFee;
-      }
-      
-      // No price impact for staking
-      priceImpact = 0;
-      
-      return { outputAmount, priceImpact };
+      outputAmount = inputAmount; // 1:1 exchange rate
+      return { outputAmount, priceImpact: 0 };
     }
-
-    if (isAToB) {
-      // Swap A to B
-      const inputWithFee = inputAmount * feeMultiplier;
-      const numerator = inputWithFee * pool.reserveB;
-      const denominator = pool.reserveA * feeDivisor + inputWithFee;
-      outputAmount = numerator / denominator;
-
-      // Calculate price impact
-      const oldPrice = Number(pool.reserveB) / Number(pool.reserveA);
-      const newReserveA = pool.reserveA + inputAmount;
-      const newReserveB = pool.reserveB - outputAmount;
-      const newPrice = Number(newReserveB) / Number(newReserveA);
-      priceImpact = Math.abs((newPrice - oldPrice) / oldPrice) * 100;
-    } else {
-      // Swap B to A
-      const inputWithFee = inputAmount * feeMultiplier;
-      const numerator = inputWithFee * pool.reserveA;
-      const denominator = pool.reserveB * feeDivisor + inputWithFee;
-      outputAmount = numerator / denominator;
-
-      // Calculate price impact
-      const oldPrice = Number(pool.reserveA) / Number(pool.reserveB);
-      const newReserveB = pool.reserveB + inputAmount;
-      const newReserveA = pool.reserveA - outputAmount;
-      const newPrice = Number(newReserveA) / Number(newReserveB);
-      priceImpact = Math.abs((newPrice - oldPrice) / oldPrice) * 100;
-    }
-
-    return { outputAmount, priceImpact };
+    
+    // For regular pools, use simple 1:1 exchange rate
+    // This matches the simple_dex contract implementation
+    outputAmount = inputAmount;
+    
+    // No price impact with fixed rates
+    return { outputAmount, priceImpact: 0 };
   }
 
   static async findBestRoute(

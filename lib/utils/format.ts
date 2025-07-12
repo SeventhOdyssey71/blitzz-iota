@@ -1,4 +1,4 @@
-export function formatBalance(balance: string | bigint, decimals: number = 9): string {
+export function formatBalance(balance: string | bigint, decimals: number = 9, displayDecimals: number = 2): string {
   const balanceNum = BigInt(balance);
   const divisor = BigInt(10 ** decimals);
   const quotient = balanceNum / divisor;
@@ -12,19 +12,19 @@ export function formatBalance(balance: string | bigint, decimals: number = 9): s
     return quotient.toString();
   }
   
-  // Show max 6 decimal places
-  const displayDecimals = trimmedDecimal.slice(0, 6);
-  return `${quotient}.${displayDecimals}`;
+  // Show max displayDecimals decimal places (default 2)
+  const finalDecimals = trimmedDecimal.slice(0, displayDecimals);
+  return `${quotient}.${finalDecimals.padEnd(displayDecimals, '0')}`;
 }
 
-export function formatTokenAmount(amount: number | string, decimals: number = 9): string {
+export function formatTokenAmount(amount: number | string, decimals: number = 2): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
   
   if (num >= 1000000) {
     return `${(num / 1000000).toFixed(2)}M`;
   } else if (num >= 1000) {
     return `${(num / 1000).toFixed(2)}K`;
-  } else if (num < 0.01) {
+  } else if (num < 0.01 && num > 0) {
     return num.toExponential(2);
   } else {
     return num.toFixed(decimals);

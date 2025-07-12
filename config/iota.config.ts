@@ -23,9 +23,9 @@ export const DEFAULT_NETWORK = 'testnet';
 
 export const blitz_PACKAGE_ID = {
   mainnet: '0x0', // To be deployed
-  testnet: '0xd84fe8b6622ff910dc5e097c06de5ac31055c169453435d162ff999c8fb65202', // Deployed
+  testnet: '0xb5085c72c83a89607ef0e61ea7091121393d8dbe70e017fe8da17815b4ad0bb0', // Deployed with liquidity functions
   devnet: '0x0', // To be deployed
-};
+} as const;
 
 export const SUPPORTED_COINS = {
   IOTA: {
@@ -36,14 +36,14 @@ export const SUPPORTED_COINS = {
     iconUrl: 'https://app.pools.finance/assets/coins/iota.svg',
   },
   stIOTA: {
-    type: '0x3::staking_pool::StakedIota',
+    type: '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT',
     decimals: 9,
     symbol: 'stIOTA',
     name: 'Staked IOTA',
     iconUrl: 'https://app.pools.finance/assets/coins/stiota.svg',
   },
   vUSD: {
-    type: '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT',
+    type: '0x929065320c756b8a4a841deeed013bd748ee45a28629c4aaafc56d8948ebb081::vusd::VUSD',
     decimals: 6,
     symbol: 'vUSD',
     name: 'Native USD',
@@ -57,4 +57,4 @@ export const DEFAULT_DEADLINE = 20; // 20 minutes
 
 // Staking Pool Configuration
 export const STAKING_POOL_ADDRESS = '0x3';
-export const STIOTA_TYPE = '0x3::staking_pool::StakedIota';
+export const STIOTA_TYPE = '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT';
