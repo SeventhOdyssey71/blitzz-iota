@@ -133,7 +133,7 @@ export function SwapInterface() {
 
     const startTime = Date.now();
 
-    const result = await executeSwap({
+    const result: any = await executeSwap({
       inputToken,
       outputToken,
       inputAmount,
@@ -142,7 +142,10 @@ export function SwapInterface() {
     });
 
     if (result.success) {
-      const executionTime = (Date.now() - startTime) / 1000;
+      // Use blockchain execution time if available, otherwise fall back to client-side timing
+      const clientExecutionTime = (Date.now() - startTime) / 1000;
+      const blockchainExecutionTime = result.executionTime ? result.executionTime / 1000 : null;
+      const executionTime = blockchainExecutionTime || clientExecutionTime;
       
       // Set up success modal data
       setSwapResult({
