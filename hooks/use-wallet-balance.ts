@@ -5,7 +5,7 @@ import { SUPPORTED_COINS } from '@/config/iota.config';
 export function useWalletBalance(coinType?: string) {
   const currentAccount = useCurrentAccount();
   
-  const { data: balance, isLoading, error } = useIotaClientQuery(
+  const { data: balance, isLoading, error, refetch } = useIotaClientQuery(
     'getBalance',
     {
       owner: currentAccount?.address || '',
@@ -21,6 +21,7 @@ export function useWalletBalance(coinType?: string) {
     isLoading,
     error,
     formatted: balance ? formatBalance(balance.totalBalance, balance.coinMetadata?.decimals || 9) : '0',
+    refetch,
   };
 }
 

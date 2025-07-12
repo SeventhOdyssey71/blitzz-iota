@@ -181,7 +181,7 @@ export function useSimpleSwapV2() {
             onSuccess: (result) => {
               console.log('Swap successful:', result);
               toast.success('Swap executed successfully!');
-              resolve({ success: true, digest: result.digest });
+              resolve({ success: true, digest: result.digest, error: null });
             },
             onError: (error) => {
               console.error('Swap failed:', error);

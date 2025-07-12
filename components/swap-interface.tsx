@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { useSimpleSwapV2 } from '@/hooks/use-simple-swap-v2';
 import { TokenSelector } from '@/components/token-selector';
 import { CoinIcon } from '@/components/coin-icon';
+import { SwapSuccessModal } from '@/components/swap-success-modal';
 
 interface Token {
   symbol: string;
@@ -39,6 +40,13 @@ export function SwapInterface() {
   const [inputAmount, setInputAmount] = useState('');
   const [slippage, setSlippage] = useState(0.5);
   const [showTokenSelect, setShowTokenSelect] = useState<'input' | 'output' | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [swapResult, setSwapResult] = useState<{
+    inputAmount: string;
+    outputAmount: string;
+    txHash: string;
+    executionTime: number;
+  } | null>(null);
   
   // Use the swap hook
   const { executeSwap, isSwapping } = useSimpleSwapV2();
@@ -69,9 +77,9 @@ export function SwapInterface() {
   const { price: inputPrice } = useTokenPrice(inputToken.symbol);
   const { price: outputPrice } = useTokenPrice(outputToken.symbol);
 
-  // Fetch wallet balances
-  const { balance: inputBalance, formatted: inputBalanceFormatted } = useWalletBalance(inputToken.type);
-  const { balance: outputBalance, formatted: outputBalanceFormatted } = useWalletBalance(outputToken.type);
+  // Fetch wallet balances with refresh capability
+  const { balance: inputBalance, formatted: inputBalanceFormatted, refetch: refetchInputBalance } = useWalletBalance(inputToken.type);
+  const { balance: outputBalance, formatted: outputBalanceFormatted, refetch: refetchOutputBalance } = useWalletBalance(outputToken.type);
 
   // Calculate swap output
   const swapCalculation = inputAmount && parseFloat(inputAmount) > 0
@@ -123,6 +131,8 @@ export function SwapInterface() {
       return;
     }
 
+    const startTime = Date.now();
+
     const result = await executeSwap({
       inputToken,
       outputToken,
@@ -132,7 +142,27 @@ export function SwapInterface() {
     });
 
     if (result.success) {
+      const executionTime = (Date.now() - startTime) / 1000;
+      
+      // Set up success modal data
+      setSwapResult({
+        inputAmount,
+        outputAmount: swapCalculation.outputAmount,
+        txHash: result.digest || '',
+        executionTime,
+      });
+      
+      // Show success modal
+      setShowSuccessModal(true);
+      
+      // Clear input
       setInputAmount('');
+      
+      // Refresh balances after a short delay to ensure blockchain state is updated
+      setTimeout(() => {
+        refetchInputBalance();
+        refetchOutputBalance();
+      }, 1000);
     }
   };
 
@@ -390,6 +420,23 @@ export function SwapInterface() {
         onSelect={setOutputToken}
         selectedToken={outputToken}
       />
+      
+      {/* Success Modal */}
+      {swapResult && (
+        <SwapSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => {
+            setShowSuccessModal(false);
+            setSwapResult(null);
+          }}
+          inputAmount={swapResult.inputAmount}
+          outputAmount={swapResult.outputAmount}
+          inputToken={inputToken}
+          outputToken={outputToken}
+          txHash={swapResult.txHash}
+          executionTime={swapResult.executionTime}
+        />
+      )}
     </div>
   );
 }
