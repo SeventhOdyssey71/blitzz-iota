@@ -90,20 +90,24 @@ export function useRemoveLiquidity() {
       // Create transaction
       const tx = new Transaction();
       const packageId = blitz_PACKAGE_ID.testnet;
+      
+      // Set gas budget to avoid dry run issues
+      tx.setGasBudget(100000000); // 0.1 IOTA
 
-      // Call remove_liquidity function
+      // The remove_liquidity function expects the LP token object to be passed directly,
+      // not just its ID. We need to pass it as an owned object.
       tx.moveCall({
         target: `${packageId}::simple_dex::remove_liquidity`,
         typeArguments: [params.tokenA.type, params.tokenB.type],
         arguments: [
           tx.object(pool.poolId),
-          tx.object(params.lpTokenId),
+          tx.object(params.lpTokenId), // This will be consumed by the function
           tx.pure.u64(params.minAmountA || '0'),
           tx.pure.u64(params.minAmountB || '0'),
         ],
       });
 
-      // Execute transaction
+      // Execute transaction without dry run
       return new Promise((resolve, reject) => {
         signAndExecuteTransaction(
           {
@@ -112,6 +116,7 @@ export function useRemoveLiquidity() {
               showEffects: true,
               showEvents: true,
               showObjectChanges: true,
+              showRawEffects: true,
             },
             requestType: 'WaitForLocalExecution',
           },
@@ -141,13 +146,17 @@ export function useRemoveLiquidity() {
                 toast.error('Insufficient gas for transaction');
               } else if (errorMessage.includes('slippage')) {
                 toast.error('Slippage tolerance exceeded');
+              } else if (errorMessage.includes('Dry run failed')) {
+                toast.error('Transaction failed', {
+                  description: 'Please try again. If the issue persists, check your LP token balance.',
+                });
               } else {
                 toast.error('Failed to remove liquidity', {
                   description: errorMessage.slice(0, 100),
                 });
               }
               
-              reject(error);
+              resolve({ success: false, error: errorMessage });
             },
           }
         );
