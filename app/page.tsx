@@ -26,8 +26,8 @@ export default function IotaApp() {
           </div>
           
           <div className="grid grid-cols-12 gap-8">
-            {/* Trading Interface - Offset design */}
-            <div className="col-span-12 lg:col-span-7 lg:col-start-2">
+            {/* Trading Interface */}
+            <div className="col-span-12 lg:col-span-8">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex items-center justify-between mb-6">
                 <TabsList className="bg-black/50 border border-white/10 p-1 rounded-xl">
@@ -70,7 +70,7 @@ export default function IotaApp() {
             </div>
 
             {/* Wallet Balance Section */}
-            <div className="col-span-12 lg:col-span-3">
+            <div className="col-span-12 lg:col-span-4">
               <WalletTokens />
             </div>
           </div>
