@@ -6,7 +6,8 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import { Search, Copy, ExternalLink, Wallet, Droplets, FileText } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Search, Copy, ExternalLink, Wallet, Droplets, FileText, TrendingUp, BarChart3, Plus } from 'lucide-react'
 import { useAllBalances } from '@/hooks/use-wallet-balance'
 import { useTokenPrices } from '@/hooks/use-token-price'
 import { formatBalance, formatTokenAmount, formatNumber } from '@/lib/utils/format'
@@ -14,6 +15,10 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { getMultipleCoinMetadata } from '@/lib/services/coin-metadata'
 import { CoinIcon } from '@/components/coin-icon'
+import { useLPTokens } from '@/hooks/use-lp-tokens'
+import { usePoolInfo } from '@/hooks/use-pool-info'
+import { SUPPORTED_COINS } from '@/config/iota.config'
+import Link from 'next/link'
 
 interface EnrichedBalance {
   coinType: string
@@ -110,11 +115,29 @@ export default function ProfilePage() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
+  // Get LP tokens and pool info
+  const { lpTokens, isLoading: isLoadingLP } = useLPTokens()
+  const { poolInfo, isLoading: isLoadingPool } = usePoolInfo(
+    SUPPORTED_COINS.IOTA.type,
+    SUPPORTED_COINS.stIOTA.type
+  )
+  
+  // Calculate liquidity value
+  const liquidityValue = lpTokens.length > 0 && poolInfo && poolInfo.lpSupply > 0
+    ? lpTokens.reduce((total, token) => {
+        const share = BigInt(token.amount) * BigInt(10000) / poolInfo.lpSupply
+        const iotaAmount = (poolInfo.reserveA * share) / BigInt(10000)
+        const stIotaAmount = (poolInfo.reserveB * share) / BigInt(10000)
+        const valueInUsd = (Number(iotaAmount + stIotaAmount) / 1e9) * 0.28 // Assuming $0.28 per IOTA
+        return total + valueInUsd
+      }, 0)
+    : 0
+
   const portfolioStats = {
     walletHoldings: balancesWithPrices.reduce((sum, b) => sum + (b.usdValue || 0), 0),
-    liquidity: 0,
+    liquidity: liquidityValue,
     orders: 0,
-    xCETUS: 0
+    dca: 0
   }
 
   const filteredBalances = balancesWithPrices.filter(balance => {
@@ -225,16 +248,34 @@ export default function ProfilePage() {
                     size={20}
                   />
                 </div>
-                <span className="text-sm text-gray-400">xBLITZ</span>
+                <span className="text-sm text-gray-400">DCA</span>
               </div>
-              <p className="text-2xl font-bold text-white mono">${formatNumber(portfolioStats.xCETUS, 2)}</p>
+              <p className="text-2xl font-bold text-white mono">${formatNumber(portfolioStats.dca, 2)}</p>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Wallet Holdings Section */}
-      <Card className="p-6 glass-dark border-white/10">
+      {/* Tabs for different sections */}
+      <Tabs defaultValue="wallet" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 bg-black/40 border border-white/10">
+          <TabsTrigger value="wallet" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
+            Wallet Holdings
+          </TabsTrigger>
+          <TabsTrigger value="liquidity" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
+            Liquidity Positions
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
+            Limit Orders
+          </TabsTrigger>
+          <TabsTrigger value="dca" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
+            DCA Strategies
+          </TabsTrigger>
+        </TabsList>
+        
+        {/* Wallet Holdings Tab */}
+        <TabsContent value="wallet">
+          <Card className="p-6 glass-dark border-white/10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h2 className="text-xl font-semibold text-white">Wallet Holdings</h2>
           
@@ -357,6 +398,175 @@ export default function ProfilePage() {
           </table>
         </div>
       </Card>
+        </TabsContent>
+        
+        {/* Liquidity Positions Tab */}
+        <TabsContent value="liquidity">
+          <Card className="p-6 glass-dark border-white/10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-white">Your Liquidity Positions</h2>
+              <Button
+                asChild
+                className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50"
+              >
+                <Link href="/pools">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Liquidity
+                </Link>
+              </Button>
+            </div>
+            
+            {isLoadingLP ? (
+              <div className="text-center py-8 text-gray-400">
+                Loading liquidity positions...
+              </div>
+            ) : lpTokens.length === 0 ? (
+              <div className="text-center py-12">
+                <Droplets className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+                <p className="text-gray-400 mb-4">No liquidity positions found</p>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                >
+                  <Link href="/pools">Add Your First Position</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {lpTokens.map((token) => {
+                  const share = poolInfo && poolInfo.lpSupply > 0
+                    ? (BigInt(token.amount) * BigInt(10000) / poolInfo.lpSupply)
+                    : BigInt(0)
+                  const iotaAmount = poolInfo
+                    ? (poolInfo.reserveA * share) / BigInt(10000)
+                    : BigInt(0)
+                  const stIotaAmount = poolInfo
+                    ? (poolInfo.reserveB * share) / BigInt(10000)
+                    : BigInt(0)
+                  const valueInUsd = (Number(iotaAmount + stIotaAmount) / 1e9) * 0.28
+                  const poolShare = Number(share) / 100
+                  
+                  return (
+                    <div key={token.id} className="p-4 bg-white/5 rounded-lg border border-white/10 hover:border-cyan-500/30 transition-all">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex -space-x-2">
+                            <CoinIcon symbol="IOTA" size={32} />
+                            <CoinIcon symbol="stIOTA" size={32} />
+                          </div>
+                          <div>
+                            <h3 className="text-white font-medium">IOTA/stIOTA Pool</h3>
+                            <p className="text-sm text-gray-400">Pool Share: <span className="text-cyan-400">{poolShare.toFixed(2)}%</span></p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-white mono">${valueInUsd.toFixed(2)}</p>
+                          <p className="text-sm text-gray-400">Total Value</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-400">LP Tokens</p>
+                          <p className="font-medium text-white mono">{formatBalance(token.amount, 9, 4)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">IOTA</p>
+                          <p className="font-medium text-white mono">{formatBalance(iotaAmount.toString(), 9, 4)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">stIOTA</p>
+                          <p className="font-medium text-white mono">{formatBalance(stIotaAmount.toString(), 9, 4)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                        >
+                          <Link href="/pools">Manage</Link>
+                        </Button>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                        >
+                          <Link href="/pools?tab=remove">Remove</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+        
+        {/* Limit Orders Tab */}
+        <TabsContent value="orders">
+          <Card className="p-6 glass-dark border-white/10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-white">Your Limit Orders</h2>
+              <Button
+                asChild
+                className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50"
+              >
+                <Link href="/limit">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Order
+                </Link>
+              </Button>
+            </div>
+            
+            <div className="text-center py-12">
+              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+              <p className="text-gray-400 mb-4">No active limit orders</p>
+              <Button
+                asChild
+                variant="outline"
+                className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+              >
+                <Link href="/limit">Create Your First Order</Link>
+              </Button>
+            </div>
+          </Card>
+        </TabsContent>
+        
+        {/* DCA Strategies Tab */}
+        <TabsContent value="dca">
+          <Card className="p-6 glass-dark border-white/10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-white">Your DCA Strategies</h2>
+              <Button
+                asChild
+                className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50"
+              >
+                <Link href="/dca">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Strategy
+                </Link>
+              </Button>
+            </div>
+            
+            <div className="text-center py-12">
+              <TrendingUp className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+              <p className="text-gray-400 mb-4">No active DCA strategies</p>
+              <Button
+                asChild
+                variant="outline"
+                className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+              >
+                <Link href="/dca">Create Your First Strategy</Link>
+              </Button>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
     </div>
   )
