@@ -13,13 +13,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { 
   ChevronDown, 
-  Bell, 
-  Settings, 
   User, 
   TrendingUp, 
   BarChart3, 
   Info,
-  UserCircle
+  UserCircle,
+  Settings
 } from 'lucide-react'
 import { WalletButtonV2 } from '@/components/wallet-button-v2'
 import { cn } from '@/lib/utils'
@@ -30,20 +29,24 @@ export function SiteHeader() {
 
   return (
     <header className="glass-dark border-b border-white/10 sticky top-0 z-50">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2">
-            <Image 
-              src="/larplogo.png" 
-              alt="IOTA Logo" 
-              width={40} 
-              height={32} 
-              className="rounded-lg"
-            />
-            <span className="text-white font-bold text-2xl tracking-wider" style={{ fontFamily: 'Orbitron, monospace' }}>BLITZ</span>
-          </Link>
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-3 items-center py-3">
+          {/* Logo - Left */}
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center gap-2">
+              <Image 
+                src="/larplogo.png" 
+                alt="IOTA Logo" 
+                width={40} 
+                height={32} 
+                className="rounded-lg"
+              />
+              <span className="text-white font-bold text-2xl tracking-wider" style={{ fontFamily: 'Orbitron, monospace' }}>BLITZ</span>
+            </Link>
+          </div>
 
-          <nav className="hidden md:flex items-center gap-6">
+          {/* Navigation - Center */}
+          <nav className="hidden md:flex items-center justify-center gap-6">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium">
@@ -123,28 +126,23 @@ export function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <Link href="/profile">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={cn(
-                "text-gray-400 hover:text-cyan-400 transition-colors",
-                pathname === '/profile' && "text-cyan-400"
-              )}
-            >
-              <UserCircle className="w-5 h-5" />
-            </Button>
-          </Link>
-          <WalletButtonV2 />
-          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-cyan-400 transition-colors">
-            <Bell className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-cyan-400 transition-colors">
-            <Settings className="w-4 h-4" />
-          </Button>
+          {/* Right Actions */}
+          <div className="flex items-center justify-end gap-3">
+            <Link href="/profile">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={cn(
+                  "text-gray-400 hover:text-cyan-400 transition-colors",
+                  pathname === '/profile' && "text-cyan-400"
+                )}
+              >
+                <UserCircle className="w-5 h-5" />
+              </Button>
+            </Link>
+            <WalletButtonV2 />
+          </div>
         </div>
       </div>
     </header>
