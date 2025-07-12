@@ -100,39 +100,69 @@ export function useSimpleSwap() {
         }
 
         let coinToSwap;
-        const coinRefs = coins.data.map(coin => tx.object(coin.coinObjectId));
         
-        // For IOTA, ensure we keep some for gas
+        // For IOTA swaps, we need special handling to ensure gas coins remain
         if (params.inputToken.type === SUPPORTED_COINS.IOTA.type) {
-          const MIN_GAS_AMOUNT = BigInt(100000000); // 0.1 IOTA for gas
+          const MIN_GAS_AMOUNT = BigInt(150000000); // 0.15 IOTA for gas
+          
           if (totalBalance <= inputAmount + MIN_GAS_AMOUNT) {
-            throw new Error(`Insufficient IOTA balance. Need to keep at least 0.1 IOTA for gas fees.`);
+            throw new Error(`Insufficient IOTA balance. Need to keep at least 0.15 IOTA for gas fees.`);
+          }
+          
+          // Sort coins by balance (ascending) to use smaller coins first
+          const sortedCoins = [...coins.data].sort((a, b) => {
+            const balanceA = BigInt(a.balance);
+            const balanceB = BigInt(b.balance);
+            return balanceA < balanceB ? -1 : balanceA > balanceB ? 1 : 0;
+          });
+          
+          // Find coins to use for swap amount
+          let accumulatedAmount = BigInt(0);
+          const coinsToUse = [];
+          const gasCoins = [];
+          
+          for (const coin of sortedCoins) {
+            const coinBalance = BigInt(coin.balance);
+            if (accumulatedAmount < inputAmount) {
+              coinsToUse.push(coin);
+              accumulatedAmount += coinBalance;
+            } else {
+              gasCoins.push(coin);
+            }
+          }
+          
+          // If we have exactly the coins we need, use them directly
+          if (coinsToUse.length === 1 && BigInt(coinsToUse[0].balance) === inputAmount) {
+            coinToSwap = tx.object(coinsToUse[0].coinObjectId);
+          } else {
+            // Merge coins if needed and split exact amount
+            const coinRefs = coinsToUse.map(coin => tx.object(coin.coinObjectId));
+            if (coinRefs.length > 1) {
+              const [primaryCoin, ...otherCoins] = coinRefs;
+              tx.mergeCoins(primaryCoin, otherCoins);
+              [coinToSwap] = tx.splitCoins(primaryCoin, [tx.pure.u64(inputAmount)]);
+            } else {
+              [coinToSwap] = tx.splitCoins(coinRefs[0], [tx.pure.u64(inputAmount)]);
+            }
+          }
+        } else {
+          // For non-IOTA tokens, use the standard approach
+          const coinRefs = coins.data.map(coin => tx.object(coin.coinObjectId));
+          
+          // Merge coins if needed
+          if (coinRefs.length > 1) {
+            const [primaryCoin, ...otherCoins] = coinRefs;
+            tx.mergeCoins(primaryCoin, otherCoins);
+          }
+          
+          // Split exact amount if not using entire balance
+          if (totalBalance === inputAmount) {
+            coinToSwap = coinRefs[0];
+          } else {
+            [coinToSwap] = tx.splitCoins(coinRefs[0], [tx.pure.u64(inputAmount)]);
           }
         }
-        
-        // Merge coins if needed
-        if (coinRefs.length > 1) {
-          const [primaryCoin, ...otherCoins] = coinRefs;
-          tx.mergeCoins(primaryCoin, otherCoins);
-        }
-        
-        // Split exact amount if not using entire balance
-        if (totalBalance === inputAmount && params.inputToken.type !== SUPPORTED_COINS.IOTA.type) {
-          coinToSwap = coinRefs[0];
-        } else {
-          [coinToSwap] = tx.splitCoins(coinRefs[0], [tx.pure.u64(inputAmount)]);
-        }
 
-        // Calculate minimum output with slippage
-        const expectedOutput = AMMContract.calculateOutputAmount(
-          inputAmount,
-          BigInt(pool.reserveA),
-          BigInt(pool.reserveB),
-          pool.feePercentage || 30,
-          10000
-        );
-        const minOutput = expectedOutput * BigInt(100 - Math.floor(params.slippage * 100)) / BigInt(100);
-        
         // Execute swap using simplified DEX (1:1 exchange rate)
         if (isAToB) {
           tx.moveCall({
