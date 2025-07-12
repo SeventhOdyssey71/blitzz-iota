@@ -7,7 +7,9 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "deploy:contracts": "node scripts/deploy-contracts.js"
+    "deploy:contracts": "node scripts/deploy-contracts.js",
+    "create:stiota-pool": "tsx scripts/create-stiota-iota-pool.ts",
+    "create:pools": "tsx scripts/create-pools.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
