@@ -292,12 +292,12 @@ export function PoolInterface() {
                 <div className="flex items-center justify-between">
                   <label className="text-sm text-gray-400">IOTA Amount</label>
                   {isConnected && (
-                    <div className="flex items-center gap-2 text-gray-500 text-xs">
+                    <div className="flex items-center gap-2 text-gray-400 text-xs">
                       <span>Balance: {iotaFormatted || '0'}</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs h-auto p-0"
+                        className="text-xs h-auto p-0 text-cyan-400 hover:text-cyan-300"
                         onClick={handleMaxIota}
                       >
                         MAX
@@ -331,12 +331,12 @@ export function PoolInterface() {
                 <div className="flex items-center justify-between">
                   <label className="text-sm text-gray-400">stIOTA Amount</label>
                   {isConnected && (
-                    <div className="flex items-center gap-2 text-gray-500 text-xs">
+                    <div className="flex items-center gap-2 text-gray-400 text-xs">
                       <span>Balance: {stIotaFormatted || '0'}</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs h-auto p-0"
+                        className="text-xs h-auto p-0 text-cyan-400 hover:text-cyan-300"
                         onClick={handleMaxStIota}
                       >
                         MAX
