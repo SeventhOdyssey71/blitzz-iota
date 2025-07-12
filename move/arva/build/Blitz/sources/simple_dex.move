@@ -5,12 +5,24 @@ module Blitz::simple_dex {
     use iota::tx_context::TxContext;
     use iota::transfer;
 
+    // Constants
+    const FEE_NUMERATOR: u64 = 3; // 0.3% fee
+    const FEE_DENOMINATOR: u64 = 1000;
+    
+    // Error codes
+    const E_INSUFFICIENT_RESERVES: u64 = 1;
+    const E_INSUFFICIENT_OUTPUT_AMOUNT: u64 = 2;
+    
     // AMM Pool
     public struct Pool<phantom CoinA, phantom CoinB> has key {
         id: UID,
         reserve_a: Balance<CoinA>,
         reserve_b: Balance<CoinB>,
         lp_supply: u64,
+        fees_a: u64, // Accumulated fees in token A
+        fees_b: u64, // Accumulated fees in token B
+        total_volume_a: u64, // Total volume traded in token A
+        total_volume_b: u64, // Total volume traded in token B
     }
 
     // LP Token
@@ -35,6 +47,10 @@ module Blitz::simple_dex {
             reserve_a: coin::into_balance(coin_a),
             reserve_b: coin::into_balance(coin_b),
             lp_supply: lp_supply,
+            fees_a: 0,
+            fees_b: 0,
+            total_volume_a: 0,
+            total_volume_b: 0,
         };
         
         transfer::share_object(pool);
@@ -56,15 +72,24 @@ module Blitz::simple_dex {
         let reserve_a = balance::value(&pool.reserve_a);
         let reserve_b = balance::value(&pool.reserve_b);
         
-        // Simple fixed rate: 1:1 for most pairs
-        // You can adjust this based on your needs
-        let amount_out = amount_in;
+        // Calculate fee
+        let fee_amount = (amount_in * FEE_NUMERATOR) / FEE_DENOMINATOR;
+        let amount_in_after_fee = amount_in - fee_amount;
+        
+        // Calculate output using constant product formula (x * y = k)
+        let amount_out = (amount_in_after_fee * reserve_b) / (reserve_a + amount_in_after_fee);
         
         // Ensure pool has enough reserves
-        assert!(reserve_b >= amount_out, 1);
+        assert!(amount_out > 0, E_INSUFFICIENT_OUTPUT_AMOUNT);
+        assert!(reserve_b >= amount_out, E_INSUFFICIENT_RESERVES);
         
+        // Update pool state
         balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
         let coin_b = coin::take(&mut pool.reserve_b, amount_out, ctx);
+        
+        // Record fees and volume
+        pool.fees_a = pool.fees_a + fee_amount;
+        pool.total_volume_a = pool.total_volume_a + amount_in;
         
         transfer::public_transfer(coin_b, tx_context::sender(ctx));
     }
@@ -78,14 +103,24 @@ module Blitz::simple_dex {
         let reserve_a = balance::value(&pool.reserve_a);
         let reserve_b = balance::value(&pool.reserve_b);
         
-        // Simple fixed rate: 1:1 for most pairs
-        let amount_out = amount_in;
+        // Calculate fee
+        let fee_amount = (amount_in * FEE_NUMERATOR) / FEE_DENOMINATOR;
+        let amount_in_after_fee = amount_in - fee_amount;
+        
+        // Calculate output using constant product formula (x * y = k)
+        let amount_out = (amount_in_after_fee * reserve_a) / (reserve_b + amount_in_after_fee);
         
         // Ensure pool has enough reserves
-        assert!(reserve_a >= amount_out, 1);
+        assert!(amount_out > 0, E_INSUFFICIENT_OUTPUT_AMOUNT);
+        assert!(reserve_a >= amount_out, E_INSUFFICIENT_RESERVES);
         
+        // Update pool state
         balance::join(&mut pool.reserve_b, coin::into_balance(coin_b));
         let coin_a = coin::take(&mut pool.reserve_a, amount_out, ctx);
+        
+        // Record fees and volume
+        pool.fees_b = pool.fees_b + fee_amount;
+        pool.total_volume_b = pool.total_volume_b + amount_in;
         
         transfer::public_transfer(coin_a, tx_context::sender(ctx));
     }
@@ -158,5 +193,39 @@ module Blitz::simple_dex {
         
         transfer::public_transfer(coin_a, tx_context::sender(ctx));
         transfer::public_transfer(coin_b, tx_context::sender(ctx));
+    }
+    
+    // Getter functions
+    public fun get_reserves<CoinA, CoinB>(pool: &Pool<CoinA, CoinB>): (u64, u64) {
+        (balance::value(&pool.reserve_a), balance::value(&pool.reserve_b))
+    }
+    
+    public fun get_lp_supply<CoinA, CoinB>(pool: &Pool<CoinA, CoinB>): u64 {
+        pool.lp_supply
+    }
+    
+    public fun get_fees<CoinA, CoinB>(pool: &Pool<CoinA, CoinB>): (u64, u64) {
+        (pool.fees_a, pool.fees_b)
+    }
+    
+    public fun get_volume<CoinA, CoinB>(pool: &Pool<CoinA, CoinB>): (u64, u64) {
+        (pool.total_volume_a, pool.total_volume_b)
+    }
+    
+    // Calculate output amount for swap preview
+    public fun calculate_swap_output<CoinA, CoinB>(
+        pool: &Pool<CoinA, CoinB>,
+        amount_in: u64,
+        is_a_to_b: bool
+    ): u64 {
+        let (reserve_a, reserve_b) = get_reserves(pool);
+        let fee_amount = (amount_in * FEE_NUMERATOR) / FEE_DENOMINATOR;
+        let amount_in_after_fee = amount_in - fee_amount;
+        
+        if (is_a_to_b) {
+            (amount_in_after_fee * reserve_b) / (reserve_a + amount_in_after_fee)
+        } else {
+            (amount_in_after_fee * reserve_a) / (reserve_b + amount_in_after_fee)
+        }
     }
 }

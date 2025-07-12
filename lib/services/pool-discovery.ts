@@ -14,6 +14,10 @@ export interface PoolInfo {
   reserveB: bigint;
   lpSupply: bigint;
   feePercentage: number;
+  feesA?: bigint;
+  feesB?: bigint;
+  totalVolumeA?: bigint;
+  totalVolumeB?: bigint;
 }
 
 export interface SwapRoute {
@@ -145,7 +149,11 @@ export class PoolDiscovery {
               reserveA: BigInt(reserveA),
               reserveB: BigInt(reserveB),
               lpSupply: BigInt(fields.lp_supply || 0),
-              feePercentage: 10, // 0.1% fee
+              feePercentage: 30, // 0.3% fee (3/1000)
+              feesA: BigInt(fields.fees_a || 0),
+              feesB: BigInt(fields.fees_b || 0),
+              totalVolumeA: BigInt(fields.total_volume_a || 0),
+              totalVolumeB: BigInt(fields.total_volume_b || 0),
             };
             
             console.log('Found pool:', poolInfo);
