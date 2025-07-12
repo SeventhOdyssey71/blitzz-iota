@@ -9,7 +9,9 @@
     "start": "next start",
     "deploy:contracts": "node scripts/deploy-contracts.js",
     "create:stiota-pool": "tsx scripts/create-stiota-iota-pool.ts",
-    "create:pools": "tsx scripts/create-pools.ts"
+    "create:pools": "tsx scripts/create-pools.ts",
+    "republish:stiota-pool": "tsx scripts/republish-stiota-pool.ts",
+    "find:pools": "tsx scripts/find-existing-pools.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
