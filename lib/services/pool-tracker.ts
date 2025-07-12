@@ -8,6 +8,7 @@ interface PoolRecord {
   coinTypeA: string;
   coinTypeB: string;
   createdAt: number;
+  network?: string;
 }
 
 const POOL_STORAGE_KEY = 'blitz_created_pools';
@@ -20,7 +21,7 @@ export class PoolTracker {
     return stored ? JSON.parse(stored) : [];
   }
 
-  static addPool(poolId: string, coinTypeA: string, coinTypeB: string) {
+  static addPool(poolId: string, coinTypeA: string, coinTypeB: string, network?: string) {
     if (typeof window === 'undefined') return;
     
     const pools = this.getPools();
@@ -29,6 +30,7 @@ export class PoolTracker {
       coinTypeA,
       coinTypeB,
       createdAt: Date.now(),
+      network,
     };
     
     // Check if pool already exists
@@ -36,11 +38,14 @@ export class PoolTracker {
     if (!exists) {
       pools.push(newPool);
       localStorage.setItem(POOL_STORAGE_KEY, JSON.stringify(pools));
+      console.log('Pool saved to tracker:', newPool);
     }
   }
 
   static findPool(coinTypeA: string, coinTypeB: string): string | null {
     const pools = this.getPools();
+    console.log('PoolTracker - Looking for pool:', { coinTypeA, coinTypeB });
+    console.log('PoolTracker - Available pools:', pools);
     
     // Check both orders
     const pool = pools.find(p => 
@@ -48,11 +53,21 @@ export class PoolTracker {
       (p.coinTypeA === coinTypeB && p.coinTypeB === coinTypeA)
     );
     
+    console.log('PoolTracker - Found pool:', pool);
     return pool ? pool.poolId : null;
   }
 
   static clearPools() {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(POOL_STORAGE_KEY);
+  }
+  
+  static savePool(params: {
+    poolId: string;
+    coinTypeA: string;
+    coinTypeB: string;
+    network?: string;
+  }) {
+    this.addPool(params.poolId, params.coinTypeA, params.coinTypeB, params.network);
   }
 }

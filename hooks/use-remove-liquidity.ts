@@ -47,14 +47,33 @@ export function useRemoveLiquidity() {
       console.log('Removing liquidity:', params);
 
       // Find the pool
-      const pool = await PoolDiscovery.findPoolsForPair(
+      console.log('Looking for pool with types:', {
+        tokenA: params.tokenA.type,
+        tokenB: params.tokenB.type
+      });
+      
+      let pool = await PoolDiscovery.findPoolsForPair(
         params.tokenA.type,
         params.tokenB.type,
         'testnet'
       );
 
+      console.log('Pool discovery result:', pool);
+
       if (!pool) {
-        throw new Error(`No pool found for ${params.tokenA.symbol}/${params.tokenB.symbol}`);
+        // Try reverse order
+        console.log('Trying reverse order...');
+        pool = await PoolDiscovery.findPoolsForPair(
+          params.tokenB.type,
+          params.tokenA.type,
+          'testnet'
+        );
+        
+        if (pool) {
+          console.log('Found pool in reverse order:', pool);
+        } else {
+          throw new Error(`No pool found for ${params.tokenA.symbol}/${params.tokenB.symbol}. Please make sure the pool exists.`);
+        }
       }
 
       // Get LP token object

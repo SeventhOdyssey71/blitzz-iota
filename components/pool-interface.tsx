@@ -17,6 +17,8 @@ import { useAddLiquidity } from '@/hooks/use-add-liquidity';
 import { useRemoveLiquidity } from '@/hooks/use-remove-liquidity';
 import { usePoolInfo } from '@/hooks/use-pool-info';
 import { useLPTokens } from '@/hooks/use-lp-tokens';
+import { useLPTokensV2 } from '@/hooks/use-lp-tokens-v2';
+import { PoolTrackerHelper } from '@/components/pool-tracker-helper';
 
 export function PoolInterface() {
   const currentAccount = useCurrentAccount();
@@ -42,8 +44,16 @@ export function PoolInterface() {
   const { addLiquidity, isAdding } = useAddLiquidity();
   const { removeLiquidity, isRemoving } = useRemoveLiquidity();
   
-  // Get LP tokens
-  const { lpTokens, isLoading: isLoadingLP } = useLPTokens();
+  // Get LP tokens - using V2 for debugging
+  const { lpTokens: lpTokensV1, isLoading: isLoadingLPV1 } = useLPTokens();
+  const { lpTokens: lpTokensV2, isLoading: isLoadingLPV2 } = useLPTokensV2();
+  
+  console.log('Pool Interface - LP Tokens V1:', lpTokensV1);
+  console.log('Pool Interface - LP Tokens V2:', lpTokensV2);
+  
+  // Use V2 for now to see all tokens
+  const lpTokens = lpTokensV2;
+  const isLoadingLP = isLoadingLPV2;
   
   // Refresh pool info after adding liquidity
   const refreshPoolInfo = () => {
@@ -201,6 +211,7 @@ export function PoolInterface() {
   
   return (
     <div className="space-y-6">
+      <PoolTrackerHelper />
       {/* Your Position */}
       {isConnected && lpTokens.length > 0 && (
         <Card className="bg-black/60 backdrop-blur-sm border-cyan-500/20">
