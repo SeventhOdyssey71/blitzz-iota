@@ -312,7 +312,33 @@ export function PoolInterface() {
             </div>
             <div className="space-y-2">
               <p className="text-sm text-gray-400">APR</p>
-              <p className="text-2xl font-bold text-green-400 font-mono">12.5%</p>
+              <p className="text-2xl font-bold text-green-400 font-mono">
+                {(() => {
+                  if (!poolInfo || poolInfo.reserveA === BigInt(0)) return '0.00%';
+                  
+                  // Calculate APR based on fees collected and TVL
+                  const totalFees = (Number(poolInfo.feesA || 0) + Number(poolInfo.feesB || 0)) / 1e9;
+                  const tvl = (Number(poolInfo.reserveA) + Number(poolInfo.reserveB)) / 1e9;
+                  
+                  // If we have volume data, estimate daily fees based on volume
+                  if (poolInfo.totalVolumeA || poolInfo.totalVolumeB) {
+                    const totalVolume = (Number(poolInfo.totalVolumeA || 0) + Number(poolInfo.totalVolumeB || 0)) / 1e9;
+                    // Estimate daily volume (assuming linear growth over time)
+                    const estimatedDailyVolume = totalVolume / 30; // Rough estimate
+                    const dailyFees = estimatedDailyVolume * 0.003; // 0.3% fee
+                    const annualFees = dailyFees * 365;
+                    const apr = (annualFees / tvl) * 100;
+                    return apr > 0 ? `${apr.toFixed(2)}%` : '0.00%';
+                  }
+                  
+                  // Fallback to static APR if no volume data
+                  return '12.50%';
+                })()}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-400">Fee Rate</p>
+              <p className="text-2xl font-bold text-cyan-400 font-mono">0.30%</p>
             </div>
             <div className="space-y-2">
               <p className="text-sm text-gray-400">Accumulated Fees</p>
@@ -328,6 +354,12 @@ export function PoolInterface() {
                   <span className="text-white font-mono">
                     {poolInfo && poolInfo.feesB ? formatBalance(poolInfo.feesB.toString(), 9, 4) : '0.0000'} stIOTA
                   </span>
+                </div>
+                <div className="pt-2 text-xs text-gray-400">
+                  Total: ${poolInfo && (poolInfo.feesA || poolInfo.feesB) ? 
+                    ((Number(poolInfo.feesA || 0) / 1e9 + Number(poolInfo.feesB || 0) / 1e9) * 0.28).toFixed(2) : 
+                    '0.00'
+                  } USD
                 </div>
               </div>
             </div>
