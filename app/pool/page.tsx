@@ -66,11 +66,11 @@ export default function PoolPage() {
       tokenB: 'vUSD',
       tokenASymbol: 'stIOTA',
       tokenBSymbol: 'vUSD',
-      tvl: 245000.00, // More realistic TVL
-      volume24h: 24500.00, // 10% daily volume
-      volume30d: 735000.00, // 30x daily volume
-      apr: 8.5, // More realistic APR
-      fees24h: 73.50 // 0.3% fee
+      tvl: 0.00, // No liquidity yet
+      volume24h: 0.00,
+      volume30d: 0.00,
+      apr: 0.00,
+      fees24h: 0.00
     },
     {
       rank: 3,
@@ -78,11 +78,11 @@ export default function PoolPage() {
       tokenB: 'vUSD',
       tokenASymbol: 'IOTA',
       tokenBSymbol: 'vUSD',
-      tvl: 125000.00, // More realistic TVL
-      volume24h: 18750.00, // 15% daily volume
-      volume30d: 562500.00, // 30x daily volume
-      apr: 15.2, // Higher APR due to more volatility
-      fees24h: 56.25 // 0.3% fee
+      tvl: 0.00, // No liquidity yet
+      volume24h: 0.00,
+      volume30d: 0.00,
+      apr: 0.00,
+      fees24h: 0.00
     }
   ];
   
