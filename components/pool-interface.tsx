@@ -272,7 +272,13 @@ export function PoolInterface() {
             <div className="space-y-2">
               <p className="text-sm text-gray-400">24h Volume</p>
               <p className="text-2xl font-bold text-white font-mono">
-                {poolInfo && poolInfo.reserveA > 0 ? '$0.00' : '-'}
+                {isLoadingPool ? (
+                  <span className="animate-pulse">Loading...</span>
+                ) : poolInfo && (poolInfo.totalVolumeA || poolInfo.totalVolumeB) ? (
+                  `$${((Number(poolInfo.totalVolumeA || 0) / 1e9 + Number(poolInfo.totalVolumeB || 0) / 1e9) * 0.28).toFixed(2)}`
+                ) : (
+                  '$0.00'
+                )}
               </p>
             </div>
             <div className="space-y-2">
@@ -307,6 +313,23 @@ export function PoolInterface() {
             <div className="space-y-2">
               <p className="text-sm text-gray-400">APR</p>
               <p className="text-2xl font-bold text-green-400 font-mono">12.5%</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-400">Accumulated Fees</p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <CoinIcon symbol="IOTA" size={16} />
+                  <span className="text-white font-mono">
+                    {poolInfo && poolInfo.feesA ? formatBalance(poolInfo.feesA.toString(), 9, 4) : '0.0000'} IOTA
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CoinIcon symbol="stIOTA" size={16} />
+                  <span className="text-white font-mono">
+                    {poolInfo && poolInfo.feesB ? formatBalance(poolInfo.feesB.toString(), 9, 4) : '0.0000'} stIOTA
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
