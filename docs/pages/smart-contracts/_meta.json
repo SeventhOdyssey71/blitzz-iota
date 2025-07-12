@@ -1,0 +1,22 @@
+{
+  "overview": {
+    "title": "Overview",
+    "type": "page"
+  },
+  "dex": {
+    "title": "DEX Module",
+    "type": "page"
+  },
+  "limit-order": {
+    "title": "Limit Order Module",
+    "type": "page"
+  },
+  "dca": {
+    "title": "DCA Module",
+    "type": "page"
+  },
+  "deployment": {
+    "title": "Deployment Guide",
+    "type": "page"
+  }
+}
