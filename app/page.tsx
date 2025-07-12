@@ -10,22 +10,16 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { TradeEarnNav } from "@/components/trade-earn-nav"
 
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
 
   return (
-    <div className="min-h-screen">
+    <div>
 
-      <div className="px-6 py-8">
+      <div className="px-6 py-4">
         <div className="max-w-7xl mx-auto">
-          {/* Trade/Earn Navigation */}
-          <div className="flex justify-center mb-6">
-            <TradeEarnNav />
-          </div>
-          
-          <div className="grid grid-cols-12 gap-8">
+          <div className="grid grid-cols-12 gap-6">
             {/* Trading Interface */}
             <div className="col-span-12 lg:col-span-8">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

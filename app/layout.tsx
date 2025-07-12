@@ -4,6 +4,7 @@ import './globals.css'
 import { IotaProviders } from '@/lib/iota/providers'
 import { Toaster } from 'sonner'
 import { SiteHeader } from '@/components/header/site-header'
+import { SiteFooter } from '@/components/footer/site-footer'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -28,10 +29,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="font-suprema">
+      <body className="font-suprema min-h-screen flex flex-col">
         <IotaProviders>
           <SiteHeader />
-          {children}
+          <main className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
           <Toaster position="bottom-right" />
         </IotaProviders>
       </body>
