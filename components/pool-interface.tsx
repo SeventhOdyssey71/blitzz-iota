@@ -49,99 +49,97 @@ export function PoolInterface() {
     const iotaAmountBig = BigInt(Math.floor(parseFloat(iotaAmount || '0') * 1e9));
     const stIotaAmountBig = BigInt(Math.floor(parseFloat(stIotaAmount || '0') * 1e9));
     
-    // If no existing pool, user gets 100%
-    if (!poolInfo || !poolInfo.lpSupply || poolInfo.lpSupply === BigInt(0)) {
+    // If pool is empty, user gets 100%
+    if (poolInfo.reserveA === 0n && poolInfo.reserveB === 0n) {
       return '100.00';
     }
     
-    // Calculate based on the smaller amount to maintain ratio
-    const lpFromA = poolInfo.reserveA > 0 ? (iotaAmountBig * poolInfo.lpSupply) / poolInfo.reserveA : BigInt(0);
-    const lpFromB = poolInfo.reserveB > 0 ? (stIotaAmountBig * poolInfo.lpSupply) / poolInfo.reserveB : BigInt(0);
-    const lpToMint = lpFromA < lpFromB ? lpFromA : lpFromB;
+    // Calculate share based on IOTA input (simplified for 1:1 ratio)
+    const newTotal = poolInfo.reserveA + iotaAmountBig;
+    const share = (Number(iotaAmountBig) / Number(newTotal)) * 100;
     
-    if (lpToMint === BigInt(0)) return '0.00';
+    return share.toFixed(2);
+  };
+  
+  // Calculate LP tokens
+  const calculateLPTokens = () => {
+    if (!iotaAmount || !stIotaAmount || !poolInfo) return '0.00';
     
-    const totalLpAfter = poolInfo.lpSupply + lpToMint;
-    const sharePercent = (lpToMint * BigInt(10000)) / totalLpAfter;
+    const iotaAmountBig = BigInt(Math.floor(parseFloat(iotaAmount || '0') * 1e9));
+    const stIotaAmountBig = BigInt(Math.floor(parseFloat(stIotaAmount || '0') * 1e9));
     
-    return (Number(sharePercent) / 100).toFixed(2);
+    // For new pool, LP tokens = sqrt(amount1 * amount2)
+    if (poolInfo.lpSupply === 0n) {
+      // Simplified: return the smaller amount
+      const lpAmount = iotaAmountBig < stIotaAmountBig ? iotaAmountBig : stIotaAmountBig;
+      return formatBalance(lpAmount.toString(), 9, 4);
+    }
+    
+    // For existing pool, calculate proportionally
+    const lpAmount = (iotaAmountBig * poolInfo.lpSupply) / poolInfo.reserveA;
+    return formatBalance(lpAmount.toString(), 9, 4);
   };
   
   const handleAddLiquidity = async () => {
-    if (!isConnected) {
+    if (!iotaAmount || !stIotaAmount) {
+      toast.error('Please enter both amounts');
+      return;
+    }
+    
+    if (!currentAccount) {
       toast.error('Please connect your wallet');
       return;
     }
     
-    if (!iotaAmount || !stIotaAmount) {
-      toast.error('Please enter amounts for both tokens');
-      return;
-    }
-    
-    const iotaAmountNum = parseFloat(iotaAmount);
-    const stIotaAmountNum = parseFloat(stIotaAmount);
-    
-    if (iotaAmountNum <= 0 || stIotaAmountNum <= 0) {
-      toast.error('Please enter valid amounts');
-      return;
-    }
-    
-    // Check balances
-    if (iotaAmountNum > parseFloat(iotaFormatted)) {
-      toast.error('Insufficient IOTA balance');
-      return;
-    }
-    
-    if (stIotaAmountNum > parseFloat(stIotaFormatted)) {
-      toast.error('Insufficient stIOTA balance');
-      return;
-    }
-    
-    const result = await addLiquidity({
-      tokenA: SUPPORTED_COINS.IOTA,
-      tokenB: SUPPORTED_COINS.stIOTA,
-      amountA: iotaAmount,
-      amountB: stIotaAmount,
-    });
-    
-    if (result.success) {
-      setIotaAmount('');
-      setStIotaAmount('');
-      toast.success('Liquidity added successfully!');
-      // Refresh to show updated pool info
-      setTimeout(() => {
-        refreshPoolInfo();
-      }, 2000);
+    try {
+      const result = await addLiquidity({
+        tokenA: {
+          type: SUPPORTED_COINS.IOTA.type,
+          symbol: 'IOTA',
+          decimals: 9,
+        },
+        tokenB: {
+          type: SUPPORTED_COINS.stIOTA.type,
+          symbol: 'stIOTA',
+          decimals: 9,
+        },
+        amountA: iotaAmount,
+        amountB: stIotaAmount,
+        slippage: 1, // 1% slippage
+      });
+      
+      if (result.success) {
+        toast.success('Liquidity added successfully!');
+        setIotaAmount('');
+        setStIotaAmount('');
+        // Refresh pool info after a short delay
+        setTimeout(refreshPoolInfo, 2000);
+      }
+    } catch (error) {
+      console.error('Add liquidity error:', error);
     }
   };
   
   const handleMaxIota = () => {
-    if (iotaFormatted) {
-      // Reserve 0.15 IOTA for gas
-      const balance = parseFloat(iotaFormatted);
-      const gasReserve = 0.15;
-      const maxAmount = Math.max(0, balance - gasReserve);
-      handleIotaChange(maxAmount.toFixed(2));
-    }
+    // Reserve 0.5 IOTA for gas
+    const balance = parseFloat(iotaFormatted || '0');
+    const maxAmount = Math.max(0, balance - 0.5);
+    handleIotaChange(maxAmount.toString());
   };
   
   const handleMaxStIota = () => {
-    if (stIotaFormatted) {
-      setStIotaAmount(stIotaFormatted);
-    }
+    setStIotaAmount(stIotaFormatted || '0');
   };
   
-  // Auto-calculate proportional amounts
   const handleIotaChange = (value: string) => {
     setIotaAmount(value);
     
-    // If pool exists with reserves, calculate proportional stIOTA amount
-    if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0 && value) {
-      const iotaAmountBig = BigInt(Math.floor(parseFloat(value) * 1e9));
-      const stIotaRequired = (iotaAmountBig * poolInfo.reserveB) / poolInfo.reserveA;
-      const stIotaFormatted = formatBalance(stIotaRequired.toString(), 9, 2);
-      setStIotaAmount(stIotaFormatted);
-    } else if (!poolInfo && value) {
+    // For existing pool, calculate required stIOTA amount
+    if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
+      const iotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
+      const requiredStIota = (iotaAmountBig * poolInfo.reserveB) / poolInfo.reserveA;
+      setStIotaAmount(formatBalance(requiredStIota.toString(), 9, 6));
+    } else {
       // For new pool, maintain 1:1 ratio
       setStIotaAmount(value);
     }
@@ -150,13 +148,12 @@ export function PoolInterface() {
   const handleStIotaChange = (value: string) => {
     setStIotaAmount(value);
     
-    // If pool exists with reserves, calculate proportional IOTA amount
-    if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0 && value) {
-      const stIotaAmountBig = BigInt(Math.floor(parseFloat(value) * 1e9));
-      const iotaRequired = (stIotaAmountBig * poolInfo.reserveA) / poolInfo.reserveB;
-      const iotaFormatted = formatBalance(iotaRequired.toString(), 9, 2);
-      setIotaAmount(iotaFormatted);
-    } else if (!poolInfo && value) {
+    // For existing pool, calculate required IOTA amount
+    if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
+      const stIotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
+      const requiredIota = (stIotaAmountBig * poolInfo.reserveA) / poolInfo.reserveB;
+      setIotaAmount(formatBalance(requiredIota.toString(), 9, 6));
+    } else {
       // For new pool, maintain 1:1 ratio
       setIotaAmount(value);
     }
@@ -169,7 +166,7 @@ export function PoolInterface() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Your Position */}
       {hasLiquidity && (
-        <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/20">
+        <Card className="bg-black/60 backdrop-blur-sm border-cyan-500/20">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-white">Your Liquidity Position</CardTitle>
@@ -182,19 +179,19 @@ export function PoolInterface() {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-sm text-gray-400">Your Pool Share</p>
-                <p className="text-xl font-bold text-cyan-400">
+                <p className="text-xl font-bold text-cyan-400 font-mono">
                   {poolInfo.lpSupply > 0 ? '100%' : '0%'}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">IOTA Deposited</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-xl font-bold text-white font-mono">
                   {formatBalance(poolInfo.reserveA.toString(), 9, 2)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">stIOTA Deposited</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-xl font-bold text-white font-mono">
                   {formatBalance(poolInfo.reserveB.toString(), 9, 2)}
                 </p>
               </div>
@@ -218,7 +215,7 @@ export function PoolInterface() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <p className="text-sm text-gray-400">Total Value Locked</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-white font-mono">
                 {isLoadingPool ? (
                   <span className="animate-pulse">Loading...</span>
                 ) : poolInfo && (poolInfo.reserveA > 0 || poolInfo.reserveB > 0) ? (
@@ -230,7 +227,7 @@ export function PoolInterface() {
             </div>
             <div className="space-y-2">
               <p className="text-sm text-gray-400">24h Volume</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-white font-mono">
                 {poolInfo && poolInfo.reserveA > 0 ? '$0.00' : '-'}
               </p>
             </div>
@@ -243,9 +240,9 @@ export function PoolInterface() {
                     {isLoadingPool ? (
                       <span className="animate-pulse">Loading...</span>
                     ) : poolInfo && poolInfo.reserveA > 0 ? (
-                      `${formatBalance(poolInfo.reserveA.toString(), 9, 2)} IOTA`
+                      <><span className="font-mono">{formatBalance(poolInfo.reserveA.toString(), 9, 2)}</span> IOTA</>
                     ) : (
-                      '0.00 IOTA'
+                      <span className="font-mono">0.00 IOTA</span>
                     )}
                   </span>
                 </div>
@@ -255,9 +252,9 @@ export function PoolInterface() {
                     {isLoadingPool ? (
                       <span className="animate-pulse">Loading...</span>
                     ) : poolInfo && poolInfo.reserveB > 0 ? (
-                      `${formatBalance(poolInfo.reserveB.toString(), 9, 2)} stIOTA`
+                      <><span className="font-mono">{formatBalance(poolInfo.reserveB.toString(), 9, 2)}</span> stIOTA</>
                     ) : (
-                      '0.00 stIOTA'
+                      <span className="font-mono">0.00 stIOTA</span>
                     )}
                   </span>
                 </div>
@@ -265,7 +262,7 @@ export function PoolInterface() {
             </div>
             <div className="space-y-2">
               <p className="text-sm text-gray-400">APR</p>
-              <p className="text-2xl font-bold text-green-400">
+              <p className="text-2xl font-bold text-green-400 font-mono">
                 {poolInfo && poolInfo.reserveA > 0 ? '12.5%' : '-'}
               </p>
             </div>
@@ -293,7 +290,7 @@ export function PoolInterface() {
                   <label className="text-sm text-gray-400">IOTA Amount</label>
                   {isConnected && (
                     <div className="flex items-center gap-2 text-gray-400 text-xs">
-                      <span>Balance: {iotaFormatted || '0'}</span>
+                      <span>Balance: <span className="font-mono">{iotaFormatted || '0'}</span></span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -310,7 +307,7 @@ export function PoolInterface() {
                     placeholder="0.0"
                     value={iotaAmount}
                     onChange={(e) => handleIotaChange(e.target.value)}
-                    className="bg-white/5 border-white/10 text-white pr-20"
+                    className="bg-white/5 border-white/10 text-white pr-20 font-mono"
                     type="number"
                     min="0"
                     step="any"
@@ -332,7 +329,7 @@ export function PoolInterface() {
                   <label className="text-sm text-gray-400">stIOTA Amount</label>
                   {isConnected && (
                     <div className="flex items-center gap-2 text-gray-400 text-xs">
-                      <span>Balance: {stIotaFormatted || '0'}</span>
+                      <span>Balance: <span className="font-mono">{stIotaFormatted || '0'}</span></span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -349,7 +346,7 @@ export function PoolInterface() {
                     placeholder="0.0"
                     value={stIotaAmount}
                     onChange={(e) => handleStIotaChange(e.target.value)}
-                    className="bg-white/5 border-white/10 text-white pr-24"
+                    className="bg-white/5 border-white/10 text-white pr-20 font-mono"
                     type="number"
                     min="0"
                     step="any"
@@ -371,11 +368,11 @@ export function PoolInterface() {
                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Your Pool Share</span>
-                  <span className="text-white font-medium">{calculatePoolShare()}%</span>
+                  <span className="text-white font-medium font-mono">{calculatePoolShare()}%</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-400">Exchange Rate</span>
-                  <span className="text-white">1 IOTA = 1 stIOTA</span>
+                  <span className="text-white font-mono">1 IOTA = 1 stIOTA</span>
                 </div>
               </div>
               
