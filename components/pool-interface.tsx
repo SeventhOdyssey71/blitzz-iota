@@ -145,6 +145,17 @@ export function PoolInterface() {
       if (result.success) {
         setIotaAmount('');
         setStIotaAmount('');
+        
+        // Extract liquidity info from transaction if available
+        if (result.digest) {
+          const { extractLiquidityFromTransaction } = await import('@/lib/services/extract-liquidity-from-tx');
+          extractLiquidityFromTransaction(result.digest).then((liquidityResult) => {
+            if (liquidityResult.success) {
+              console.log('Liquidity addition tracked:', liquidityResult);
+            }
+          });
+        }
+        
         // Refresh pool cache to ensure swap can find the pool
         setTimeout(() => {
           refreshPoolCache();
