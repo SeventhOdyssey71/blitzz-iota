@@ -13,9 +13,15 @@ import { Badge } from "@/components/ui/badge"
 import { refreshPoolCache } from "@/lib/services/pool-refresh"
 import { addPoolFromTransaction } from "@/lib/services/add-pool-manual"
 import { extractPoolFromTransaction } from "@/lib/services/extract-pool-from-tx"
+import { ensureCriticalPools } from "@/lib/services/ensure-pools"
 
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
+  
+  // Ensure critical pools are tracked on mount
+  useEffect(() => {
+    ensureCriticalPools();
+  }, []);
   
   // Refresh pool cache when switching to swap tab
   useEffect(() => {
