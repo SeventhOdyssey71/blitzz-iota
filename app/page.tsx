@@ -61,8 +61,24 @@ export default function IotaApp() {
         }
       };
       
+      // Check recent liquidity addition
+      const checkRecentLiquidity = async () => {
+        const liquidityTxHash = 'CLS5t6kzs2cxYuUx9r2faJU9o88beoeCoNSStrymWeEq';
+        try {
+          const { extractLiquidityFromTransaction } = await import('@/lib/services/extract-liquidity-from-tx');
+          const result = await extractLiquidityFromTransaction(liquidityTxHash);
+          if (result.success) {
+            console.log('Recent liquidity addition detected:', result);
+            refreshPoolCache();
+          }
+        } catch (error) {
+          // Silently handle error
+        }
+      };
+      
       // Run after a short delay
       setTimeout(checkRecentPool, 2000);
+      setTimeout(checkRecentLiquidity, 3000);
     }
   }, []);
 
