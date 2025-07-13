@@ -106,7 +106,7 @@ BLITZZ has established a strong presence across multiple channels:
 
 ### Total Funding (USD): $10,000
 
-### Milestone 1: Mainnet Launch & Core Features (1.5 months)
+### Milestone 1: Mainnet Launch & Core Features (1 month)
 **Funding: $5,000**
 - Deploy optimized smart contracts to IOTA mainnet
 - Complete security review and testing
@@ -116,7 +116,7 @@ BLITZZ has established a strong presence across multiple channels:
 - Set up monitoring and analytics dashboard
 - Create comprehensive documentation
 
-### Milestone 2: Growth & Enhancement (1.5 months)
+### Milestone 2: Growth & Enhancement (1 month)
 **Funding: $5,000**
 - Launch liquidity incentive program
 - Implement advanced trading features (limit orders)
