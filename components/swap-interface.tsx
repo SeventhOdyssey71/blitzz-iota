@@ -23,6 +23,8 @@ import { useSimpleSwapV2 } from '@/hooks/use-simple-swap-v2';
 import { TokenSelector } from '@/components/token-selector';
 import { CoinIcon } from '@/components/coin-icon';
 import { SwapSuccessModal } from '@/components/swap-success-modal';
+import { SwapTransactionPanel } from '@/components/swap-transaction-panel';
+import { refreshPoolCache } from '@/lib/services/pool-refresh';
 
 interface Token {
   symbol: string;
@@ -41,6 +43,8 @@ export function SwapInterface() {
   const [slippage, setSlippage] = useState(0.5);
   const [showTokenSelect, setShowTokenSelect] = useState<'input' | 'output' | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showTransactionPanel, setShowTransactionPanel] = useState(false);
+  const [currentTxHash, setCurrentTxHash] = useState<string>('');
   const [swapResult, setSwapResult] = useState<{
     inputAmount: string;
     outputAmount: string;
@@ -141,22 +145,12 @@ export function SwapInterface() {
       slippage,
     });
 
-    if (result.success) {
-      // Use blockchain execution time if available, otherwise fall back to client-side timing
-      const clientExecutionTime = (Date.now() - startTime) / 1000;
-      const blockchainExecutionTime = result.executionTime ? result.executionTime / 1000 : null;
-      const executionTime = blockchainExecutionTime || clientExecutionTime;
+    if (result.success && result.digest) {
+      // Store the transaction hash
+      setCurrentTxHash(result.digest);
       
-      // Set up success modal data
-      setSwapResult({
-        inputAmount,
-        outputAmount: swapCalculation.outputAmount,
-        txHash: result.digest || '',
-        executionTime,
-      });
-      
-      // Show success modal
-      setShowSuccessModal(true);
+      // Show the transaction panel
+      setShowTransactionPanel(true);
       
       // Clear input
       setInputAmount('');
@@ -165,7 +159,11 @@ export function SwapInterface() {
       setTimeout(() => {
         refetchInputBalance();
         refetchOutputBalance();
-      }, 1000);
+      }, 2000);
+      
+      // Also do an immediate refresh
+      refetchInputBalance();
+      refetchOutputBalance();
     }
   };
 
@@ -410,6 +408,7 @@ export function SwapInterface() {
         </div>
       </div>
 
+
       {/* Token Selector */}
       <TokenSelector
         open={showTokenSelect === 'input'}
@@ -440,6 +439,17 @@ export function SwapInterface() {
           executionTime={swapResult.executionTime}
         />
       )}
+      
+      {/* Transaction Details Panel */}
+      <SwapTransactionPanel
+        txHash={currentTxHash}
+        isOpen={showTransactionPanel}
+        onClose={() => setShowTransactionPanel(false)}
+        expectedInputAmount={inputAmount}
+        expectedOutputAmount={swapCalculation?.outputAmount}
+        inputTokenSymbol={inputToken.symbol}
+        outputTokenSymbol={outputToken.symbol}
+      />
     </div>
   );
 }

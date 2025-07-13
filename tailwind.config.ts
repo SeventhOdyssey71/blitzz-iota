@@ -11,8 +11,9 @@ const config: Config = {
   theme: {
   	extend: {
   		fontFamily: {
-  			'suprema': ['Suprema', 'sans-serif'],
+  			'suprema': ['TWK Everett', 'sans-serif'],
   			'inter': ['var(--font-inter)', 'sans-serif'],
+  			'twk': ['TWK Everett', 'sans-serif'],
   		},
   		colors: {
   			background: 'hsl(var(--background))',

@@ -49,7 +49,7 @@ export function useSwap() {
       const tx = new Transaction();
 
       // Split coins for exact amount
-      const [coin] = tx.splitCoins(tx.gas, [tx.pure(inputAmount)]);
+      const [coin] = tx.splitCoins(tx.gas, [inputAmount]);
 
       // Add swap call
       await dex.swap(

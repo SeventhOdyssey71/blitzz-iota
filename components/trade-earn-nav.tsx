@@ -31,6 +31,17 @@ export function TradeEarnNav() {
       >
         Earn
       </Link>
+      <Link
+        href="/launchpad"
+        className={cn(
+          "px-6 py-2 rounded-lg font-medium text-sm transition-all duration-200 relative",
+          pathname.startsWith('/launchpad') 
+            ? "text-cyan-400 bg-white/10 shadow-[0_0_20px_rgba(0,212,255,0.3)]" 
+            : "text-gray-400 hover:text-gray-300 hover:scale-105"
+        )}
+      >
+        Launchpad
+      </Link>
     </div>
   );
 }

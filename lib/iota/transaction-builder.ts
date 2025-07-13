@@ -18,7 +18,7 @@ export class TransactionBuilder {
     // In production, this would call the actual swap function
     if (params.isAToB) {
       // Split coins for the exact amount
-      const [coinToSwap] = tx.splitCoins(tx.gas, [tx.pure(params.amountIn)]);
+      const [coinToSwap] = tx.splitCoins(tx.gas, [params.amountIn]);
       
       // In production, this would be:
       // tx.moveCall({
@@ -27,7 +27,7 @@ export class TransactionBuilder {
       //   arguments: [
       //     tx.object(params.poolId),
       //     coinToSwap,
-      //     tx.pure(params.minAmountOut),
+      //     tx.pure.u64(params.minAmountOut),
       //   ],
       // });
 
@@ -51,8 +51,8 @@ export class TransactionBuilder {
     const packageId = blitz_PACKAGE_ID[params.network];
 
     // Split coins for liquidity
-    const [coinA] = tx.splitCoins(tx.gas, [tx.pure(params.amountA)]);
-    const [coinB] = tx.splitCoins(tx.gas, [tx.pure(params.amountB)]);
+    const [coinA] = tx.splitCoins(tx.gas, [params.amountA]);
+    const [coinB] = tx.splitCoins(tx.gas, [params.amountB]);
 
     // In production:
     // tx.moveCall({
@@ -80,8 +80,8 @@ export class TransactionBuilder {
     const packageId = blitz_PACKAGE_ID[params.network];
 
     // Split coins for initial liquidity
-    const [coinA] = tx.splitCoins(tx.gas, [tx.pure(params.amountA)]);
-    const [coinB] = tx.splitCoins(tx.gas, [tx.pure(params.amountB)]);
+    const [coinA] = tx.splitCoins(tx.gas, [params.amountA]);
+    const [coinB] = tx.splitCoins(tx.gas, [params.amountB]);
 
     // In production:
     // tx.moveCall({
@@ -90,7 +90,7 @@ export class TransactionBuilder {
     //   arguments: [
     //     coinA,
     //     coinB,
-    //     tx.pure(params.feePercentage),
+    //     tx.pure.u64(params.feePercentage),
     //   ],
     // });
 
