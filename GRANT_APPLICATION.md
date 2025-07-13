@@ -54,7 +54,7 @@ BLITZZ represents a significant advancement in the IOTA DeFi ecosystem by provid
 ### Project Presence
 BLITZZ has established a strong presence across multiple channels:
 - **Live Testnet**: Fully functional platform deployed at [testnet URL]
-- **GitHub Repository**: Active development with 50+ commits at https://github.com/SeventhOdyssey71/cetus-iota
+- **GitHub Repository**: Active development with 50+ commits at https://github.com/SeventhOdyssey71/blitzz-iota
 - **Community Channels**: Growing Discord and Telegram communities (to be launched)
 - **Documentation**: Comprehensive technical docs and user guides
 - **Social Media**: Active on X/Twitter with regular updates on development progress
@@ -102,41 +102,30 @@ BLITZZ has established a strong presence across multiple channels:
 
 ## Milestone Breakdown
 
-### Total Number of Milestones: 4
+### Total Number of Milestones: 2
 
-### Total Funding (USD): $50,000
+### Total Funding (USD): $10,000
 
-### Milestone 1: Core DEX Completion & Mainnet Launch (2 months)
-**Funding: $15,000**
-- Deploy optimized smart contracts to mainnet
-- Implement multi-hop routing for optimal swap paths
-- Add comprehensive analytics dashboard
-- Integrate price oracles for accurate USD valuations
-- Complete security audit preparations
+### Milestone 1: Mainnet Launch & Core Features (1.5 months)
+**Funding: $5,000**
+- Deploy optimized smart contracts to IOTA mainnet
+- Complete security review and testing
+- Launch AMM DEX with accurate swap calculations
+- Implement liquidity pool creation and management
+- Deploy meme token launchpad with bonding curves
+- Set up monitoring and analytics dashboard
+- Create comprehensive documentation
 
-### Milestone 2: Advanced Trading Features (1.5 months)
-**Funding: $12,000**
-- Launch limit order functionality with on-chain order book
-- Implement DCA strategy contracts
-- Add portfolio tracking and P&L analytics
-- Create trading API for algorithmic traders
-- Mobile-responsive UI optimization
-
-### Milestone 3: Launchpad Enhancement & Token Ecosystem (1.5 months)
-**Funding: $13,000**
-- Enhance bonding curve mechanics with dynamic pricing
-- Implement token vesting and lock mechanisms
-- Add social features (comments, ratings, trending)
-- Create token analytics and charts
-- Integrate with external DeFi protocols
-
-### Milestone 4: Liquidity Incentives & Growth (1 month)
-**Funding: $10,000**
-- Launch liquidity mining program
-- Implement farming and staking rewards
-- Create referral system
-- Add governance token framework
-- Complete full security audit
+### Milestone 2: Growth & Enhancement (1.5 months)
+**Funding: $5,000**
+- Launch liquidity incentive program
+- Implement advanced trading features (limit orders)
+- Add multi-hop routing for optimal swaps
+- Integrate price feeds and charts
+- Mobile UI optimization
+- Community building and marketing campaign
+- Onboard initial liquidity providers
+- Create educational content and tutorials
 
 ### To be sent to:
 [Your IOTA or ETH address]
