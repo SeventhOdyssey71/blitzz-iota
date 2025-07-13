@@ -9,6 +9,7 @@ import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
 import { PoolDiscovery } from '@/lib/services/pool-discovery';
 import { PoolTracker } from '@/lib/services/pool-tracker';
 import { mapLPTokenToPool } from '@/lib/services/lp-pool-mapper';
+import { refreshAndTrackAllPools } from '@/lib/services/refresh-and-track-pools';
 
 interface AddLiquidityParams {
   tokenA: {
@@ -290,9 +291,16 @@ export function useAddLiquidity() {
               }
               
               // Always refresh pool cache after adding liquidity
-              setTimeout(() => {
+              setTimeout(async () => {
                 window.dispatchEvent(new Event('pool-cache-refresh'));
+                // Also refresh all pool data
+                await refreshAndTrackAllPools();
               }, 1000);
+              
+              // Refresh again after a longer delay to ensure blockchain state is updated
+              setTimeout(async () => {
+                await refreshAndTrackAllPools();
+              }, 3000);
               
               toast.success('Liquidity added successfully!', {
                 description: `Transaction: ${result.digest.slice(0, 10)}...`,

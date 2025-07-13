@@ -36,10 +36,19 @@ export function usePoolInfo(coinTypeA: string, coinTypeB: string) {
     
     // Refresh pool info every 30 seconds
     const interval = setInterval(fetchPoolInfo, 30000);
+    
+    // Listen for pool cache refresh events
+    const handlePoolRefresh = () => {
+      console.log('Pool refresh event received, fetching pool info...');
+      fetchPoolInfo();
+    };
+    
+    window.addEventListener('pool-cache-refresh', handlePoolRefresh);
 
     return () => {
       mounted = false;
       clearInterval(interval);
+      window.removeEventListener('pool-cache-refresh', handlePoolRefresh);
     };
   }, [coinTypeA, coinTypeB]);
 
