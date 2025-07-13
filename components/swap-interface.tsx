@@ -308,34 +308,35 @@ export function SwapInterface() {
         </CardContent>
       </Card>
 
-      
       {/* Swap Details */}
       {swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && !swapCalculation.error && (
         <Card className="bg-black/40 border-white/10 rounded-2xl animate-fade-in">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Exchange Rate</span>
-              <span className="text-white mono">
-                1 {inputToken.symbol} = {inputAmount && parseFloat(inputAmount) > 0 
-                  ? formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) / parseFloat(inputAmount), 4)
-                  : '0'} {outputToken.symbol}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Price Impact</span>
-              <span className={swapCalculation.priceImpact > 3 ? "text-red-400" : "text-cyan-400"}>
-                {swapCalculation.priceImpact.toFixed(2)}%
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Minimum Received</span>
-              <span className="text-white mono">
-                {formatSwapOutput(swapCalculation.minimumReceived, outputToken.decimals)} {outputToken.symbol}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Route</span>
-              <span className="text-cyan-400">{swapCalculation.route.join(' → ')}</span>
+          <CardContent className="p-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-400 text-sm font-medium">Exchange Rate</span>
+                <span className="text-white text-sm font-medium mono">
+                  1 {inputToken.symbol} = {inputAmount && parseFloat(inputAmount) > 0 
+                    ? formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) / parseFloat(inputAmount), 4)
+                    : '0'} {outputToken.symbol}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-400 text-sm font-medium">Price Impact</span>
+                <span className={`text-sm font-medium ${swapCalculation.priceImpact > 3 ? "text-red-400" : "text-cyan-400"}`}>
+                  {swapCalculation.priceImpact.toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-400 text-sm font-medium">Minimum Received</span>
+                <span className="text-white text-sm font-medium mono">
+                  {formatSwapOutput(swapCalculation.minimumReceived, outputToken.decimals)} {outputToken.symbol}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-400 text-sm font-medium">Route</span>
+                <span className="text-cyan-400 text-sm font-medium">{swapCalculation.route.join(' → ')}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -377,10 +378,10 @@ export function SwapInterface() {
       )}
 
       {/* Price Info */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-gray-500 text-sm">Token Prices</span>
-          <Info className="w-4 h-4 text-gray-500" />
+      <div className="mt-6 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-gray-400 text-sm font-medium">Token Prices</span>
+          <Info className="w-4 h-4 text-gray-400" />
         </div>
 
         <div className="space-y-2">
@@ -441,19 +442,19 @@ export function SwapInterface() {
 
 function TokenPriceCard({ token, price }: { token: Token; price: any }) {
   return (
-    <div className="flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-xl hover:bg-white/5 transition-all animate-slide-in">
+    <div className="flex items-center justify-between p-3.5 bg-black/40 border border-white/10 rounded-xl hover:bg-white/5 transition-all animate-slide-in">
       <div className="flex items-center gap-3">
-        <CoinIcon symbol={token.symbol} coinType={token.type} iconUrl={token.iconUrl} size={24} />
+        <CoinIcon symbol={token.symbol} coinType={token.type} iconUrl={token.iconUrl} size={32} />
         <div>
-          <div className="text-white font-semibold">{token.symbol}</div>
-          <div className="text-gray-400 text-xs">
+          <div className="text-white font-medium text-sm">{token.symbol}</div>
+          <div className="text-gray-400 text-xs mt-0.5">
             Vol: ${formatTokenAmount(price.volume24h, 0)}
           </div>
         </div>
       </div>
       <div className="text-right">
-        <div className="text-white font-semibold mono">${price.price.toFixed(4)}</div>
-        <div className={`text-xs font-medium ${price.change24h >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
+        <div className="text-white font-medium text-sm mono">${price.price.toFixed(4)}</div>
+        <div className={`text-xs font-medium mt-0.5 ${price.change24h >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
           {price.change24h >= 0 ? '+' : ''}{price.change24h.toFixed(2)}%
         </div>
       </div>
