@@ -14,13 +14,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useMemeTokenFactory } from "@/hooks/use-meme-token-factory"
 import { useCurrentAccount } from "@iota/dapp-kit"
+import { useWalletBalance } from "@/hooks/use-wallet-balance"
 import { toast } from "sonner"
 import { CREATION_FEE, PLATFORM_ID } from "@/lib/contracts/meme-token-factory"
+import { MemeTokenService } from "@/lib/services/meme-token-service"
 
 export default function CreateTokenPage() {
   const router = useRouter()
   const currentAccount = useCurrentAccount()
   const { createToken, isLoading, formatTokenAmount } = useMemeTokenFactory()
+  const { balance: iotaBalance } = useWalletBalance("0x2::iota::IOTA")
+  const memeService = MemeTokenService.getInstance()
   
   const [formData, setFormData] = useState({
     projectName: "",
@@ -76,17 +80,41 @@ export default function CreateTokenPage() {
     // Upload image to IPFS or use placeholder
     const imageUrl = avatarPreview || "https://placeholder.com/token.png"
 
-    // Create the token
-    await createToken(
-      formData.coinTicker.toUpperCase(),
-      formData.projectName,
-      formData.description,
-      imageUrl,
-      (bondingCurveId) => {
-        // Redirect to the token page
+    // Check balance
+    if (!iotaBalance || BigInt(iotaBalance) < BigInt(CREATION_FEE)) {
+      toast.error("Insufficient IOTA balance. You need at least 2 IOTA to create a token")
+      return
+    }
+
+    // If using mock mode, use the service
+    if (memeService.isInMockMode()) {
+      const result = await memeService.createToken({
+        symbol: formData.coinTicker.toUpperCase(),
+        name: formData.projectName,
+        description: formData.description,
+        imageUrl: imageUrl,
+        payment: {}, // Mock payment
+      })
+
+      if (result.success) {
+        toast.success("Token created successfully!")
         router.push(`/launchpad/coin/${formData.coinTicker.toLowerCase()}`)
+      } else {
+        toast.error(result.error || "Failed to create token")
       }
-    )
+    } else {
+      // Use real contract
+      await createToken(
+        formData.coinTicker.toUpperCase(),
+        formData.projectName,
+        formData.description,
+        imageUrl,
+        (bondingCurveId) => {
+          // Redirect to the token page
+          router.push(`/launchpad/coin/${formData.coinTicker.toLowerCase()}`)
+        }
+      )
+    }
   }
 
   return (
@@ -113,7 +141,7 @@ export default function CreateTokenPage() {
               <p className="text-xl text-gray-400 leading-relaxed font-light">
                 Launch your token on IOTA with our professional platform and built-in security features.
               </p>
-              {!PLATFORM_ID && (
+              {memeService.isInMockMode() && (
                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
                   <p className="text-yellow-400 text-sm">
                     ⚠️ Launchpad contracts are not deployed yet. This is a preview mode.

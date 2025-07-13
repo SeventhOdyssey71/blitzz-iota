@@ -1,9 +1,9 @@
 module Blitz::simple_staking {
     use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
-    use iota::object::{Self, UID};
-    use iota::tx_context::{Self, TxContext};
-    use iota::transfer;
+    // use iota::object; // Default import, not needed
+    // use iota::tx_context; // Default import, not needed
+    // use iota::transfer; // Default import, not needed
     use iota::iota::IOTA;
 
     // Simple staking pool

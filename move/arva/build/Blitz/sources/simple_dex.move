@@ -1,20 +1,37 @@
 module Blitz::simple_dex {
-    use std::option;
-    use iota::object::{Self, UID, ID};
+    // use std::option; // Unused import
+    // use iota::object; // Default import, not needed
     use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
-    use iota::transfer;
-    use iota::tx_context::{Self, TxContext};
+    // use iota::transfer; // Default import, not needed
+    // use iota::tx_context; // Default import, not needed
 
     // Error codes
     const E_ZERO_AMOUNT: u64 = 0;
-    const E_INSUFFICIENT_LIQUIDITY: u64 = 1;
+    // const E_INSUFFICIENT_LIQUIDITY: u64 = 1; // Unused constant
     const E_INSUFFICIENT_OUTPUT_AMOUNT: u64 = 2;
     const E_INSUFFICIENT_RESERVES: u64 = 3;
 
     // Constants
     const FEE_NUMERATOR: u64 = 18; // 1.8% fee
     const FEE_DENOMINATOR: u64 = 1000;
+
+    // Square root function using Babylonian method
+    fun sqrt(x: u64): u64 {
+        if (x == 0) {
+            return 0
+        };
+        
+        let mut z = x;
+        let mut y = (z + 1) / 2;
+        
+        while (y < z) {
+            z = y;
+            y = (z + x / z) / 2;
+        };
+        
+        z
+    }
 
     public struct Pool<phantom CoinA, phantom CoinB> has key {
         id: UID,
@@ -143,8 +160,10 @@ module Blitz::simple_dex {
         
         // Calculate LP tokens to mint
         let lp_amount = if (pool.lp_supply == 0) {
-            // First liquidity provider
-            amount_a
+            // First liquidity provider - use geometric mean
+            // sqrt(amount_a * amount_b)
+            let product = amount_a * amount_b;
+            sqrt(product)
         } else {
             // Proportional to existing liquidity
             let lp_from_a = (amount_a * pool.lp_supply) / reserve_a;

@@ -1,9 +1,9 @@
 module Blitz::fixed_swap {
     use iota::coin::{Self, Coin};
-    use iota::tx_context::TxContext;
-    use iota::transfer;
+    // use iota::tx_context; // Default import, not needed
+    // use iota::transfer; // Default import, not needed
     use iota::balance::{Self, Balance};
-    use iota::object::{Self, UID};
+    // use iota::object; // Default import, not needed
 
     // Error codes
     const EInsufficientReserve: u64 = 1;
@@ -14,9 +14,9 @@ module Blitz::fixed_swap {
     // 1 IOTA = 0.28 vUSD
     // 1 stIOTA = 0.28 vUSD
     const RATE_PRECISION: u64 = 1000;
-    const IOTA_TO_STIOTA_RATE: u64 = 1000; // 1:1
-    const IOTA_TO_VUSD_RATE: u64 = 280; // 0.28
-    const STIOTA_TO_VUSD_RATE: u64 = 280; // 0.28
+    // const IOTA_TO_STIOTA_RATE: u64 = 1000; // 1:1
+    // const IOTA_TO_VUSD_RATE: u64 = 280; // 0.28
+    // const STIOTA_TO_VUSD_RATE: u64 = 280; // 0.28
 
     /// Fixed rate swap pool
     public struct SwapPool<phantom CoinA, phantom CoinB> has key {

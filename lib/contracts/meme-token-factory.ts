@@ -1,6 +1,6 @@
 import { TransactionBlock } from '@iota/iota-sdk/transactions';
 import { IotaClient, IotaObjectRef } from '@iota/iota-sdk/client';
-import { blitz_PACKAGE_ID } from '@/config/iota.config';
+import { MEME_FACTORY_PACKAGE_ID, MEME_PLATFORM_ID } from '@/config/iota.config';
 
 // Constants
 export const CREATION_FEE = 2_000_000_000; // 2 IOTA in MIST
@@ -8,8 +8,8 @@ export const DECIMALS = 9;
 export const BONDING_CURVE_TARGET = 4_000_000_000_000; // 4,000 IOTA in MIST
 export const PLATFORM_FEE_PERCENT = 2;
 
-// Platform registry address - should be stored in env/config
-export const PLATFORM_ID = process.env.NEXT_PUBLIC_MEME_PLATFORM_ID || '';
+// Re-export for backward compatibility
+export const PLATFORM_ID = MEME_PLATFORM_ID;
 
 export interface TokenInfo {
   id: string;
@@ -47,7 +47,7 @@ export class MemeTokenFactory {
 
   constructor(client: IotaClient, packageId?: string, network: 'mainnet' | 'testnet' | 'devnet' = 'testnet') {
     this.client = client;
-    this.packageId = packageId || blitz_PACKAGE_ID[network];
+    this.packageId = packageId || MEME_FACTORY_PACKAGE_ID[network];
   }
 
   // Create a new meme token

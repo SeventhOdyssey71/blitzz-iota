@@ -6,7 +6,7 @@ compiled_package_info:
     iota: "0000000000000000000000000000000000000000000000000000000000000002"
     iota_std: "0000000000000000000000000000000000000000000000000000000000000001"
     std: "0000000000000000000000000000000000000000000000000000000000000001"
-  source_digest: F8A327A61547D9B8137CB3EAE1E091607D2DF6A8DE2AF5F44583F29BAFE2FE35
+  source_digest: 0661475E17676D2B36F828B6E38D097FC5A8AE436270C8B1CBB4ED00B3C9AE22
   build_flags:
     dev_mode: false
     test_mode: false
@@ -16,7 +16,7 @@ compiled_package_info:
     force_recompilation: false
     lock_file: "./Move.lock"
     fetch_deps_only: false
-    skip_fetch_latest_git_deps: true
+    skip_fetch_latest_git_deps: false
     default_flavor: iota
     default_edition: ~
     deps_as_root: false

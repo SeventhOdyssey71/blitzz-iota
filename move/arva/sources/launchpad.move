@@ -1,23 +1,25 @@
-module blitz::launchpad {
+// This module is deprecated and not used. The meme_token_factory module is used instead.
+/*
+module Blitz::launchpad {
     use std::string::{Self, String};
-    use std::option::{Self, Option};
-    use iota::coin::{Self, Coin, TreasuryCap};
+    use std::option;
+    use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
-    use iota::object::{Self, UID, ID};
-    use iota::tx_context::{Self, TxContext};
-    use iota::transfer;
+    use iota::object::{Self, ID};
+    use iota::tx_context;
+    // use iota::transfer; // Default import, not needed
     use iota::event;
     use iota::url::{Self, Url};
     use iota::table::{Self, Table};
     use iota::clock::{Self, Clock};
-    use iota::math;
+    // use iota::math; // Module doesn't exist
 
     // Error codes
     const E_INSUFFICIENT_PAYMENT: u64 = 1;
     const E_INVALID_SYMBOL: u64 = 2;
     const E_INVALID_SUPPLY: u64 = 3;
-    const E_NOT_AUTHORIZED: u64 = 4;
-    const E_BONDING_CURVE_NOT_COMPLETE: u64 = 5;
+    // const E_NOT_AUTHORIZED: u64 = 4; // Unused constant
+    // const E_BONDING_CURVE_NOT_COMPLETE: u64 = 5; // Unused constant
     const E_BONDING_CURVE_COMPLETE: u64 = 6;
     const E_INSUFFICIENT_BALANCE: u64 = 7;
     const E_ZERO_AMOUNT: u64 = 8;
@@ -138,16 +140,9 @@ module blitz::launchpad {
         assert!(string::length(&symbol_str) >= 3 && string::length(&symbol_str) <= 10, E_INVALID_SYMBOL);
         assert!(total_supply > 0 && total_supply <= 1_000_000_000_000_000_000, E_INVALID_SUPPLY);
         
-        // Create treasury cap for the new token
-        let (treasury_cap, metadata) = coin::create_currency<T>(
-            witness_placeholder<T>(),
-            decimals,
-            symbol,
-            name,
-            description,
-            option::some(url::new_unsafe_from_bytes(image_url)),
-            ctx
-        );
+        // For this to work, the function needs to accept a witness parameter
+        // This is a placeholder - in real usage, T would need to have a witness
+        abort E_INVALID_SYMBOL
         
         // Calculate allocations
         let dev_allocation = (total_supply * DEV_ALLOCATION_PERCENT) / 100;
@@ -390,3 +385,4 @@ module blitz::launchpad {
         (current * 100) / BONDING_CURVE_TARGET
     }
 }
+*/
