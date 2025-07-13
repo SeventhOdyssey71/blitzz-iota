@@ -72,7 +72,29 @@ export function useRemoveLiquidity() {
         if (pool) {
           console.log('Found pool in reverse order:', pool);
         } else {
-          throw new Error(`No pool found for ${params.tokenA.symbol}/${params.tokenB.symbol}. Please make sure the pool exists.`);
+          // If pool ID was provided, try to use it directly
+          if (params.poolId) {
+            console.log('Using provided pool ID:', params.poolId);
+            const { verifyAndUpdatePool } = await import('@/lib/services/verify-pool');
+            const exists = await verifyAndUpdatePool(params.poolId);
+            
+            if (!exists) {
+              throw new Error(`Pool ${params.poolId} no longer exists. Please refresh the page and try again.`);
+            }
+            
+            // Create a minimal pool info object
+            pool = {
+              poolId: params.poolId,
+              coinTypeA: params.tokenA.type,
+              coinTypeB: params.tokenB.type,
+              reserveA: BigInt(0),
+              reserveB: BigInt(0),
+              lpSupply: BigInt(0),
+              feePercentage: 30,
+            };
+          } else {
+            throw new Error(`No pool found for ${params.tokenA.symbol}/${params.tokenB.symbol}. Please refresh the page and try again.`);
+          }
         }
       }
 

@@ -22,6 +22,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Import refresh tools
 import('@/lib/services/refresh-and-track-pools');
+import('@/lib/services/verify-pool');
 
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
