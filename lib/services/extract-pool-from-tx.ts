@@ -32,7 +32,9 @@ export async function extractPoolFromTransaction(txDigest: string) {
       for (const change of tx.objectChanges) {
         if (change.type === 'created' && 
             change.objectType && 
-            change.objectType.includes('::simple_dex::Pool')) {
+            (change.objectType.includes('::simple_dex::Pool') || 
+             change.objectType.includes('::dex::Pool') ||
+             change.objectType.includes('Pool<'))) {
           
           // Extract type arguments from the pool type
           // Format: packageId::simple_dex::Pool<CoinTypeA, CoinTypeB>
