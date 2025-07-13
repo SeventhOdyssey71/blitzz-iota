@@ -27,6 +27,14 @@ export const blitz_PACKAGE_ID = {
   devnet: '0x0', // To be deployed
 } as const;
 
+export const MEME_FACTORY_PACKAGE_ID = {
+  mainnet: '0x0', // To be deployed
+  testnet: process.env.NEXT_PUBLIC_MEME_PACKAGE_ID || '0x0', // To be deployed
+  devnet: '0x0', // To be deployed
+} as const;
+
+export const MEME_PLATFORM_ID = process.env.NEXT_PUBLIC_MEME_PLATFORM_ID || '';
+
 export const SUPPORTED_COINS = {
   IOTA: {
     type: '0x2::iota::IOTA',

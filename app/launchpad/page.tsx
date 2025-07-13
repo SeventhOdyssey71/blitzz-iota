@@ -10,22 +10,17 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useIotaClient } from "@iota/dapp-kit"
-import { 
-  fetchLaunchpadTokens, 
-  fetchFeaturedToken, 
-  filterTokensByCategory, 
-  searchTokens,
-  LaunchpadToken 
-} from "@/lib/contracts/fetch-launchpad-tokens"
+import { MemeTokenService } from "@/lib/services/meme-token-service"
+import { TokenInfo } from "@/lib/contracts/meme-token-factory"
 
 
 export default function LaunchpadPage() {
   const client = useIotaClient()
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilter, setActiveFilter] = useState("trust-me-bro")
-  const [allTokens, setAllTokens] = useState<LaunchpadToken[]>([])
-  const [featuredToken, setFeaturedToken] = useState<LaunchpadToken | null>(null)
-  const [displayedTokens, setDisplayedTokens] = useState<LaunchpadToken[]>([])
+  const [allTokens, setAllTokens] = useState<TokenInfo[]>([])
+  const [featuredToken, setFeaturedToken] = useState<TokenInfo | null>(null)
+  const [displayedTokens, setDisplayedTokens] = useState<TokenInfo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   
   // Fetch tokens on mount
@@ -33,13 +28,11 @@ export default function LaunchpadPage() {
     const loadTokens = async () => {
       setIsLoading(true)
       try {
-        const [tokens, featured] = await Promise.all([
-          fetchLaunchpadTokens(client),
-          fetchFeaturedToken(client)
-        ])
+        const service = MemeTokenService.getInstance()
+        const tokens = await service.getTokens()
         setAllTokens(tokens)
-        setFeaturedToken(featured)
-        setDisplayedTokens(filterTokensByCategory(tokens, activeFilter))
+        setFeaturedToken(tokens[0] || null) // First token as featured
+        setDisplayedTokens(filterTokens(tokens, activeFilter))
       } catch (error) {
         console.error('Error loading tokens:', error)
       } finally {
@@ -54,9 +47,34 @@ export default function LaunchpadPage() {
     return () => clearInterval(interval)
   }, [client, activeFilter])
   
+  // Helper functions
+  const filterTokens = (tokens: TokenInfo[], category: string) => {
+    switch (category) {
+      case "trust-me-bro":
+        return tokens
+      case "hot":
+        return tokens.filter(t => t.change24h > 10)
+      case "new":
+        return tokens.filter(t => Date.now() - t.createdAt < 86400000) // 24 hours
+      case "graduating":
+        return tokens.filter(t => t.progress > 80 && !t.isGraduated)
+      default:
+        return tokens
+    }
+  }
+
+  const searchTokens = (tokens: TokenInfo[], query: string) => {
+    const q = query.toLowerCase()
+    return tokens.filter(t => 
+      t.symbol.toLowerCase().includes(q) ||
+      t.name.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q)
+    )
+  }
+
   // Filter tokens when search or filter changes
   useEffect(() => {
-    let filtered = filterTokensByCategory(allTokens, activeFilter)
+    let filtered = filterTokens(allTokens, activeFilter)
     if (searchQuery) {
       filtered = searchTokens(filtered, searchQuery)
     }
@@ -105,7 +123,7 @@ export default function LaunchpadPage() {
                   <div className="flex items-center gap-4 mb-6">
                     <div className="relative">
                       <Image
-                        src={featuredToken.image || "/placeholder.svg"}
+                        src={featuredToken.imageUrl || "/placeholder.svg"}
                         alt={featuredToken.name}
                         width={80}
                         height={80}
@@ -117,12 +135,12 @@ export default function LaunchpadPage() {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-white font-semibold text-xl">{featuredToken.name}</h3>
-                      <p className="text-gray-400 font-mono text-sm">{featuredToken.creator}</p>
+                      <p className="text-gray-400 font-mono text-sm">{featuredToken.symbol}</p>
                       <div className="flex items-center gap-3 mt-2">
                         <span className="text-gray-400 text-sm">Market Cap</span>
-                        <span className="text-white font-semibold font-mono tabular-nums">{featuredToken.marketCap}</span>
-                        <span className={`text-sm font-mono tabular-nums ${featuredToken.change.includes('-') ? 'text-red-400' : 'text-green-400'}`}>
-                          {featuredToken.change.includes('-') ? '' : '+'}{featuredToken.change}
+                        <span className="text-white font-semibold font-mono tabular-nums">${featuredToken.marketCap}</span>
+                        <span className={`text-sm font-mono tabular-nums ${featuredToken.change24h < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                          {featuredToken.change24h > 0 ? '+' : ''}{featuredToken.change24h.toFixed(2)}%
                         </span>
                       </div>
                     </div>
@@ -136,7 +154,7 @@ export default function LaunchpadPage() {
                     </div>
                   </div>
 
-                  <Link href={`/launchpad/coin/${featuredToken.ticker.toLowerCase()}`}>
+                  <Link href={`/launchpad/coin/${featuredToken.symbol.toLowerCase()}`}>
                     <Button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black rounded-xl py-3 font-medium transition-all duration-200">
                       View Details
                     </Button>
@@ -212,7 +230,7 @@ export default function LaunchpadPage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayedTokens.map((coin) => (
-            <Link key={coin.id} href={`/launchpad/coin/${coin.ticker.toLowerCase()}`}>
+            <Link key={coin.id} href={`/launchpad/coin/${coin.symbol.toLowerCase()}`}>
               <Card
                 className={`glass-dark border hover:border-cyan-500/50 transition-all duration-300 hover:scale-[1.02] rounded-2xl ${
                   coin.hasGoldenBorder ? "border-cyan-500/50" : "border-white/10"
@@ -222,13 +240,13 @@ export default function LaunchpadPage() {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="relative">
                       <Image
-                        src={coin.image || "/placeholder.svg"}
+                        src={coin.imageUrl || "/placeholder.svg"}
                         alt={coin.name}
                         width={60}
                         height={60}
                         className="rounded-xl border border-border/50"
                       />
-                      {coin.isTrustMeBro && (
+                      {coin.progress > 90 && (
                         <Badge className="absolute -top-2 -right-2 bg-cyan-500 text-black text-xs px-2 py-1 rounded-lg border border-cyan-400/30">
                           Trusted
                         </Badge>
@@ -236,9 +254,9 @@ export default function LaunchpadPage() {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-white font-semibold">
-                        {coin.name} - {coin.ticker}
+                        {coin.name} - {coin.symbol}
                       </h3>
-                      <p className="text-gray-400 text-sm font-mono">{coin.creator}</p>
+                      <p className="text-gray-400 text-sm font-mono">{coin.creator.slice(0, 6)}...{coin.creator.slice(-4)}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -263,10 +281,10 @@ export default function LaunchpadPage() {
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-gray-400">Market Cap</span>
                     <div className="text-right">
-                      <div className="text-white font-semibold font-mono tabular-nums">{coin.marketCap}</div>
-                      <div className={`text-sm font-mono tabular-nums ${coin.change.includes("-") ? "text-red-400" : "text-green-400"}`}>
-                        {coin.change.includes("-") ? "" : "+"}
-                        {coin.change}
+                      <div className="text-white font-semibold font-mono tabular-nums">${coin.marketCap}</div>
+                      <div className={`text-sm font-mono tabular-nums ${coin.change24h < 0 ? "text-red-400" : "text-green-400"}`}>
+                        {coin.change24h > 0 ? "+" : ""}
+                        {coin.change24h.toFixed(2)}%
                       </div>
                     </div>
                   </div>

@@ -1,14 +1,14 @@
 module Blitz::simple_dex {
-    use std::option;
-    use iota::object::{Self, UID, ID};
+    // use std::option; // Unused import
+    // use iota::object; // Default import, not needed
     use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
-    use iota::transfer;
-    use iota::tx_context::{Self, TxContext};
+    // use iota::transfer; // Default import, not needed
+    // use iota::tx_context; // Default import, not needed
 
     // Error codes
     const E_ZERO_AMOUNT: u64 = 0;
-    const E_INSUFFICIENT_LIQUIDITY: u64 = 1;
+    // const E_INSUFFICIENT_LIQUIDITY: u64 = 1; // Unused constant
     const E_INSUFFICIENT_OUTPUT_AMOUNT: u64 = 2;
     const E_INSUFFICIENT_RESERVES: u64 = 3;
 
@@ -22,8 +22,8 @@ module Blitz::simple_dex {
             return 0
         };
         
-        let z = x;
-        let y = (z + 1) / 2;
+        let mut z = x;
+        let mut y = (z + 1) / 2;
         
         while (y < z) {
             z = y;

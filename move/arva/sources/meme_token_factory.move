@@ -1,32 +1,33 @@
-module blitz::meme_token_factory {
+#[allow(duplicate_alias, lint(self_transfer, share_owned))]
+module Blitz::meme_token_factory {
     use std::string::{Self, String};
-    use std::option::{Self, Option};
-    use iota::coin::{Self, Coin, TreasuryCap, CoinMetadata};
+    // use std::option; // Default import, not needed
+    use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
-    use iota::object::{Self, UID, ID};
-    use iota::tx_context::{Self, TxContext};
-    use iota::transfer;
+    // use iota::object::ID; // Default import, not needed
+    // use iota::tx_context; // Default import, not needed
+    // use iota::transfer; // Default import, not needed
     use iota::event;
     use iota::url::{Self, Url};
-    use iota::table::{Self, Table};
+    // use iota::table::{Self, Table}; // Unused imports
     use iota::clock::{Self, Clock};
     use iota::dynamic_object_field as dof;
     use iota::dynamic_field as df;
 
     // Import our DEX for liquidity provision
-    use blitz::simple_dex;
+    use Blitz::simple_dex;
 
     // Error codes
     const E_INSUFFICIENT_PAYMENT: u64 = 1;
     const E_INVALID_SYMBOL: u64 = 2;
-    const E_INVALID_SUPPLY: u64 = 3;
+    // const E_INVALID_SUPPLY: u64 = 3; // Unused constant
     const E_NOT_AUTHORIZED: u64 = 4;
-    const E_BONDING_CURVE_NOT_COMPLETE: u64 = 5;
+    // const E_BONDING_CURVE_NOT_COMPLETE: u64 = 5; // Unused constant
     const E_BONDING_CURVE_COMPLETE: u64 = 6;
     const E_INSUFFICIENT_BALANCE: u64 = 7;
     const E_ZERO_AMOUNT: u64 = 8;
     const E_SLIPPAGE_EXCEEDED: u64 = 9;
-    const E_TOKEN_EXISTS: u64 = 10;
+    // const E_TOKEN_EXISTS: u64 = 10; // Unused constant
 
     // Constants
     const CREATION_FEE: u64 = 2_000_000_000; // 2 IOTA
@@ -108,7 +109,7 @@ module blitz::meme_token_factory {
     }
 
     // Initialize the platform
-    fun init(witness: MEME_TOKEN_FACTORY, ctx: &mut TxContext) {
+    fun init(_witness: MEME_TOKEN_FACTORY, ctx: &mut TxContext) {
         let platform = Platform {
             id: object::new(ctx),
             treasury: balance::zero(),
@@ -145,10 +146,16 @@ module blitz::meme_token_factory {
         assert!(string::length(&symbol_str) >= 2 && string::length(&symbol_str) <= 10, E_INVALID_SYMBOL);
         
         // Calculate total supply (1 billion tokens with decimals)
-        let total_supply = 1_000_000_000 * iota::math::pow(10, decimals);
+        let mut multiplier = 1u64;
+        let mut i = 0u8;
+        while (i < decimals) {
+            multiplier = multiplier * 10;
+            i = i + 1;
+        };
+        let total_supply = 1_000_000_000 * multiplier;
         
         // Create the token
-        let (treasury_cap, metadata) = coin::create_currency<T>(
+        let (mut treasury_cap, metadata) = coin::create_currency<T>(
             witness,
             decimals,
             symbol,
@@ -166,12 +173,11 @@ module blitz::meme_token_factory {
         
         // Mint tokens
         let dev_coins = coin::mint(&mut treasury_cap, dev_allocation, ctx);
-        let bonding_curve_balance = balance::create_from_coin(
-            coin::mint(&mut treasury_cap, bonding_curve_allocation, ctx)
-        );
+        let bonding_curve_coins = coin::mint(&mut treasury_cap, bonding_curve_allocation, ctx);
+        let bonding_curve_balance = coin::into_balance(bonding_curve_coins);
         
         // Create bonding curve
-        let bonding_curve = BondingCurve {
+        let mut bonding_curve = BondingCurve {
             id: object::new(ctx),
             symbol: symbol_str,
             name: name_str,
@@ -258,7 +264,7 @@ module blitz::meme_token_factory {
         assert!(tokens_out <= current_token_reserve, E_INSUFFICIENT_BALANCE);
         
         // Split platform fee
-        let payment_balance = coin::into_balance(payment);
+        let mut payment_balance = coin::into_balance(payment);
         let platform_fee_balance = balance::split(&mut payment_balance, platform_fee);
         balance::join(&mut platform.treasury, platform_fee_balance);
         
@@ -283,7 +289,7 @@ module blitz::meme_token_factory {
         // Check if graduated (4,000 IOTA raised)
         if (balance::value(&bonding_curve.reserve_iota) >= BONDING_CURVE_TARGET) {
             graduate_bonding_curve<T>(bonding_curve, platform, clock, ctx);
-        }
+        };
         
         // Emit event
         event::emit(TokenPurchased {
@@ -335,7 +341,7 @@ module blitz::meme_token_factory {
         balance::join(token_reserve, coin::into_balance(tokens));
         
         // Take IOTA from reserve
-        let iota_balance = balance::split(&mut bonding_curve.reserve_iota, iota_out);
+        let mut iota_balance = balance::split(&mut bonding_curve.reserve_iota, iota_out);
         let platform_fee_balance = balance::split(&mut iota_balance, platform_fee);
         balance::join(&mut platform.treasury, platform_fee_balance);
         
@@ -367,7 +373,7 @@ module blitz::meme_token_factory {
     // Graduate bonding curve and create DEX pool
     fun graduate_bonding_curve<T>(
         bonding_curve: &mut BondingCurve,
-        platform: &mut Platform,
+        _platform: &mut Platform,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
