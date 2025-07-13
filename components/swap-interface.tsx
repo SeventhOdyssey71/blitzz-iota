@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/popover';
 import { useTokenPrice } from '@/hooks/use-token-price';
 import { useWalletBalance } from '@/hooks/use-wallet-balance';
-import { calculateSwapOutput } from '@/lib/services/price-feed';
+import { useSwapCalculation, formatSwapOutput } from '@/hooks/use-swap-calculation';
 import { formatTokenAmount } from '@/lib/utils/format';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 import { toast } from 'sonner';
@@ -85,39 +85,13 @@ export function SwapInterface() {
   const { balance: inputBalance, formatted: inputBalanceFormatted, refetch: refetchInputBalance } = useWalletBalance(inputToken.type);
   const { balance: outputBalance, formatted: outputBalanceFormatted, refetch: refetchOutputBalance } = useWalletBalance(outputToken.type);
 
-  // Calculate swap output
-  const swapCalculation = inputAmount && parseFloat(inputAmount) > 0
-    ? (() => {
-        // For IOTA <-> stIOTA swaps, use 1:1 rate (minus fees)
-        const isStakingSwap = 
-          (inputToken.type === SUPPORTED_COINS.IOTA.type && outputToken.type === SUPPORTED_COINS.stIOTA.type) ||
-          (inputToken.type === SUPPORTED_COINS.stIOTA.type && outputToken.type === SUPPORTED_COINS.IOTA.type);
-        
-        if (isStakingSwap) {
-          const inputAmountNum = parseFloat(inputAmount);
-          const feePercentage = 0.1; // 0.1% fee
-          const outputAmount = inputAmountNum * (1 - feePercentage / 100);
-          const minimumReceived = outputAmount * (1 - slippage / 100);
-          
-          return {
-            outputAmount: outputAmount.toString(),
-            minimumReceived: minimumReceived.toString(),
-            priceImpact: 0, // No price impact for staking
-            route: [inputToken.symbol, outputToken.symbol],
-          };
-        }
-        
-        // For other swaps, use price-based calculation
-        return inputPrice && outputPrice
-          ? calculateSwapOutput(
-              parseFloat(inputAmount),
-              inputPrice.price,
-              outputPrice.price,
-              slippage
-            )
-          : null;
-      })()
-    : null;
+  // Calculate swap output using actual pool reserves
+  const swapCalculation = useSwapCalculation(
+    inputToken,
+    outputToken,
+    inputAmount,
+    slippage
+  );
 
   const handleSwap = async () => {
     if (!isConnected) {
@@ -130,7 +104,12 @@ export function SwapInterface() {
       return;
     }
 
-    if (!swapCalculation) {
+    if (swapCalculation.error) {
+      toast.error(swapCalculation.error);
+      return;
+    }
+
+    if (!swapCalculation.outputAmount || swapCalculation.outputAmount === '0') {
       toast.error('Unable to calculate swap output');
       return;
     }
@@ -305,7 +284,11 @@ export function SwapInterface() {
           </div>
           <div className="flex items-center justify-between">
             <div className="text-3xl font-bold text-white mono">
-              {swapCalculation ? formatTokenAmount(swapCalculation.outputAmount, 2) : '0.0'}
+              {swapCalculation.isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)
+              )}
             </div>
             <Button
               variant="ghost"
@@ -317,9 +300,9 @@ export function SwapInterface() {
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </Button>
           </div>
-          {swapCalculation && outputPrice && (
+          {swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && outputPrice && (
             <div className="text-xs text-gray-500 mt-1">
-              ≈ ${formatTokenAmount(swapCalculation.outputAmount * outputPrice.price, 2)}
+              ≈ ${formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) * outputPrice.price, 2)}
             </div>
           )}
         </CardContent>
@@ -327,13 +310,15 @@ export function SwapInterface() {
 
       
       {/* Swap Details */}
-      {swapCalculation && inputPrice && outputPrice && (
+      {swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && !swapCalculation.error && (
         <Card className="bg-black/40 border-white/10 rounded-2xl animate-fade-in">
           <CardContent className="p-4 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Rate</span>
+              <span className="text-gray-400">Exchange Rate</span>
               <span className="text-white mono">
-                1 {inputToken.symbol} = {formatTokenAmount(outputPrice.price / inputPrice.price, 4)} {outputToken.symbol}
+                1 {inputToken.symbol} = {inputAmount && parseFloat(inputAmount) > 0 
+                  ? formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) / parseFloat(inputAmount), 4)
+                  : '0'} {outputToken.symbol}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -345,7 +330,7 @@ export function SwapInterface() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Minimum Received</span>
               <span className="text-white mono">
-                {formatTokenAmount(swapCalculation.minimumReceived, 2)} {outputToken.symbol}
+                {formatSwapOutput(swapCalculation.minimumReceived, outputToken.decimals)} {outputToken.symbol}
               </span>
             </div>
             <div className="flex justify-between text-sm">
