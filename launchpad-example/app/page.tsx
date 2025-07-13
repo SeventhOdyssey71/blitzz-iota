@@ -105,7 +105,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
-              <h1 className="text-white font-bold text-2xl tracking-tight">BLITZ</h1>
+              <h1 className="text-white font-bold text-2xl tracking-tight"></h1>
             </div>
 
             {/* Navigation */}
