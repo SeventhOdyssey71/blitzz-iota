@@ -38,8 +38,8 @@ export function useTokenPrice(symbol: string) {
 
     fetchPrice();
 
-    // Refresh price every 30 seconds
-    const interval = setInterval(fetchPrice, 30000);
+    // Refresh price every 5 minutes (reduced from 30 seconds)
+    const interval = setInterval(fetchPrice, 300000);
 
     return () => {
       mounted = false;
@@ -89,8 +89,8 @@ export function useTokenPrices(symbols: string[]) {
 
     fetchPrices();
 
-    // Refresh prices every 30 seconds
-    const interval = setInterval(fetchPrices, 30000);
+    // Refresh prices every 5 minutes (reduced from 30 seconds)
+    const interval = setInterval(fetchPrices, 300000);
 
     return () => {
       mounted = false;

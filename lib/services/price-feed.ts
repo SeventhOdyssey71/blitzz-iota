@@ -13,8 +13,13 @@ interface PriceCache {
   };
 }
 
-const CACHE_DURATION = 30000; // 30 seconds
+const CACHE_DURATION = 300000; // 5 minutes (increased from 30 seconds)
 const priceCache: PriceCache = {};
+
+// Rate limiting
+let lastApiCall = 0;
+const MIN_API_INTERVAL = 10000; // Minimum 10 seconds between API calls
+const pendingRequests = new Map<string, Promise<TokenPrice | null>>();
 
 // CoinGecko API for real prices
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
@@ -50,60 +55,94 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
       return cached.data;
     }
 
+    // Check if there's already a pending request for this symbol
+    if (pendingRequests.has(symbol)) {
+      return pendingRequests.get(symbol)!;
+    }
+
+    // Rate limit check
+    const now = Date.now();
+    if (now - lastApiCall < MIN_API_INTERVAL) {
+      console.log(`Rate limiting: Using cached/fallback price for ${symbol}`);
+      return fallbackPrices[symbol];
+    }
+
     const coinId = TOKEN_MAPPINGS[symbol];
     if (!coinId) {
       return fallbackPrices[symbol];
     }
 
-    // Fetch from CoinGecko with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-    
-    const response = await fetch(
-      `${COINGECKO_API}/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true`,
-      { signal: controller.signal }
-    ).catch(() => null);
-    
-    clearTimeout(timeoutId);
+    // Create the fetch promise
+    const fetchPromise = (async () => {
+      lastApiCall = Date.now();
+      
+      // Fetch from CoinGecko with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(
+        `${COINGECKO_API}/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true`,
+        { signal: controller.signal }
+      ).catch(() => null);
+      
+      clearTimeout(timeoutId);
 
-    if (!response || !response.ok) {
-      console.warn(`Failed to fetch price for ${symbol}, using fallback`);
-      return fallbackPrices[symbol];
-    }
+      if (!response || !response.ok) {
+        console.warn(`Failed to fetch price for ${symbol}, using fallback`);
+        pendingRequests.delete(symbol);
+        return fallbackPrices[symbol];
+      }
 
-    const data = await response.json();
-    const priceData = data[coinId];
+      const data = await response.json();
+      const priceData = data[coinId];
 
-    if (!priceData) {
-      return fallbackPrices[symbol];
-    }
+      if (!priceData) {
+        pendingRequests.delete(symbol);
+        return fallbackPrices[symbol];
+      }
 
-    // For vUSD, always return stable price
-    if (symbol === 'vUSD') {
-      return {
-        symbol: 'vUSD',
-        price: 1.0,
-        change24h: 0,
+      // For vUSD, always return stable price
+      if (symbol === 'vUSD') {
+        const vUsdPrice = {
+          symbol: 'vUSD',
+          price: 1.0,
+          change24h: 0,
+          volume24h: priceData.usd_24h_vol || 0,
+          marketCap: priceData.usd_market_cap || 0,
+        };
+        
+        // Update cache
+        priceCache[symbol] = {
+          data: vUsdPrice,
+          timestamp: Date.now(),
+        };
+        
+        pendingRequests.delete(symbol);
+        return vUsdPrice;
+      }
+
+      const tokenPrice: TokenPrice = {
+        symbol,
+        price: priceData.usd || 0,
+        change24h: priceData.usd_24h_change || 0,
         volume24h: priceData.usd_24h_vol || 0,
         marketCap: priceData.usd_market_cap || 0,
       };
-    }
 
-    const tokenPrice: TokenPrice = {
-      symbol,
-      price: priceData.usd || 0,
-      change24h: priceData.usd_24h_change || 0,
-      volume24h: priceData.usd_24h_vol || 0,
-      marketCap: priceData.usd_market_cap || 0,
-    };
+      // Update cache
+      priceCache[symbol] = {
+        data: tokenPrice,
+        timestamp: Date.now(),
+      };
 
-    // Update cache
-    priceCache[symbol] = {
-      data: tokenPrice,
-      timestamp: Date.now(),
-    };
-
-    return tokenPrice;
+      pendingRequests.delete(symbol);
+      return tokenPrice;
+    })();
+    
+    // Store the promise to prevent duplicate requests
+    pendingRequests.set(symbol, fetchPromise);
+    
+    return fetchPromise;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
     return fallbackPrices[symbol];
