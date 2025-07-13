@@ -94,8 +94,10 @@ export default function IotaApp() {
             </div>
 
             {/* Wallet Balance Section */}
-            <div className="col-span-1 lg:col-span-4">
-              <WalletTokens />
+            <div className="col-span-12 lg:col-span-4">
+              <div className="lg:pl-4">
+                <WalletTokens />
+              </div>
             </div>
           </div>
         </div>

@@ -201,7 +201,7 @@ function TokenRow({ token }: { token: WalletToken }) {
         </div>
       </div>
       
-      <div className="text-right ml-4">
+      <div className="text-right ml-auto min-w-[120px]">
         <div className="font-semibold text-white mono">{formattedBalance}</div>
         {token.price && token.usdValue !== undefined && (
           <>
