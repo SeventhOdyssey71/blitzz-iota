@@ -47,6 +47,22 @@ export default function IotaApp() {
       (window as any).addPoolFromTransaction = addPoolFromTransaction;
       (window as any).extractPoolFromTransaction = extractPoolFromTransaction;
       (window as any).refreshPoolCache = refreshPoolCache;
+      
+      // Auto-add recent liquidity pool
+      const checkRecentPool = async () => {
+        const txHash = 'DBJiftpbLE9JJ3e5N6rtLUHsMs3FZkbaYHJRaRdp5WR2';
+        try {
+          const result = await extractPoolFromTransaction(txHash);
+          if (result && result.success && result.poolId) {
+            console.log('Recent pool auto-added:', result.poolId);
+          }
+        } catch (error) {
+          // Silently handle error
+        }
+      };
+      
+      // Run after a short delay
+      setTimeout(checkRecentPool, 2000);
     }
   }, []);
 
