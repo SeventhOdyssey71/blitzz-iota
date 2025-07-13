@@ -5,21 +5,24 @@ import { PoolTracker } from './pool-tracker';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 
 export async function refreshPoolCache() {
-  console.log('Refreshing pool cache...');
-  
   const client = getIotaClientSafe();
   if (!client) {
-    console.log('No client available for pool refresh');
     return;
   }
   
   // Get all tracked pools
   const trackedPools = PoolTracker.getPools();
-  console.log('Tracked pools:', trackedPools);
   
   // Validate each pool still exists
   for (const pool of trackedPools) {
     try {
+      // Validate pool ID format first
+      if (!pool.poolId || !/^0x[a-fA-F0-9]{64}$/.test(pool.poolId)) {
+        console.warn('Invalid pool ID format, removing:', pool.poolId);
+        PoolTracker.removePool(pool.poolId);
+        continue;
+      }
+      
       const poolObject = await client.getObject({
         id: pool.poolId,
         options: {
@@ -28,13 +31,17 @@ export async function refreshPoolCache() {
         },
       });
       
-      if (poolObject.data) {
-        console.log(`Pool ${pool.poolId} validated`);
-      } else {
-        console.log(`Pool ${pool.poolId} not found on chain`);
+      if (!poolObject.data) {
+        // Pool not found, remove from tracker
+        PoolTracker.removePool(pool.poolId);
       }
-    } catch (error) {
-      console.error(`Error validating pool ${pool.poolId}:`, error);
+    } catch (error: any) {
+      if (error?.message?.includes('Invalid') || error?.message?.includes('Object id')) {
+        // Pool is invalid, remove from tracker
+        PoolTracker.removePool(pool.poolId);
+      } else {
+        console.error(`Error validating pool ${pool.poolId}:`, error);
+      }
     }
   }
   
@@ -54,10 +61,6 @@ export function getPoolForPair(tokenA: string, tokenB: string) {
                 tokenB === 'stIOTA' ? SUPPORTED_COINS.stIOTA.type : 
                 tokenB;
   
-  console.log('Looking for pool with types:', { typeA, typeB });
-  
   const poolId = PoolTracker.findPool(typeA, typeB);
-  console.log('Found pool ID:', poolId);
-  
   return poolId;
 }

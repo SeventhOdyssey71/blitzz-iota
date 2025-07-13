@@ -16,13 +16,15 @@ import { extractPoolFromTransaction } from "@/lib/services/extract-pool-from-tx"
 import { ensureCriticalPools } from "@/lib/services/ensure-pools"
 
 // Import debug tools in development
-if (process.env.NODE_ENV === 'development') {
-  import('@/lib/services/debug-pool');
-}
+// Commented out to reduce console noise
+// if (process.env.NODE_ENV === 'development') {
+//   import('@/lib/services/debug-pool');
+// }
 
 // Import refresh tools
 import('@/lib/services/refresh-and-track-pools');
 import('@/lib/services/verify-pool');
+import('@/lib/services/cleanup-pools');
 
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")

@@ -56,7 +56,16 @@ export function useSwapCalculation(
         );
 
         if (!pool) {
-          throw new Error(`No liquidity pool found for ${inputToken.symbol} → ${outputToken.symbol}`);
+          // Don't throw error, just set state and return
+          setCalculation(prev => ({
+            ...prev,
+            isLoading: false,
+            error: `No liquidity pool found for ${inputToken.symbol} → ${outputToken.symbol}`,
+            outputAmount: '0',
+            minimumReceived: '0',
+            priceImpact: 0,
+          }));
+          return;
         }
 
         // Check if pool has liquidity
@@ -91,11 +100,17 @@ export function useSwapCalculation(
           error: null,
         });
       } catch (error) {
-        console.error('Swap calculation error:', error);
+        // Only log errors that aren't about missing pools
+        if (error instanceof Error && !error.message.includes('No liquidity pool found')) {
+          console.error('Swap calculation error:', error);
+        }
         setCalculation(prev => ({
           ...prev,
           isLoading: false,
           error: error instanceof Error ? error.message : 'Failed to calculate swap',
+          outputAmount: '0',
+          minimumReceived: '0',
+          priceImpact: 0,
         }));
       }
     };

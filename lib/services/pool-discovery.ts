@@ -58,7 +58,10 @@ export class PoolDiscovery {
     coinTypeB: string,
     network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'
   ): Promise<PoolInfo | null> {
-    console.log('Finding pool for pair:', { coinTypeA, coinTypeB });
+    // Only log in debug mode
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+      console.log('Finding pool for pair:', { coinTypeA, coinTypeB });
+    }
     const client = getIotaClientSafe();
     
     // Return null if client is not available (SSR)
@@ -81,18 +84,20 @@ export class PoolDiscovery {
     const isStakingPair = (coinTypeA === iotaType && coinTypeB === stIotaType) ||
         (coinTypeA === stIotaType && coinTypeB === iotaType);
     
-    console.log('Is staking pair:', isStakingPair, {
-      iotaType,
-      stIotaType,
-      coinTypeA,
-      coinTypeB,
-      match1: coinTypeA === iotaType && coinTypeB === stIotaType,
-      match2: coinTypeA === stIotaType && coinTypeB === iotaType
-    });
+    // Only log in debug mode
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+      console.log('Is staking pair:', isStakingPair, {
+        iotaType,
+        stIotaType,
+        coinTypeA,
+        coinTypeB,
+        match1: coinTypeA === iotaType && coinTypeB === stIotaType,
+        match2: coinTypeA === stIotaType && coinTypeB === iotaType
+      });
+    }
     
     if (isStakingPair) {
       // For IOTA <-> stIOTA, use regular pool instead of staking
-      console.log('IOTA/stIOTA pair - checking for regular pool');
       // Continue to regular pool lookup below
     }
     
@@ -125,19 +130,25 @@ export class PoolDiscovery {
     }
 
     try {
-      console.log('Searching for pool:', { coinTypeA, coinTypeB, packageId });
+      // Only log in debug mode
+      if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+        console.log('Searching for pool:', { coinTypeA, coinTypeB, packageId });
+      }
       
       // First check known pools
       const poolKey = `${coinTypeA}_${coinTypeB}`;
       const reverseKey = `${coinTypeB}_${coinTypeA}`;
       const knownPoolId = KNOWN_POOLS[network]?.[poolKey] || KNOWN_POOLS[network]?.[reverseKey];
       
-      console.log('Checking known pools:', {
-        poolKey,
-        reverseKey,
-        knownPoolId,
-        knownPools: KNOWN_POOLS[network]
-      });
+      // Only log in debug mode
+      if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+        console.log('Checking known pools:', {
+          poolKey,
+          reverseKey,
+          knownPoolId,
+          knownPools: KNOWN_POOLS[network]
+        });
+      }
       
       // Then check tracked pools (from localStorage)
       let poolId = knownPoolId || PoolTracker.findPool(coinTypeA, coinTypeB);
@@ -145,24 +156,34 @@ export class PoolDiscovery {
       // Get all tracked pools for debugging
       const allTrackedPools = PoolTracker.getPools();
       
-      console.log('Pool discovery - found poolId:', poolId, {
-        coinTypeA,
-        coinTypeB,
-        knownPoolId,
-        trackedPoolId: PoolTracker.findPool(coinTypeA, coinTypeB),
-        allTrackedPools: allTrackedPools.map(p => ({
-          poolId: p.poolId,
-          coinTypeA: p.coinTypeA,
-          coinTypeB: p.coinTypeB,
-        })),
-        totalTrackedPools: allTrackedPools.length,
-      });
+      // Only log in debug mode
+      if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+        console.log('Pool discovery - found poolId:', poolId, {
+          coinTypeA,
+          coinTypeB,
+          knownPoolId,
+          trackedPoolId: PoolTracker.findPool(coinTypeA, coinTypeB),
+          allTrackedPools: allTrackedPools.map(p => ({
+            poolId: p.poolId,
+            coinTypeA: p.coinTypeA,
+            coinTypeB: p.coinTypeB,
+          })),
+          totalTrackedPools: allTrackedPools.length,
+        });
+      }
       
       // No hardcoded pools - they need to be created with the new contract
       // Only return pools that actually exist on-chain
       
       if (poolId) {
         try {
+          // Validate pool ID format first
+          if (!poolId || !/^0x[a-fA-F0-9]{64}$/.test(poolId)) {
+            // Remove invalid pool from tracker silently
+            PoolTracker.removePool(poolId);
+            return null;
+          }
+          
           const poolObject = await client.getObject({
             id: poolId,
             options: {
@@ -192,7 +213,10 @@ export class PoolDiscovery {
               totalVolumeB: BigInt(fields.total_volume_b || 0),
             };
             
-            console.log('Found pool:', poolInfo);
+            // Only log in debug mode
+            if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+              console.log('Found pool:', poolInfo);
+            }
             
             // Update cache
             POOL_CACHE.set(cacheKey, poolInfo);
@@ -200,8 +224,14 @@ export class PoolDiscovery {
             
             return poolInfo;
           }
-        } catch (err) {
-          console.error('Error fetching pool object:', err);
+        } catch (err: any) {
+          // Check if it's an invalid object ID error
+          if (err?.message?.includes('Invalid') || err?.message?.includes('Object id')) {
+            // Pool no longer exists, remove from tracker silently
+            PoolTracker.removePool(poolId);
+          } else {
+            console.error('Error fetching pool object:', err);
+          }
         }
       }
       
@@ -287,13 +317,19 @@ export class PoolDiscovery {
     inputAmount: bigint,
     network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'
   ): Promise<SwapRoute | null> {
-    console.log('Finding best route:', { inputToken, outputToken, inputAmount: inputAmount.toString() });
+    // Only log in debug mode
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+      console.log('Finding best route:', { inputToken, outputToken, inputAmount: inputAmount.toString() });
+    }
     
     // Direct route
     const directPool = await this.findPoolsForPair(inputToken, outputToken, network);
     
     if (directPool) {
-      console.log('Direct pool found:', directPool);
+      // Only log in debug mode
+      if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
+        console.log('Direct pool found:', directPool);
+      }
       const isAToB = directPool.coinTypeA === inputToken;
       const { outputAmount, priceImpact } = this.calculateOutputAmount(
         directPool,
@@ -308,8 +344,6 @@ export class PoolDiscovery {
         priceImpact,
         path: [inputToken, outputToken],
       };
-    } else {
-      console.log('No direct pool found');
     }
 
     // Multi-hop routes (through IOTA as intermediary)
