@@ -56,7 +56,7 @@ export default function IotaApp() {
                 </TabsList>
 
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-gray-300 text-gray-700">
+                  <Badge variant="outline" className="border-white text-white">
                     Lite
                   </Badge>
                   <Button variant="ghost" size="sm" className="text-gray-500">
