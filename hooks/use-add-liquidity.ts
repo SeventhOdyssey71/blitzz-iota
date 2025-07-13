@@ -259,7 +259,20 @@ export function useAddLiquidity() {
                 if (createdPool) {
                   poolId = createdPool.objectId;
                   console.log('Pool created with ID:', poolId);
+                  
+                  // Track the pool
                   PoolTracker.addPool(poolId, params.tokenA.type, params.tokenB.type);
+                  
+                  // Also save it directly to ensure it's available
+                  PoolTracker.savePool({
+                    poolId,
+                    coinTypeA: params.tokenA.type,
+                    coinTypeB: params.tokenB.type,
+                    network: 'testnet',
+                  });
+                  
+                  // Trigger pool cache refresh
+                  window.dispatchEvent(new Event('pool-cache-refresh'));
                 }
               }
               
@@ -275,6 +288,11 @@ export function useAddLiquidity() {
                   mapLPTokenToPool(lpToken.objectId, poolId);
                 });
               }
+              
+              // Always refresh pool cache after adding liquidity
+              setTimeout(() => {
+                window.dispatchEvent(new Event('pool-cache-refresh'));
+              }, 1000);
               
               toast.success('Liquidity added successfully!', {
                 description: `Transaction: ${result.digest.slice(0, 10)}...`,

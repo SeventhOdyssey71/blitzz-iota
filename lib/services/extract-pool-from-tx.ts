@@ -26,46 +26,82 @@ export async function extractPoolFromTransaction(txDigest: string) {
     console.log('Transaction details:', tx);
     
     // Look for created pool object
-    let poolId = null;
+    let poolInfo = null;
     
     if (tx.objectChanges) {
       for (const change of tx.objectChanges) {
         if (change.type === 'created' && 
             change.objectType && 
             change.objectType.includes('::simple_dex::Pool')) {
-          poolId = change.objectId;
-          console.log('Found created pool:', poolId);
-          break;
+          
+          // Extract type arguments from the pool type
+          // Format: packageId::simple_dex::Pool<CoinTypeA, CoinTypeB>
+          const poolType = change.objectType;
+          const typeArgsMatch = poolType.match(/<(.+), (.+)>/);
+          
+          if (typeArgsMatch) {
+            const [, coinTypeA, coinTypeB] = typeArgsMatch;
+            poolInfo = {
+              poolId: change.objectId,
+              coinTypeA: coinTypeA.trim(),
+              coinTypeB: coinTypeB.trim(),
+            };
+            console.log('Found created pool with types:', poolInfo);
+            break;
+          }
         }
       }
     }
     
-    if (!poolId && tx.events) {
+    if (!poolInfo && tx.events) {
       // Check events for pool creation
       for (const event of tx.events) {
         if (event.type.includes('PoolCreated')) {
           // Extract pool ID from event data
-          poolId = event.parsedJson?.pool_id || event.parsedJson?.id;
-          console.log('Found pool in events:', poolId);
-          break;
+          const poolId = event.parsedJson?.pool_id || event.parsedJson?.id;
+          if (poolId) {
+            // Try to extract types from event
+            poolInfo = {
+              poolId,
+              coinTypeA: SUPPORTED_COINS.IOTA.type,
+              coinTypeB: SUPPORTED_COINS.stIOTA.type,
+            };
+            console.log('Found pool in events:', poolInfo);
+            break;
+          }
         }
       }
     }
     
-    if (poolId) {
+    if (poolInfo) {
       // Add to tracker
       PoolTracker.addPool(
-        poolId,
-        SUPPORTED_COINS.IOTA.type,
-        SUPPORTED_COINS.stIOTA.type,
+        poolInfo.poolId,
+        poolInfo.coinTypeA,
+        poolInfo.coinTypeB,
         'testnet'
       );
       
-      console.log('Pool added to tracker:', poolId);
+      // Also save it directly
+      PoolTracker.savePool({
+        poolId: poolInfo.poolId,
+        coinTypeA: poolInfo.coinTypeA,
+        coinTypeB: poolInfo.coinTypeB,
+        network: 'testnet',
+      });
+      
+      // Trigger pool cache refresh
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('pool-cache-refresh'));
+      }
+      
+      console.log('Pool added to tracker:', poolInfo);
       return {
         success: true,
-        poolId,
-        message: `Successfully extracted and added pool ${poolId}`
+        poolId: poolInfo.poolId,
+        coinTypeA: poolInfo.coinTypeA,
+        coinTypeB: poolInfo.coinTypeB,
+        message: `Successfully extracted and added pool ${poolInfo.poolId}`
       };
     }
     

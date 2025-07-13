@@ -15,6 +15,11 @@ import { addPoolFromTransaction } from "@/lib/services/add-pool-manual"
 import { extractPoolFromTransaction } from "@/lib/services/extract-pool-from-tx"
 import { ensureCriticalPools } from "@/lib/services/ensure-pools"
 
+// Import debug tools in development
+if (process.env.NODE_ENV === 'development') {
+  import('@/lib/services/debug-pool');
+}
+
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
   
