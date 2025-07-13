@@ -237,55 +237,6 @@ export function PoolInterface() {
   
   return (
     <div className="space-y-4">
-      {/* Your Position */}
-      {isConnected && lpTokens.length > 0 && (
-        <Card className="bg-black/60 backdrop-blur-sm border-cyan-500/20">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-white">Your Liquidity Positions</CardTitle>
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                {lpTokens.length} Position{lpTokens.length > 1 ? 's' : ''}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {lpTokens.map((token) => (
-                <div key={token.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="flex -space-x-2">
-                      <CoinIcon symbol="IOTA" size={24} />
-                      <CoinIcon symbol="stIOTA" size={24} />
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">IOTA/stIOTA</p>
-                      <p className="text-sm text-gray-400">LP Tokens: <span className="font-mono">{formatBalance(token.amount, 9, 4)}</span></p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
-                    onClick={() => {
-                      setActiveTab('remove');
-                      setSelectedLPToken(token.id);
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
-              <div className="pt-3 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Total Value</span>
-                  <span className="text-white font-mono">${totalLPValue.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
       {/* Pool Stats */}
       <Card className="bg-black/40 border-white/10">
         <CardHeader className="pb-2 pt-4">
