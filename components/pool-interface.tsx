@@ -91,10 +91,23 @@ export function PoolInterface() {
     if (!poolInfo || !iotaAmount || !stIotaAmount) return '0';
     
     const iotaAmountBig = BigInt(Math.floor(parseFloat(iotaAmount || '0') * 1e9));
+    const stIotaAmountBig = BigInt(Math.floor(parseFloat(stIotaAmount || '0') * 1e9));
     
     if (poolInfo.lpSupply === BigInt(0)) {
-      // First liquidity provider gets amount equal to their deposit
-      return formatBalance(iotaAmountBig.toString(), 9, 4);
+      // First liquidity provider - use geometric mean: sqrt(amount_a * amount_b)
+      const product = iotaAmountBig * stIotaAmountBig;
+      // Simple sqrt approximation for bigint
+      const sqrt = (n: bigint) => {
+        if (n === 0n) return 0n;
+        let x = n;
+        let y = (x + 1n) / 2n;
+        while (y < x) {
+          x = y;
+          y = (x + n / x) / 2n;
+        }
+        return x;
+      };
+      return formatBalance(sqrt(product).toString(), 9, 4);
     }
     
     // For existing pool, calculate proportionally
@@ -246,6 +259,26 @@ export function PoolInterface() {
           )}
         </CardHeader>
         <CardContent className="py-2 px-4">
+          {/* Pool Ratio and Spot Price */}
+          {poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0 && (
+            <div className="mb-4 p-3 bg-black/20 rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Pool Ratio</p>
+                  <p className="text-sm text-white font-medium">
+                    1 IOTA = {formatBalance((poolInfo.reserveB * BigInt(1e9) / poolInfo.reserveA).toString(), 9, 6)} stIOTA
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Trading Fee</p>
+                  <p className="text-sm text-white font-medium">
+                    {((poolInfo.feePercentage || 30) / 100).toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-0.5">
               <p className="text-sm text-gray-400">Total Value Locked</p>
@@ -381,8 +414,23 @@ export function PoolInterface() {
               {!poolInfo && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
                   <p className="text-yellow-400 text-sm">
-                    No IOTA/stIOTA pool exists yet. You'll be creating the first pool with 1.8% swap fee.
+                    No IOTA/stIOTA pool exists yet. You'll be creating the first pool with 0.3% swap fee.
                   </p>
+                </div>
+              )}
+              
+              {/* Pool Ratio Info */}
+              {poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0 && (
+                <div className="bg-black/20 border border-white/10 rounded-lg p-3 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Current Pool Ratio</span>
+                    <span className="text-white font-medium">
+                      1 IOTA : {formatBalance((poolInfo.reserveB * BigInt(1e9) / poolInfo.reserveA).toString(), 9, 6)} stIOTA
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    You must add liquidity in this ratio
+                  </div>
                 </div>
               )}
               
