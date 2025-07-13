@@ -30,7 +30,7 @@ export interface SwapRoute {
 
 // Cache for pool data
 const POOL_CACHE: Map<string, PoolInfo> = new Map();
-const CACHE_DURATION = 30000; // 30 seconds
+const CACHE_DURATION = 10000; // 10 seconds for faster updates
 let lastCacheUpdate = 0;
 
 // Clear cache on pool refresh event
@@ -142,11 +142,20 @@ export class PoolDiscovery {
       // Then check tracked pools (from localStorage)
       let poolId = knownPoolId || PoolTracker.findPool(coinTypeA, coinTypeB);
       
+      // Get all tracked pools for debugging
+      const allTrackedPools = PoolTracker.getPools();
+      
       console.log('Pool discovery - found poolId:', poolId, {
         coinTypeA,
         coinTypeB,
         knownPoolId,
-        trackedPoolId: PoolTracker.findPool(coinTypeA, coinTypeB)
+        trackedPoolId: PoolTracker.findPool(coinTypeA, coinTypeB),
+        allTrackedPools: allTrackedPools.map(p => ({
+          poolId: p.poolId,
+          coinTypeA: p.coinTypeA,
+          coinTypeB: p.coinTypeB,
+        })),
+        totalTrackedPools: allTrackedPools.length,
       });
       
       // No hardcoded pools - they need to be created with the new contract
