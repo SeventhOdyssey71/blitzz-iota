@@ -62,6 +62,18 @@ export class PoolTracker {
     localStorage.removeItem(POOL_STORAGE_KEY);
   }
   
+  static removePool(poolId: string) {
+    if (typeof window === 'undefined') return;
+    
+    const pools = this.getPools();
+    const filteredPools = pools.filter(p => p.poolId !== poolId);
+    
+    if (filteredPools.length < pools.length) {
+      localStorage.setItem(POOL_STORAGE_KEY, JSON.stringify(filteredPools));
+      console.log('Pool removed from tracker:', poolId);
+    }
+  }
+  
   static savePool(params: {
     poolId: string;
     coinTypeA: string;
