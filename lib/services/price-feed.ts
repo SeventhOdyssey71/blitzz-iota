@@ -63,7 +63,12 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
     // Rate limit check
     const now = Date.now();
     if (now - lastApiCall < MIN_API_INTERVAL) {
-      console.log(`Rate limiting: Using cached/fallback price for ${symbol}`);
+      console.log(`Rate limiting: Using last fetched price for ${symbol}`);
+      // Return the last cached price if available, even if expired
+      if (cached) {
+        return cached.data;
+      }
+      // Only use fallback if we've never fetched this price before
       return fallbackPrices[symbol];
     }
 
@@ -88,8 +93,13 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
       clearTimeout(timeoutId);
 
       if (!response || !response.ok) {
-        console.warn(`Failed to fetch price for ${symbol}, using fallback`);
+        console.warn(`Failed to fetch price for ${symbol}, using last cached price`);
         pendingRequests.delete(symbol);
+        // Return the last cached price if available
+        if (cached) {
+          return cached.data;
+        }
+        // Only use fallback if we've never fetched this price before
         return fallbackPrices[symbol];
       }
 
@@ -98,6 +108,11 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
 
       if (!priceData) {
         pendingRequests.delete(symbol);
+        // Return the last cached price if available
+        if (cached) {
+          return cached.data;
+        }
+        // Only use fallback if we've never fetched this price before
         return fallbackPrices[symbol];
       }
 
@@ -145,6 +160,12 @@ export async function getTokenPrice(symbol: string): Promise<TokenPrice | null> 
     return fetchPromise;
   } catch (error) {
     console.error(`Failed to fetch price for ${symbol}:`, error);
+    // Return the last cached price if available
+    const cached = priceCache[symbol];
+    if (cached) {
+      return cached.data;
+    }
+    // Only use fallback if we've never fetched this price before
     return fallbackPrices[symbol];
   }
 }
