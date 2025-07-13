@@ -38,14 +38,11 @@ export class PoolTracker {
     if (!exists) {
       pools.push(newPool);
       localStorage.setItem(POOL_STORAGE_KEY, JSON.stringify(pools));
-      console.log('Pool saved to tracker:', newPool);
     }
   }
 
   static findPool(coinTypeA: string, coinTypeB: string): string | null {
     const pools = this.getPools();
-    console.log('PoolTracker - Looking for pool:', { coinTypeA, coinTypeB });
-    console.log('PoolTracker - Available pools:', pools);
     
     // Check both orders
     const pool = pools.find(p => 
@@ -53,7 +50,6 @@ export class PoolTracker {
       (p.coinTypeA === coinTypeB && p.coinTypeB === coinTypeA)
     );
     
-    console.log('PoolTracker - Found pool:', pool);
     return pool ? pool.poolId : null;
   }
 
@@ -70,7 +66,6 @@ export class PoolTracker {
     
     if (filteredPools.length < pools.length) {
       localStorage.setItem(POOL_STORAGE_KEY, JSON.stringify(filteredPools));
-      console.log('Pool removed from tracker:', poolId);
     }
   }
   
