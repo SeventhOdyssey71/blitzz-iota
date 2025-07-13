@@ -13,6 +13,8 @@ interface SwapCalculation {
   pool: PoolInfo | null;
   isLoading: boolean;
   error: string | null;
+  spotPriceBefore?: number;
+  spotPriceAfter?: number;
 }
 
 export function useSwapCalculation(
@@ -80,24 +82,26 @@ export function useSwapCalculation(
         const isAToB = pool.coinTypeA === inputToken.type;
 
         // Calculate output amount using AMM formula
-        const { outputAmount, priceImpact } = PoolDiscovery.calculateOutputAmount(
+        const swapResult = PoolDiscovery.calculateOutputAmount(
           pool,
           inputAmountBigInt,
           isAToB
         );
 
-        // Apply slippage to get minimum amount
-        const slippageMultiplier = BigInt(Math.floor((100 - slippage) * 100));
-        const minimumReceived = (outputAmount * slippageMultiplier) / 10000n;
+        // Use the calculated minimum received from the pool (includes slippage)
+        const customSlippageMultiplier = BigInt(Math.floor((100 - slippage) * 100));
+        const customMinimumReceived = (swapResult.outputAmount * customSlippageMultiplier) / 10000n;
 
         setCalculation({
-          outputAmount: outputAmount.toString(),
-          minimumReceived: minimumReceived.toString(),
-          priceImpact,
+          outputAmount: swapResult.outputAmount.toString(),
+          minimumReceived: customMinimumReceived.toString(),
+          priceImpact: swapResult.priceImpact,
           route: [inputToken.symbol, outputToken.symbol],
           pool,
           isLoading: false,
           error: null,
+          spotPriceBefore: swapResult.spotPriceBefore,
+          spotPriceAfter: swapResult.spotPriceAfter,
         });
       } catch (error) {
         // Only log errors that aren't about missing pools

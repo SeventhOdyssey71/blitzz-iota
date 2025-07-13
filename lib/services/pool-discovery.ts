@@ -280,35 +280,100 @@ export class PoolDiscovery {
     pool: PoolInfo,
     inputAmount: bigint,
     isAToB: boolean
-  ): { outputAmount: bigint; priceImpact: number } {
+  ): { outputAmount: bigint; priceImpact: number; minimumReceived: bigint; spotPriceBefore: number; spotPriceAfter: number } {
     // AMM constant product formula with fees
-    const FEE_NUMERATOR = BigInt(18); // 1.8% fee
-    const FEE_DENOMINATOR = BigInt(1000);
+    // Using the fee structure from the smart contract (0.3% = 30/10000)
+    const FEE_SCALE = BigInt(10000);
+    const FEE_PERCENTAGE = BigInt(pool.feePercentage || 30); // 0.3% default
     
     // Special handling for staking pool (1:1 rate)
     if (pool.poolId === STAKING_POOL_ADDRESS) {
-      outputAmount = inputAmount; // 1:1 exchange rate
-      return { outputAmount, priceImpact: 0 };
+      const outputAmount = inputAmount; // 1:1 exchange rate
+      return { 
+        outputAmount, 
+        priceImpact: 0,
+        minimumReceived: outputAmount,
+        spotPriceBefore: 1,
+        spotPriceAfter: 1
+      };
     }
-    
-    // Calculate fee amount
-    const feeAmount = (inputAmount * FEE_NUMERATOR) / FEE_DENOMINATOR;
-    const amountInAfterFee = inputAmount - feeAmount;
     
     // Get reserves based on direction
     const reserveIn = isAToB ? pool.reserveA : pool.reserveB;
     const reserveOut = isAToB ? pool.reserveB : pool.reserveA;
     
-    // Calculate output using constant product formula: k = x * y
-    // outputAmount = (amountInAfterFee * reserveOut) / (reserveIn + amountInAfterFee)
-    const outputAmount = (amountInAfterFee * reserveOut) / (reserveIn + amountInAfterFee);
+    // Calculate spot price before swap
+    const spotPriceBefore = Number(reserveOut) / Number(reserveIn);
+    
+    // Apply fee to input amount
+    const inputAmountWithFee = inputAmount * (FEE_SCALE - FEE_PERCENTAGE);
+    
+    // Calculate output using constant product formula with fee
+    // outputAmount = (inputAmountWithFee * reserveOut) / (reserveIn * FEE_SCALE + inputAmountWithFee)
+    const numerator = inputAmountWithFee * reserveOut;
+    const denominator = reserveIn * FEE_SCALE + inputAmountWithFee;
+    const outputAmount = numerator / denominator;
+    
+    // Calculate new reserves after swap
+    const newReserveIn = reserveIn + inputAmount;
+    const newReserveOut = reserveOut - outputAmount;
+    
+    // Calculate spot price after swap
+    const spotPriceAfter = Number(newReserveOut) / Number(newReserveIn);
+    
+    // Calculate execution price for this trade
+    const executionPrice = Number(outputAmount) / Number(inputAmount);
     
     // Calculate price impact
-    const spotPrice = Number(reserveOut) / Number(reserveIn);
-    const executionPrice = Number(outputAmount) / Number(amountInAfterFee);
-    const priceImpact = Math.abs((executionPrice - spotPrice) / spotPrice) * 100;
+    const priceImpact = Math.abs((spotPriceBefore - executionPrice) / spotPriceBefore) * 100;
     
-    return { outputAmount, priceImpact };
+    // Calculate minimum received with 0.5% slippage tolerance
+    const slippageTolerance = BigInt(995); // 99.5%
+    const minimumReceived = (outputAmount * slippageTolerance) / BigInt(1000);
+    
+    return { outputAmount, priceImpact, minimumReceived, spotPriceBefore, spotPriceAfter };
+  }
+
+  static getSpotPrice(
+    pool: PoolInfo,
+    isAToB: boolean
+  ): number {
+    if (pool.reserveA === 0n || pool.reserveB === 0n) {
+      return 0;
+    }
+    
+    if (isAToB) {
+      // Price of A in terms of B
+      return Number(pool.reserveB) / Number(pool.reserveA);
+    } else {
+      // Price of B in terms of A
+      return Number(pool.reserveA) / Number(pool.reserveB);
+    }
+  }
+
+  static getPoolSharePercentage(
+    lpTokenAmount: bigint,
+    totalLpSupply: bigint
+  ): number {
+    if (totalLpSupply === 0n) {
+      return 0;
+    }
+    return (Number(lpTokenAmount) / Number(totalLpSupply)) * 100;
+  }
+
+  static calculateLiquidityValue(
+    pool: PoolInfo,
+    lpTokenAmount: bigint
+  ): { tokenAAmount: bigint; tokenBAmount: bigint } {
+    if (pool.lpSupply === 0n) {
+      return { tokenAAmount: 0n, tokenBAmount: 0n };
+    }
+    
+    const sharePercentage = lpTokenAmount * BigInt(10000) / pool.lpSupply;
+    const tokenAAmount = (pool.reserveA * sharePercentage) / BigInt(10000);
+    const tokenBAmount = (pool.reserveB * sharePercentage) / BigInt(10000);
+    
+    return { tokenAAmount, tokenBAmount };
   }
 
   static async findBestRoute(
@@ -355,7 +420,7 @@ export class PoolDiscovery {
       if (pool1 && pool2) {
         // Calculate first swap
         const isAToB1 = pool1.coinTypeA === inputToken;
-        const { outputAmount: iotaAmount, priceImpact: impact1 } = this.calculateOutputAmount(
+        const result1 = this.calculateOutputAmount(
           pool1,
           inputAmount,
           isAToB1
@@ -363,17 +428,21 @@ export class PoolDiscovery {
 
         // Calculate second swap
         const isAToB2 = pool2.coinTypeA === iotaType;
-        const { outputAmount: finalAmount, priceImpact: impact2 } = this.calculateOutputAmount(
+        const result2 = this.calculateOutputAmount(
           pool2,
-          iotaAmount,
+          result1.outputAmount,
           isAToB2
         );
+
+        // Combined price impact (multiplicative, not additive)
+        const combinedPriceImpact = result1.priceImpact + result2.priceImpact + 
+          (result1.priceImpact * result2.priceImpact) / 100;
 
         return {
           pools: [pool1, pool2],
           inputAmount,
-          outputAmount: finalAmount,
-          priceImpact: impact1 + impact2, // Simplified calculation
+          outputAmount: result2.outputAmount,
+          priceImpact: combinedPriceImpact,
           path: [inputToken, iotaType, outputToken],
         };
       }

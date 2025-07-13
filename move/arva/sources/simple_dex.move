@@ -16,6 +16,23 @@ module Blitz::simple_dex {
     const FEE_NUMERATOR: u64 = 18; // 1.8% fee
     const FEE_DENOMINATOR: u64 = 1000;
 
+    // Square root function using Babylonian method
+    fun sqrt(x: u64): u64 {
+        if (x == 0) {
+            return 0
+        };
+        
+        let z = x;
+        let y = (z + 1) / 2;
+        
+        while (y < z) {
+            z = y;
+            y = (z + x / z) / 2;
+        };
+        
+        z
+    }
+
     public struct Pool<phantom CoinA, phantom CoinB> has key {
         id: UID,
         reserve_a: Balance<CoinA>,
@@ -143,8 +160,10 @@ module Blitz::simple_dex {
         
         // Calculate LP tokens to mint
         let lp_amount = if (pool.lp_supply == 0) {
-            // First liquidity provider
-            amount_a
+            // First liquidity provider - use geometric mean
+            // sqrt(amount_a * amount_b)
+            let product = amount_a * amount_b;
+            sqrt(product)
         } else {
             // Proportional to existing liquidity
             let lp_from_a = (amount_a * pool.lp_supply) / reserve_a;

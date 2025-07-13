@@ -312,31 +312,77 @@ export function SwapInterface() {
       {swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && !swapCalculation.error && (
         <Card className="bg-black/40 border-white/10 rounded-2xl animate-fade-in">
           <CardContent className="p-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {/* Spot Price */}
+              {swapCalculation.spotPriceBefore && (
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-gray-400 text-sm font-medium">Spot Price</span>
+                  <span className="text-white text-sm font-medium mono">
+                    1 {inputToken.symbol} = {formatTokenAmount(swapCalculation.spotPriceBefore, 6)} {outputToken.symbol}
+                  </span>
+                </div>
+              )}
+              
+              {/* Execution Price */}
               <div className="flex items-center justify-between py-1">
-                <span className="text-gray-400 text-sm font-medium">Exchange Rate</span>
+                <span className="text-gray-400 text-sm font-medium">Execution Price</span>
                 <span className="text-white text-sm font-medium mono">
                   1 {inputToken.symbol} = {inputAmount && parseFloat(inputAmount) > 0 
-                    ? formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) / parseFloat(inputAmount), 4)
+                    ? formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) / parseFloat(inputAmount), 6)
                     : '0'} {outputToken.symbol}
                 </span>
               </div>
+              
+              {/* Price Impact with Warning */}
               <div className="flex items-center justify-between py-1">
                 <span className="text-gray-400 text-sm font-medium">Price Impact</span>
-                <span className={`text-sm font-medium ${swapCalculation.priceImpact > 3 ? "text-red-400" : "text-cyan-400"}`}>
-                  {swapCalculation.priceImpact.toFixed(2)}%
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium ${
+                    swapCalculation.priceImpact > 5 ? "text-red-500" : 
+                    swapCalculation.priceImpact > 3 ? "text-yellow-500" : 
+                    "text-cyan-400"
+                  }`}>
+                    {swapCalculation.priceImpact.toFixed(3)}%
+                  </span>
+                  {swapCalculation.priceImpact > 3 && (
+                    <Info className="w-3 h-3 text-yellow-500" />
+                  )}
+                </div>
               </div>
+              
+              {/* Minimum Received with Slippage */}
               <div className="flex items-center justify-between py-1">
-                <span className="text-gray-400 text-sm font-medium">Minimum Received</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 text-sm font-medium">Min. Received</span>
+                  <span className="text-gray-500 text-xs">({slippage}% slippage)</span>
+                </div>
                 <span className="text-white text-sm font-medium mono">
                   {formatSwapOutput(swapCalculation.minimumReceived, outputToken.decimals)} {outputToken.symbol}
                 </span>
               </div>
+              
+              {/* Trading Fee */}
+              <div className="flex items-center justify-between py-1">
+                <span className="text-gray-400 text-sm font-medium">Trading Fee</span>
+                <span className="text-gray-300 text-sm font-medium">
+                  {((swapCalculation.pool?.feePercentage || 30) / 100).toFixed(2)}%
+                </span>
+              </div>
+              
+              {/* Route */}
               <div className="flex items-center justify-between py-1">
                 <span className="text-gray-400 text-sm font-medium">Route</span>
                 <span className="text-cyan-400 text-sm font-medium">{swapCalculation.route.join(' → ')}</span>
               </div>
+              
+              {/* High Price Impact Warning */}
+              {swapCalculation.priceImpact > 5 && (
+                <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-red-400 text-xs">
+                    ⚠️ High price impact! Consider reducing your trade size or splitting into smaller trades.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
