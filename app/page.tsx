@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Settings, BarChart3, ChevronDown, ArrowUpDown, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SwapInterface as NewSwapInterface } from "@/components/swap-interface"
@@ -10,9 +10,28 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { refreshPoolCache } from "@/lib/services/pool-refresh"
+import { addPoolFromTransaction } from "@/lib/services/add-pool-manual"
+import { extractPoolFromTransaction } from "@/lib/services/extract-pool-from-tx"
 
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
+  
+  // Refresh pool cache when switching to swap tab
+  useEffect(() => {
+    if (activeTab === "swap") {
+      refreshPoolCache();
+    }
+  }, [activeTab]);
+  
+  // Make functions available in console for debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).addPoolFromTransaction = addPoolFromTransaction;
+      (window as any).extractPoolFromTransaction = extractPoolFromTransaction;
+      (window as any).refreshPoolCache = refreshPoolCache;
+    }
+  }, []);
 
   return (
     <div>
@@ -64,7 +83,7 @@ export default function IotaApp() {
             </div>
 
             {/* Wallet Balance Section */}
-            <div className="col-span-12 lg:col-span-4">
+            <div className="col-span-1 lg:col-span-4">
               <WalletTokens />
             </div>
           </div>

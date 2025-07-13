@@ -25,7 +25,7 @@ export class DexContract {
       arguments: [
         tx.object(coinA),
         tx.object(coinB),
-        tx.pure(feePercentage),
+        tx.pure.u64(feePercentage),
       ],
     });
 
@@ -50,7 +50,7 @@ export class DexContract {
       arguments: [
         tx.object(poolId),
         tx.object(coinIn),
-        tx.pure(minAmountOut),
+        tx.pure.u64(minAmountOut),
       ],
     });
 

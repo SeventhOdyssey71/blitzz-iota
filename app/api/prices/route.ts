@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       const response = await fetch(
         `${COINGECKO_API}/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true`,
         {
-          next: { revalidate: 30 }, // Cache for 30 seconds
+          next: { revalidate: 600 }, // Cache for 10 minutes (600 seconds)
         }
       ).catch(() => null);
 
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(prices, {
       headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200', // 10 min cache, 20 min stale
       },
     });
   } catch (error) {
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(fallbackPrices, {
       status: 200,
       headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200', // 10 min cache, 20 min stale
       },
     });
   }

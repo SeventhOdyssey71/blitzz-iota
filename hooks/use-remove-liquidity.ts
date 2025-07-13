@@ -88,12 +88,30 @@ export function useRemoveLiquidity() {
       if (!lpTokenObject.data) {
         throw new Error('LP token not found');
       }
+      
+      console.log('LP Token object:', {
+        id: lpTokenObject.data.objectId,
+        type: lpTokenObject.data.type,
+        content: lpTokenObject.data.content,
+      });
+      
+      // Extract type parameters from LP token to ensure exact match
+      const lpTokenType = lpTokenObject.data.type || '';
+      const typeMatch = lpTokenType.match(/<(.+),\s*(.+)>/);
+      if (!typeMatch) {
+        throw new Error('Invalid LP token type format');
+      }
+      
+      const lpCoinTypeA = typeMatch[1].trim();
+      const lpCoinTypeB = typeMatch[2].trim();
 
       // Calculate expected outputs based on pool reserves
       const lpAmount = BigInt(params.lpAmount);
       const totalLpSupply = pool.lpSupply;
       const reserveA = pool.reserveA;
       const reserveB = pool.reserveB;
+
+      // Overflow is now handled in the smart contract
 
       // Calculate proportional amounts
       const expectedAmountA = (lpAmount * reserveA) / totalLpSupply;
@@ -113,11 +131,22 @@ export function useRemoveLiquidity() {
       // Set gas budget to avoid dry run issues
       tx.setGasBudget(100000000); // 0.1 IOTA
 
+      // Use the exact type parameters from the LP token
+      // This ensures perfect type matching with the Move function
+      const typeArgs: [string, string] = [lpCoinTypeA, lpCoinTypeB];
+      
+      console.log('Remove liquidity call:', {
+        target: `${packageId}::simple_dex::remove_liquidity`,
+        typeArgs,
+        poolId: pool.poolId,
+        lpTokenId: params.lpTokenId,
+      });
+      
       // The remove_liquidity function expects the LP token object to be passed directly,
       // not just its ID. We need to pass it as an owned object.
       tx.moveCall({
         target: `${packageId}::simple_dex::remove_liquidity`,
-        typeArguments: [params.tokenA.type, params.tokenB.type],
+        typeArguments: typeArgs,
         arguments: [
           tx.object(pool.poolId),
           tx.object(params.lpTokenId), // This will be consumed by the function

@@ -33,6 +33,15 @@ const POOL_CACHE: Map<string, PoolInfo> = new Map();
 const CACHE_DURATION = 30000; // 30 seconds
 let lastCacheUpdate = 0;
 
+// Clear cache on pool refresh event
+if (typeof window !== 'undefined') {
+  window.addEventListener('pool-cache-refresh', () => {
+    console.log('Clearing pool discovery cache');
+    POOL_CACHE.clear();
+    lastCacheUpdate = 0;
+  });
+}
+
 // Clean up cache periodically to prevent memory leaks
 const MAX_CACHE_SIZE = 100;
 function cleanupCache() {
@@ -52,10 +61,17 @@ export class PoolDiscovery {
     console.log('Finding pool for pair:', { coinTypeA, coinTypeB });
     const client = getIotaClientSafe();
     
-    // Return mock data if client is not available (SSR)
+    // Return null if client is not available (SSR)
     if (!client) {
-      const mockPool = findMockPool(coinTypeA, coinTypeB);
-      return mockPool;
+      return null;
+    }
+    
+    // Clear any stale pool data on first load
+    if (typeof window !== 'undefined' && !window.poolsCleared) {
+      console.log('Clearing stale pool data...');
+      POOL_CACHE.clear();
+      lastCacheUpdate = 0;
+      window.poolsCleared = true;
     }
     
     // Special handling for IOTA <-> stIOTA staking pool
@@ -82,15 +98,9 @@ export class PoolDiscovery {
     
     const packageId = blitz_PACKAGE_ID[network];
 
-    // Use mock pools if package is not deployed
+    // Don't use mock pools - return null if package is not deployed
     if (packageId === '0x0') {
-      const mockPool = findMockPool(coinTypeA, coinTypeB);
-      if (mockPool) {
-        cleanupCache();
-        POOL_CACHE.set(`${mockPool.coinTypeA}-${mockPool.coinTypeB}`, mockPool);
-        lastCacheUpdate = Date.now();
-      }
-      return mockPool;
+      return null;
     }
 
     // Check cache first
@@ -122,8 +132,25 @@ export class PoolDiscovery {
       const reverseKey = `${coinTypeB}_${coinTypeA}`;
       const knownPoolId = KNOWN_POOLS[network]?.[poolKey] || KNOWN_POOLS[network]?.[reverseKey];
       
+      console.log('Checking known pools:', {
+        poolKey,
+        reverseKey,
+        knownPoolId,
+        knownPools: KNOWN_POOLS[network]
+      });
+      
       // Then check tracked pools (from localStorage)
       let poolId = knownPoolId || PoolTracker.findPool(coinTypeA, coinTypeB);
+      
+      console.log('Pool discovery - found poolId:', poolId, {
+        coinTypeA,
+        coinTypeB,
+        knownPoolId,
+        trackedPoolId: PoolTracker.findPool(coinTypeA, coinTypeB)
+      });
+      
+      // No hardcoded pools - they need to be created with the new contract
+      // Only return pools that actually exist on-chain
       
       if (poolId) {
         try {
@@ -185,9 +212,9 @@ export class PoolDiscovery {
     const packageId = blitz_PACKAGE_ID[network];
     const pools: PoolInfo[] = [];
 
-    // Use mock pools if package is not deployed or client not available
+    // Return empty array if package is not deployed or client not available
     if (packageId === '0x0' || !client) {
-      return getAllMockPools();
+      return [];
     }
 
     try {
@@ -215,8 +242,9 @@ export class PoolDiscovery {
     inputAmount: bigint,
     isAToB: boolean
   ): { outputAmount: bigint; priceImpact: number } {
-    // Simplified swap with fixed rates
-    let outputAmount: bigint;
+    // AMM constant product formula with fees
+    const FEE_NUMERATOR = BigInt(18); // 1.8% fee
+    const FEE_DENOMINATOR = BigInt(1000);
     
     // Special handling for staking pool (1:1 rate)
     if (pool.poolId === STAKING_POOL_ADDRESS) {
@@ -224,12 +252,24 @@ export class PoolDiscovery {
       return { outputAmount, priceImpact: 0 };
     }
     
-    // For regular pools, use simple 1:1 exchange rate
-    // This matches the simple_dex contract implementation
-    outputAmount = inputAmount;
+    // Calculate fee amount
+    const feeAmount = (inputAmount * FEE_NUMERATOR) / FEE_DENOMINATOR;
+    const amountInAfterFee = inputAmount - feeAmount;
     
-    // No price impact with fixed rates
-    return { outputAmount, priceImpact: 0 };
+    // Get reserves based on direction
+    const reserveIn = isAToB ? pool.reserveA : pool.reserveB;
+    const reserveOut = isAToB ? pool.reserveB : pool.reserveA;
+    
+    // Calculate output using constant product formula: k = x * y
+    // outputAmount = (amountInAfterFee * reserveOut) / (reserveIn + amountInAfterFee)
+    const outputAmount = (amountInAfterFee * reserveOut) / (reserveIn + amountInAfterFee);
+    
+    // Calculate price impact
+    const spotPrice = Number(reserveOut) / Number(reserveIn);
+    const executionPrice = Number(outputAmount) / Number(amountInAfterFee);
+    const priceImpact = Math.abs((executionPrice - spotPrice) / spotPrice) * 100;
+    
+    return { outputAmount, priceImpact };
   }
 
   static async findBestRoute(

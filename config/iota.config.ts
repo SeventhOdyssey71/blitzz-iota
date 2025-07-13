@@ -23,7 +23,7 @@ export const DEFAULT_NETWORK = 'testnet';
 
 export const blitz_PACKAGE_ID = {
   mainnet: '0x0', // To be deployed
-  testnet: '0x62b8cf324feb458dba7f9c8efba4bf6984eb737db51cc1b4aeade60763f6cc15', // Deployed with swap fees (0.3%)
+  testnet: '0x43b97b2e83b8819a247168b976e9a914f245b676c313977085004e225b666ba3', // 1.8% fee, fixed zero amount handling
   devnet: '0x0', // To be deployed
 } as const;
 

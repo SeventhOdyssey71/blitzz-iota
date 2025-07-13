@@ -14,11 +14,12 @@ import { SUPPORTED_COINS } from '@/config/iota.config';
 import { toast } from 'sonner';
 import { CoinIcon } from '@/components/coin-icon';
 import { useAddLiquidity } from '@/hooks/use-add-liquidity';
-import { useRemoveLiquidity } from '@/hooks/use-remove-liquidity';
+import { useRemoveLiquidityV2 } from '@/hooks/use-remove-liquidity-v2';
 import { usePoolInfo } from '@/hooks/use-pool-info';
 import { useLPTokens } from '@/hooks/use-lp-tokens';
 import { useLPTokensV2 } from '@/hooks/use-lp-tokens-v2';
-import { PoolTrackerHelper } from '@/components/pool-tracker-helper';
+import { refreshPoolCache } from '@/lib/services/pool-refresh';
+import { useTokenPrices } from '@/hooks/use-token-price';
 
 export function PoolInterface() {
   const currentAccount = useCurrentAccount();
@@ -42,21 +43,28 @@ export function PoolInterface() {
   
   // Add/Remove liquidity hooks
   const { addLiquidity, isAdding } = useAddLiquidity();
-  const { removeLiquidity, isRemoving } = useRemoveLiquidity();
+  const { removeLiquidity, isRemoving } = useRemoveLiquidityV2();
   
   // Get LP tokens - using V2 for debugging
   const { lpTokens: lpTokensV1, isLoading: isLoadingLPV1 } = useLPTokens();
   const { lpTokens: lpTokensV2, isLoading: isLoadingLPV2 } = useLPTokensV2();
   
-  console.log('Pool Interface - LP Tokens V1:', lpTokensV1);
-  console.log('Pool Interface - LP Tokens V2:', lpTokensV2);
   
   // Use V2 for now to see all tokens
   const lpTokens = lpTokensV2;
   const isLoadingLP = isLoadingLPV2;
   
+  // Get token prices
+  const { prices: tokenPrices } = useTokenPrices(['IOTA', 'stIOTA']);
+  const iotaPrice = tokenPrices?.IOTA?.price || 0.28;
+  const stIotaPrice = tokenPrices?.stIOTA?.price || iotaPrice; // stIOTA typically tracks IOTA price
+  
   // Refresh pool info after adding liquidity
   const refreshPoolInfo = () => {
+    // Clear pool cache
+    localStorage.removeItem('blitz_created_pools');
+    localStorage.removeItem('pool_cache');
+    window.dispatchEvent(new Event('pool-cache-refresh'));
     window.location.reload();
   };
   
@@ -124,7 +132,11 @@ export function PoolInterface() {
       if (result.success) {
         setIotaAmount('');
         setStIotaAmount('');
-        setTimeout(refreshPoolInfo, 2000);
+        // Refresh pool cache to ensure swap can find the pool
+        setTimeout(() => {
+          refreshPoolCache();
+          refreshPoolInfo();
+        }, 2000);
       }
     } catch (error) {
       console.error('Add liquidity error:', error);
@@ -140,13 +152,15 @@ export function PoolInterface() {
     const lpToken = lpTokens.find(t => t.id === selectedLPToken);
     if (!lpToken) return;
     
-    const lpAmount = (BigInt(lpToken.amount) * BigInt(removePercentage) / BigInt(100)).toString();
+    // The contract burns the entire LP token, so we use the full amount
+    const lpAmount = lpToken.amount;
     
     const result = await removeLiquidity({
       tokenA: SUPPORTED_COINS.IOTA,
       tokenB: SUPPORTED_COINS.stIOTA,
       lpTokenId: selectedLPToken,
       lpAmount,
+      poolId: poolInfo?.poolId, // Pass pool ID if available
     });
     
     if (result.success) {
@@ -161,10 +175,16 @@ export function PoolInterface() {
     setIotaAmount(value);
     
     // Auto-calculate proportional amount for stIOTA
-    if (value && poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
-      const iotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
-      const stIotaAmountBig = (iotaAmountBig * poolInfo.reserveB) / poolInfo.reserveA;
-      setStIotaAmount(formatBalance(stIotaAmountBig.toString(), 9, 6));
+    if (value) {
+      if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
+        // Existing pool - maintain ratio
+        const iotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
+        const stIotaAmountBig = (iotaAmountBig * poolInfo.reserveB) / poolInfo.reserveA;
+        setStIotaAmount(formatBalance(stIotaAmountBig.toString(), 9, 6));
+      } else {
+        // New pool - 1:1 ratio for IOTA/stIOTA
+        setStIotaAmount(value);
+      }
     }
   };
   
@@ -172,22 +192,28 @@ export function PoolInterface() {
     setStIotaAmount(value);
     
     // Auto-calculate proportional amount for IOTA
-    if (value && poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
-      const stIotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
-      const iotaAmountBig = (stIotaAmountBig * poolInfo.reserveA) / poolInfo.reserveB;
-      setIotaAmount(formatBalance(iotaAmountBig.toString(), 9, 6));
+    if (value) {
+      if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
+        // Existing pool - maintain ratio
+        const stIotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
+        const iotaAmountBig = (stIotaAmountBig * poolInfo.reserveA) / poolInfo.reserveB;
+        setIotaAmount(formatBalance(iotaAmountBig.toString(), 9, 6));
+      } else {
+        // New pool - 1:1 ratio for IOTA/stIOTA
+        setIotaAmount(value);
+      }
     }
   };
   
   const handleMaxIota = () => {
     if (iotaFormatted) {
       const balance = parseFloat(iotaFormatted);
-      const gasReserve = 0.15; // Reserve for gas
+      const gasReserve = 0.2; // Reserve 0.2 IOTA for gas to be safe
       const maxAmount = Math.max(0, balance - gasReserve);
       if (maxAmount > 0) {
         handleIotaChange(maxAmount.toFixed(6));
       } else {
-        toast.error('Insufficient IOTA balance (need gas reserves)');
+        toast.error('Insufficient IOTA balance (need at least 0.2 IOTA for gas reserves)');
       }
     }
   };
@@ -204,14 +230,13 @@ export function PoolInterface() {
         const share = BigInt(token.amount) * BigInt(10000) / poolInfo.lpSupply;
         const iotaAmount = (poolInfo.reserveA * share) / BigInt(10000);
         const stIotaAmount = (poolInfo.reserveB * share) / BigInt(10000);
-        const valueInUsd = (Number(iotaAmount + stIotaAmount) / 1e9) * 0.28; // Assuming $0.28 per IOTA
+        const valueInUsd = (Number(iotaAmount) / 1e9 * iotaPrice) + (Number(stIotaAmount) / 1e9 * stIotaPrice);
         return total + valueInUsd;
       }, 0)
     : 0;
   
   return (
-    <div className="space-y-6">
-      <PoolTrackerHelper />
+    <div className="space-y-4">
       {/* Your Position */}
       {isConnected && lpTokens.length > 0 && (
         <Card className="bg-black/60 backdrop-blur-sm border-cyan-500/20">
@@ -263,38 +288,41 @@ export function PoolInterface() {
       
       {/* Pool Stats */}
       <Card className="bg-black/40 border-white/10">
-        <CardHeader>
+        <CardHeader className="pb-2 pt-4">
           <CardTitle className="text-xl font-bold text-white">IOTA / stIOTA Pool</CardTitle>
+          {!poolInfo && !isLoadingPool && (
+            <p className="text-sm text-yellow-400 mt-1">No pool exists yet. Be the first to create one!</p>
+          )}
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+        <CardContent className="py-2 px-4">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-0.5">
               <p className="text-sm text-gray-400">Total Value Locked</p>
               <p className="text-2xl font-bold text-white font-mono">
                 {isLoadingPool ? (
                   <span className="animate-pulse">Loading...</span>
                 ) : poolInfo && (poolInfo.reserveA > 0 || poolInfo.reserveB > 0) ? (
-                  `$${((Number(poolInfo.reserveA) / 1e9 + Number(poolInfo.reserveB) / 1e9) * 0.28).toFixed(2)}`
+                  `$${((Number(poolInfo.reserveA) / 1e9 * iotaPrice) + (Number(poolInfo.reserveB) / 1e9 * stIotaPrice)).toFixed(2)}`
                 ) : (
                   '$0.00'
                 )}
               </p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <p className="text-sm text-gray-400">24h Volume</p>
               <p className="text-2xl font-bold text-white font-mono">
                 {isLoadingPool ? (
                   <span className="animate-pulse">Loading...</span>
                 ) : poolInfo && (poolInfo.totalVolumeA || poolInfo.totalVolumeB) ? (
-                  `$${((Number(poolInfo.totalVolumeA || 0) / 1e9 + Number(poolInfo.totalVolumeB || 0) / 1e9) * 0.28).toFixed(2)}`
+                  `$${((Number(poolInfo.totalVolumeA || 0) / 1e9 * iotaPrice) + (Number(poolInfo.totalVolumeB || 0) / 1e9 * stIotaPrice)).toFixed(2)}`
                 ) : (
                   '$0.00'
                 )}
               </p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <p className="text-sm text-gray-400">Pool Reserves</p>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <CoinIcon symbol="IOTA" size={16} />
                   <span className="text-white">
@@ -321,39 +349,45 @@ export function PoolInterface() {
                 </div>
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <p className="text-sm text-gray-400">APR</p>
               <p className="text-2xl font-bold text-green-400 font-mono">
                 {(() => {
-                  if (!poolInfo || poolInfo.reserveA === BigInt(0)) return '0.00%';
+                  if (!poolInfo || poolInfo.reserveA === BigInt(0) || poolInfo.reserveB === BigInt(0)) return '0.00%';
                   
-                  // Calculate APR based on fees collected and TVL
-                  const totalFees = (Number(poolInfo.feesA || 0) + Number(poolInfo.feesB || 0)) / 1e9;
-                  const tvl = (Number(poolInfo.reserveA) + Number(poolInfo.reserveB)) / 1e9;
+                  // Calculate TVL in USD
+                  const tvlUSD = (Number(poolInfo.reserveA) / 1e9 * iotaPrice) + (Number(poolInfo.reserveB) / 1e9 * stIotaPrice);
                   
-                  // If we have volume data, estimate daily fees based on volume
-                  if (poolInfo.totalVolumeA || poolInfo.totalVolumeB) {
-                    const totalVolume = (Number(poolInfo.totalVolumeA || 0) + Number(poolInfo.totalVolumeB || 0)) / 1e9;
-                    // Estimate daily volume (assuming linear growth over time)
-                    const estimatedDailyVolume = totalVolume / 30; // Rough estimate
-                    const dailyFees = estimatedDailyVolume * 0.003; // 0.3% fee
-                    const annualFees = dailyFees * 365;
-                    const apr = (annualFees / tvl) * 100;
-                    return apr > 0 ? `${apr.toFixed(2)}%` : '0.00%';
+                  if (tvlUSD === 0) return '0.00%';
+                  
+                  // Calculate total fees collected in USD
+                  const totalFeesUSD = (Number(poolInfo.feesA || 0) / 1e9 * iotaPrice) + (Number(poolInfo.feesB || 0) / 1e9 * stIotaPrice);
+                  
+                  // If pool has been active and has fees, calculate APR based on actual performance
+                  if (totalFeesUSD > 0) {
+                    // Assume pool has been active for at least 1 day to extrapolate
+                    // This is a simple estimation - in production you'd track pool creation time
+                    const estimatedDaysActive = Math.max(1, totalFeesUSD / (tvlUSD * 0.0001)); // Rough estimate
+                    const dailyReturn = totalFeesUSD / (tvlUSD * estimatedDaysActive);
+                    const annualReturn = dailyReturn * 365;
+                    const apr = annualReturn * 100;
+                    
+                    // Cap APR at reasonable levels
+                    return apr > 0 && apr < 1000 ? `${apr.toFixed(2)}%` : '0.00%';
                   }
                   
-                  // Fallback to static APR if no volume data
-                  return '12.50%';
+                  // No fees collected yet
+                  return '0.00%';
                 })()}
               </p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <p className="text-sm text-gray-400">Fee Rate</p>
-              <p className="text-2xl font-bold text-cyan-400 font-mono">0.30%</p>
+              <p className="text-2xl font-bold text-cyan-400 font-mono">1.80%</p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <p className="text-sm text-gray-400">Accumulated Fees</p>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <CoinIcon symbol="IOTA" size={16} />
                   <span className="text-white font-mono">
@@ -366,9 +400,9 @@ export function PoolInterface() {
                     {poolInfo && poolInfo.feesB ? formatBalance(poolInfo.feesB.toString(), 9, 4) : '0.0000'} stIOTA
                   </span>
                 </div>
-                <div className="pt-2 text-xs text-gray-400">
+                <div className="pt-1 text-xs text-gray-400">
                   Total: ${poolInfo && (poolInfo.feesA || poolInfo.feesB) ? 
-                    ((Number(poolInfo.feesA || 0) / 1e9 + Number(poolInfo.feesB || 0) / 1e9) * 0.28).toFixed(2) : 
+                    ((Number(poolInfo.feesA || 0) / 1e9 * iotaPrice) + (Number(poolInfo.feesB || 0) / 1e9 * stIotaPrice)).toFixed(2) : 
                     '0.00'
                   } USD
                 </div>
@@ -392,6 +426,15 @@ export function PoolInterface() {
             </TabsList>
             
             <TabsContent value="add" className="space-y-4 mt-6">
+              {/* Pool Status */}
+              {!poolInfo && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+                  <p className="text-yellow-400 text-sm">
+                    No IOTA/stIOTA pool exists yet. You'll be creating the first pool with 1.8% swap fee.
+                  </p>
+                </div>
+              )}
+              
               {/* IOTA Input */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -493,10 +536,10 @@ export function PoolInterface() {
                 {isAdding ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Adding Liquidity...
+                    {poolInfo ? 'Adding Liquidity...' : 'Creating Pool...'}
                   </>
                 ) : (
-                  'Add Liquidity'
+                  poolInfo ? 'Add Liquidity' : 'Create Pool'
                 )}
               </Button>
               
@@ -543,63 +586,14 @@ export function PoolInterface() {
                   
                   {selectedLPToken && (
                     <>
-                      {/* Remove Percentage */}
-                      <div className="space-y-2">
-                        <label className="text-sm text-gray-400">Remove Amount ({removePercentage}%)</label>
-                        <div className="space-y-3">
-                          <Input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={removePercentage}
-                            onChange={(e) => setRemovePercentage(e.target.value)}
-                            className="w-full"
-                          />
-                          <div className="flex justify-between text-sm gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setRemovePercentage('25')}
-                              className="flex-1 border-white/10 text-gray-400 hover:text-white hover:bg-white/5"
-                            >
-                              25%
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setRemovePercentage('50')}
-                              className="flex-1 border-white/10 text-gray-400 hover:text-white hover:bg-white/5"
-                            >
-                              50%
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setRemovePercentage('75')}
-                              className="flex-1 border-white/10 text-gray-400 hover:text-white hover:bg-white/5"
-                            >
-                              75%
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setRemovePercentage('100')}
-                              className="flex-1 border-white/10 text-gray-400 hover:text-white hover:bg-white/5"
-                            >
-                              100%
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      
                       {/* Expected Output */}
                       <div className="bg-white/5 rounded-xl p-4 space-y-2">
-                        <h4 className="text-sm text-gray-400 mb-3">You will receive</h4>
+                        <h4 className="text-sm text-gray-400 mb-3">You will receive (entire LP token will be removed)</h4>
                         {(() => {
                           const lpToken = lpTokens.find(t => t.id === selectedLPToken);
                           if (!lpToken || !poolInfo || poolInfo.lpSupply === BigInt(0)) return null;
                           
-                          const lpAmount = BigInt(lpToken.amount) * BigInt(removePercentage) / BigInt(100);
+                          const lpAmount = BigInt(lpToken.amount);
                           const totalLpSupply = poolInfo.lpSupply;
                           const expectedIota = (lpAmount * poolInfo.reserveA) / totalLpSupply;
                           const expectedStIota = (lpAmount * poolInfo.reserveB) / totalLpSupply;
@@ -635,7 +629,7 @@ export function PoolInterface() {
                   <Button
                     className="w-full bg-red-500 hover:bg-red-400 text-white font-semibold py-6 text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleRemoveLiquidity}
-                    disabled={!selectedLPToken || isRemoving || removePercentage === '0'}
+                    disabled={!selectedLPToken || isRemoving}
                   >
                     {isRemoving ? (
                       <>

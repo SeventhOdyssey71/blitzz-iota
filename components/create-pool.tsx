@@ -14,6 +14,7 @@ import { SUPPORTED_COINS } from '@/config/iota.config';
 import { toast } from 'sonner';
 import { parseTokenAmount } from '@/lib/utils/format';
 import { AMMContract } from '@/lib/contracts/amm-contract';
+import { PoolTracker } from '@/lib/services/pool-tracker';
 
 export function CreatePool() {
   const client = useIotaClient();
@@ -81,20 +82,30 @@ export function CreatePool() {
       }
       
       // Prepare coin A
-      const coinARefs = coinsA.data.map(coin => tx.object(coin.coinObjectId));
-      if (coinARefs.length > 1) {
-        const [primaryCoinA, ...otherCoinsA] = coinARefs;
-        tx.mergeCoins(primaryCoinA, otherCoinsA);
+      let coinAToUse;
+      if (coinA.type === SUPPORTED_COINS.IOTA.type) {
+        // For IOTA, use tx.gas to avoid gas issues
+        [coinAToUse] = tx.splitCoins(tx.gas, [amountABigInt]);
+      } else {
+        const coinARefs = coinsA.data.map(coin => tx.object(coin.coinObjectId));
+        if (coinARefs.length > 1) {
+          tx.mergeCoins(coinARefs[0], coinARefs.slice(1));
+        }
+        [coinAToUse] = tx.splitCoins(coinARefs[0], [amountABigInt]);
       }
-      const [coinAToUse] = tx.splitCoins(coinARefs[0], [tx.pure.u64(amountABigInt)]);
       
       // Prepare coin B
-      const coinBRefs = coinsB.data.map(coin => tx.object(coin.coinObjectId));
-      if (coinBRefs.length > 1) {
-        const [primaryCoinB, ...otherCoinsB] = coinBRefs;
-        tx.mergeCoins(primaryCoinB, otherCoinsB);
+      let coinBToUse;
+      if (coinB.type === SUPPORTED_COINS.IOTA.type) {
+        // For IOTA, use tx.gas to avoid gas issues
+        [coinBToUse] = tx.splitCoins(tx.gas, [amountBBigInt]);
+      } else {
+        const coinBRefs = coinsB.data.map(coin => tx.object(coin.coinObjectId));
+        if (coinBRefs.length > 1) {
+          tx.mergeCoins(coinBRefs[0], coinBRefs.slice(1));
+        }
+        [coinBToUse] = tx.splitCoins(coinBRefs[0], [amountBBigInt]);
       }
-      const [coinBToUse] = tx.splitCoins(coinBRefs[0], [tx.pure.u64(amountBBigInt)]);
       
       // Create pool
       AMMContract.createPool(
@@ -121,6 +132,26 @@ export function CreatePool() {
           {
             onSuccess: (result) => {
               console.log('Pool created:', result);
+              
+              // Track the created pool
+              if (result.objectChanges) {
+                const createdPool = result.objectChanges.find(
+                  change => change.type === 'created' && 
+                  change.objectType.includes('::simple_dex::Pool')
+                );
+                
+                if (createdPool) {
+                  const coinA = SUPPORTED_COINS[tokenA as keyof typeof SUPPORTED_COINS];
+                  const coinB = SUPPORTED_COINS[tokenB as keyof typeof SUPPORTED_COINS];
+                  
+                  console.log('Pool created with ID:', createdPool.objectId);
+                  PoolTracker.addPool(createdPool.objectId, coinA.type, coinB.type, 'testnet');
+                  
+                  // Dispatch pool refresh event
+                  window.dispatchEvent(new Event('pool-cache-refresh'));
+                }
+              }
+              
               toast.success('Pool created successfully!', {
                 description: `Transaction: ${result.digest.slice(0, 10)}...`,
               });
@@ -248,6 +279,7 @@ export function CreatePool() {
           onClick={handleCreatePool}
           disabled={isCreating || !account || !tokenA || !tokenB || !amountA || !amountB}
           className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-6 rounded-xl transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+          data-testid="create-pool-button"
         >
           {isCreating ? (
             <>
