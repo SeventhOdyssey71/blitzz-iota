@@ -43,7 +43,7 @@ export default function CoinDetailPage() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center">
-              <h1 className="text-white font-bold text-2xl tracking-tight">BLITZ</h1>
+              <h1 className="text-white font-bold text-2xl tracking-tight">BLITZZ</h1>
             </Link>
 
             {/* Navigation */}

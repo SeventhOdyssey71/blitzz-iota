@@ -49,7 +49,7 @@ export function SiteHeader() {
                 height={32} 
                 className="rounded-lg"
               />
-              <span className="text-white font-bold text-2xl tracking-wider" style={{ fontFamily: 'Orbitron, monospace' }}>BLITZ</span>
+              <span className="text-white font-bold text-2xl tracking-wider" style={{ fontFamily: 'Orbitron, monospace' }}>BLITZZ</span>
             </Link>
           </div>
 
