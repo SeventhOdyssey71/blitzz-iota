@@ -51,6 +51,55 @@ BLITZZ represents a significant advancement in the IOTA DeFi ecosystem by provid
 ### Project Type
 **DeFi Infrastructure & Trading Platform**
 
+### Project Presence
+BLITZZ has established a strong presence across multiple channels:
+- **Live Testnet**: Fully functional platform deployed at [testnet URL]
+- **GitHub Repository**: Active development with 50+ commits at https://github.com/SeventhOdyssey71/cetus-iota
+- **Community Channels**: Growing Discord and Telegram communities (to be launched)
+- **Documentation**: Comprehensive technical docs and user guides
+- **Social Media**: Active on X/Twitter with regular updates on development progress
+- **Analytics Dashboard**: Real-time metrics showing TVL, volume, and active users
+
+### Project Token
+✓ **Yes** - We are planning to launch the BLITZZ governance token
+
+### Tokenomics
+**BLITZZ Token (BLTZ) - Governance & Utility Token**
+
+**Token Distribution:**
+- **Community Rewards**: 40% (liquidity mining, trading rewards, airdrops)
+- **Team & Advisors**: 20% (4-year vesting with 1-year cliff)
+- **Treasury**: 15% (protocol development and partnerships)
+- **Initial Liquidity**: 10% (DEX liquidity and market making)
+- **Strategic Partners**: 10% (ecosystem collaborations)
+- **Public Sale**: 5% (fair launch mechanism)
+
+**Token Utility:**
+1. **Governance**: Vote on protocol parameters, fee structures, and treasury allocation
+2. **Fee Discounts**: Up to 50% reduction in trading fees for BLTZ holders
+3. **Revenue Sharing**: Stake BLTZ to earn a portion of protocol fees
+4. **Launchpad Access**: Exclusive access to new token launches and guaranteed allocations
+5. **Liquidity Incentives**: Boost rewards for liquidity providers
+
+**Token Mechanics:**
+- **Total Supply**: 1,000,000,000 BLTZ
+- **Initial Circulating**: 150,000,000 BLTZ (15%)
+- **Emission Schedule**: Decreasing inflation over 4 years
+- **Burn Mechanism**: 10% of protocol fees used for buyback and burn
+- **Staking Rewards**: 20% APY for long-term stakers
+
+**Value Accrual:**
+- Protocol fees flow to BLTZ stakers
+- Buyback and burn creates deflationary pressure
+- Increased utility drives demand
+- Network effects from growing user base
+
+**Launch Strategy:**
+- Fair launch via bonding curve on our launchpad
+- No pre-mine or insider allocation
+- Initial liquidity provided by team
+- Community-driven price discovery
+
 ## Milestone Breakdown
 
 ### Total Number of Milestones: 4
