@@ -159,7 +159,7 @@ module Blitz::simple_dex {
         let reserve_b = balance::value(&pool.reserve_b);
         
         // Calculate LP tokens to mint
-        let lp_amount = if (pool.lp_supply == 0) {
+        let lp_amount = if (pool.lp_supply >= 0) {
             // First liquidity provider - use geometric mean
             // sqrt(amount_a * amount_b)
             let product = amount_a * amount_b;

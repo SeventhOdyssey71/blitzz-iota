@@ -170,7 +170,7 @@ export function SwapInterface() {
                     placeholder="0"
                     value={inputAmount}
                     onChange={(e) => setInputAmount(e.target.value)}
-                    className="bg-transparent border-none text-2xl font-semibold text-white p-0 h-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-600"
+                    className="bg-transparent border-none text-3xl font-semibold text-white p-0 h-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-600"
                     type="number"
                     min="0"
                     step="any"
@@ -214,7 +214,7 @@ export function SwapInterface() {
               
               <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="text-2xl font-semibold text-white">
+                  <div className="text-3xl font-semibold text-white">
                     {swapCalculation.isLoading ? (
                       <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                     ) : (

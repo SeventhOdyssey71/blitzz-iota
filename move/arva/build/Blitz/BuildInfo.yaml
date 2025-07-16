@@ -3,18 +3,19 @@ compiled_package_info:
   package_name: Blitz
   address_alias_instantiation:
     Blitz: "0000000000000000000000000000000000000000000000000000000000000000"
+    blitz: "0000000000000000000000000000000000000000000000000000000000000000"
     iota: "0000000000000000000000000000000000000000000000000000000000000002"
     iota_std: "0000000000000000000000000000000000000000000000000000000000000001"
     std: "0000000000000000000000000000000000000000000000000000000000000001"
-  source_digest: 0661475E17676D2B36F828B6E38D097FC5A8AE436270C8B1CBB4ED00B3C9AE22
+  source_digest: D41A08DB39CB39D694282F7A3D84DDD92998D1C22C93C9912973246AD7D63E1E
   build_flags:
-    dev_mode: false
-    test_mode: false
+    dev_mode: true
+    test_mode: true
     generate_docs: false
     save_disassembly: false
     install_dir: ~
     force_recompilation: false
-    lock_file: "./Move.lock"
+    lock_file: ~
     fetch_deps_only: false
     skip_fetch_latest_git_deps: false
     default_flavor: iota
