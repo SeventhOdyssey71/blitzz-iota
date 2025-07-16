@@ -85,10 +85,6 @@ export function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Link href="/launchpad" className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md">
-              Launchpad
-            </Link>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md flex items-center gap-1">
@@ -114,12 +110,6 @@ export function SiteHeader() {
                 <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <TrendingUp className="w-4 h-4 mr-2 text-gray-400" />
                   Buy Crypto
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
-                  <Link href="/launchpad">
-                    <BarChart3 className="w-4 h-4 mr-2 text-gray-400" />
-                    Launchpad
-                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
                   <Settings className="w-4 h-4 mr-2 text-gray-400" />
@@ -269,14 +259,6 @@ export function SiteHeader() {
                           Buy Crypto
                         </Link>
                         <Link 
-                          href="/launchpad" 
-                          onClick={closeMobileMenu}
-                          className="flex items-center gap-3 py-2 text-gray-400 hover:text-cyan-400 transition-colors"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                          Launchpad
-                        </Link>
-                        <Link 
                           href="#" 
                           onClick={closeMobileMenu}
                           className="flex items-center gap-3 py-2 text-gray-400 hover:text-cyan-400 transition-colors"
@@ -303,15 +285,6 @@ export function SiteHeader() {
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-
-                  {/* Single Menu Items */}
-                  <Link 
-                    href="/launchpad" 
-                    onClick={closeMobileMenu}
-                    className="py-4 text-gray-300 hover:text-cyan-400 transition-colors border-t border-white/10"
-                  >
-                    Launchpad
-                  </Link>
 
                   {/* Profile Link for Mobile */}
                   <Link 
