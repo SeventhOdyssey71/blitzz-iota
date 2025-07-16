@@ -164,13 +164,13 @@ export function SwapInterface() {
                 )}
               </div>
               
-              <div className="bg-black rounded-xl p-4 border border-gray-800">
+              <div className="bg-black rounded-xl p-6 border border-gray-800">
                 <div className="flex items-center justify-between gap-4">
                   <Input
                     placeholder="0"
                     value={inputAmount}
                     onChange={(e) => setInputAmount(e.target.value)}
-                    className="bg-transparent border-none text-3xl font-semibold text-white p-0 h-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-none placeholder:text-gray-600 placeholder:text-5xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="bg-transparent border-none text-4xl font-semibold text-white p-0 h-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-none placeholder:text-gray-600 placeholder:text-4xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     type="number"
                     min="0"
                     step="any"
@@ -212,9 +212,9 @@ export function SwapInterface() {
                 )}
               </div>
               
-              <div className="bg-black rounded-xl p-4 border border-gray-800">
+              <div className="bg-black rounded-xl p-6 border border-gray-800">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="text-3xl font-semibold text-white">
+                  <div className="text-4xl font-semibold text-white">
                     {swapCalculation.isLoading ? (
                       <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                     ) : (
