@@ -218,6 +218,16 @@
   animation: fadeIn 0.5s ease-out;
 }
 
+/* Remove focus styles from swap input */
+input[type="number"]:focus,
+input[type="number"]:focus-visible,
+input[type="number"]:focus-within {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline-offset: 0 !important;
+}
+
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
 }

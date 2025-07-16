@@ -170,7 +170,7 @@ export function SwapInterface() {
                     placeholder="0"
                     value={inputAmount}
                     onChange={(e) => setInputAmount(e.target.value)}
-                    className="bg-transparent border-none text-3xl font-semibold text-white p-0 h-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-600"
+                    className="bg-transparent border-none text-3xl font-semibold text-white p-0 h-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-none placeholder:text-gray-600 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     type="number"
                     min="0"
                     step="any"
