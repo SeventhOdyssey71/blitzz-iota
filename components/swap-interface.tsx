@@ -164,7 +164,7 @@ export function SwapInterface() {
                 )}
               </div>
               
-              <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              <div className="bg-black rounded-xl p-4 border border-gray-800">
                 <div className="flex items-center justify-between gap-4">
                   <Input
                     placeholder="0"
@@ -212,7 +212,7 @@ export function SwapInterface() {
                 )}
               </div>
               
-              <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              <div className="bg-black rounded-xl p-4 border border-gray-800">
                 <div className="flex items-center justify-between gap-4">
                   <div className="text-3xl font-semibold text-white">
                     {swapCalculation.isLoading ? (
