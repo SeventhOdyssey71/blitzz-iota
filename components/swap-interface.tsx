@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ChevronDown, ArrowUpDown, Settings, Info, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowUpDown, Settings, Loader2 } from 'lucide-react';
 import { useCurrentAccount } from '@iota/dapp-kit';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import {
   Popover,
@@ -20,11 +19,9 @@ import { formatTokenAmount } from '@/lib/utils/format';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 import { toast } from 'sonner';
 import { useSimpleSwapV2 } from '@/hooks/use-simple-swap-v2';
-import { TokenSelector } from '@/components/token-selector';
-import { CoinIcon } from '@/components/coin-icon';
+import { TokenDropdown } from '@/components/token-dropdown';
 import { SwapSuccessModal } from '@/components/swap-success-modal';
 import { SwapTransactionPanel } from '@/components/swap-transaction-panel';
-import { refreshPoolCache } from '@/lib/services/pool-refresh';
 
 interface Token {
   symbol: string;
@@ -41,7 +38,6 @@ export function SwapInterface() {
   const [outputToken, setOutputToken] = useState<Token>(SUPPORTED_COINS.stIOTA);
   const [inputAmount, setInputAmount] = useState('');
   const [slippage, setSlippage] = useState(0.5);
-  const [showTokenSelect, setShowTokenSelect] = useState<'input' | 'output' | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showTransactionPanel, setShowTransactionPanel] = useState(false);
   const [currentTxHash, setCurrentTxHash] = useState<string>('');
@@ -55,35 +51,14 @@ export function SwapInterface() {
   // Use the swap hook
   const { executeSwap, isSwapping } = useSimpleSwapV2();
   
-  // Check if pool exists for current pair
-  const [poolExists, setPoolExists] = useState(false);
-  
-  useEffect(() => {
-    const checkPool = async () => {
-      try {
-        const { PoolDiscovery } = await import('@/lib/services/pool-discovery');
-        const pool = await PoolDiscovery.findPoolsForPair(
-          inputToken.type,
-          outputToken.type,
-          'testnet'
-        );
-        setPoolExists(!!pool);
-      } catch (error) {
-        console.error('Error checking pool:', error);
-        setPoolExists(false);
-      }
-    };
-    
-    checkPool();
-  }, [inputToken.type, outputToken.type]);
 
   // Fetch token prices
   const { price: inputPrice } = useTokenPrice(inputToken.symbol);
   const { price: outputPrice } = useTokenPrice(outputToken.symbol);
 
   // Fetch wallet balances with refresh capability
-  const { balance: inputBalance, formatted: inputBalanceFormatted, refetch: refetchInputBalance } = useWalletBalance(inputToken.type);
-  const { balance: outputBalance, formatted: outputBalanceFormatted, refetch: refetchOutputBalance } = useWalletBalance(outputToken.type);
+  const { formatted: inputBalanceFormatted, refetch: refetchInputBalance } = useWalletBalance(inputToken.type);
+  const { formatted: outputBalanceFormatted, refetch: refetchOutputBalance } = useWalletBalance(outputToken.type);
 
   // Calculate swap output using actual pool reserves
   const swapCalculation = useSwapCalculation(
@@ -114,7 +89,6 @@ export function SwapInterface() {
       return;
     }
 
-    const startTime = Date.now();
 
     const result: any = await executeSwap({
       inputToken,
@@ -171,289 +145,218 @@ export function SwapInterface() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Aggregator Mode */}
-      <div className="flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-2xl animate-fade-in">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-300 text-sm font-medium">Aggregator Mode</span>
-          <Switch className="switch-root" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-cyan-400">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 bg-black border-white/10">
-              <div className="space-y-4">
-                <h4 className="font-semibold text-white">Transaction Settings</h4>
-                <div>
-                  <label className="text-sm text-gray-400">Slippage Tolerance (%)</label>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Input
-                      type="number"
-                      value={slippage}
-                      onChange={(e) => setSlippage(parseFloat(e.target.value) || 0)}
-                      className="w-full bg-white/5 border-white/10 text-white"
-                      placeholder="0.5"
-                      step="0.1"
-                      min="0"
-                      max="50"
-                    />
+    <div className="space-y-3 max-w-[480px] mx-auto">
+      {/* Main Swap Card */}
+      <Card className="bg-black border-gray-800 rounded-2xl shadow-2xl">
+        <CardContent className="p-6">
+          {/* You Pay Section */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-sm">You pay</span>
+                {isConnected && inputBalanceFormatted && (
+                  <button
+                    onClick={handleMaxInput}
+                    className="text-gray-500 text-sm hover:text-gray-300 transition-colors"
+                  >
+                    Balance: {inputBalanceFormatted}
+                  </button>
+                )}
+              </div>
+              
+              <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+                <div className="flex items-center justify-between gap-4">
+                  <Input
+                    placeholder="0"
+                    value={inputAmount}
+                    onChange={(e) => setInputAmount(e.target.value)}
+                    className="bg-transparent border-none text-2xl font-semibold text-white p-0 h-auto focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-600"
+                    type="number"
+                    min="0"
+                    step="any"
+                  />
+                  
+                  <TokenDropdown
+                    selectedToken={inputToken}
+                    onSelect={setInputToken}
+                    excludeToken={outputToken}
+                  />
+                </div>
+                
+                {inputAmount && inputPrice && (
+                  <div className="text-sm text-gray-500 mt-2">
+                    ≈ ${formatTokenAmount(parseFloat(inputAmount) * inputPrice.price, 2)}
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Swap Direction Button */}
+            <div className="flex justify-center -my-2 relative z-10">
+              <button
+                onClick={handleFlipTokens}
+                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 transition-all hover:rotate-180 duration-300"
+              >
+                <ArrowUpDown className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+
+            {/* You Receive Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-sm">You receive</span>
+                {isConnected && outputBalanceFormatted && (
+                  <span className="text-gray-500 text-sm">
+                    Balance: {outputBalanceFormatted}
+                  </span>
+                )}
+              </div>
+              
+              <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="text-2xl font-semibold text-white">
+                    {swapCalculation.isLoading ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    ) : (
+                      formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals) || '0'
+                    )}
+                  </div>
+                  
+                  <TokenDropdown
+                    selectedToken={outputToken}
+                    onSelect={setOutputToken}
+                    excludeToken={inputToken}
+                  />
                 </div>
+                
+                {swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && outputPrice && (
+                  <div className="text-sm text-gray-500 mt-2">
+                    ≈ ${formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) * outputPrice.price, 2)}
+                  </div>
+                )}
               </div>
-            </PopoverContent>
-          </Popover>
-          <Badge variant="outline" className="text-xs border-white/20 text-gray-300">
-            {slippage}% slippage
-          </Badge>
-        </div>
-      </div>
+            </div>
 
-      {/* You Pay */}
-      <Card className="bg-black/40 border-white/10 rounded-2xl card-hover animate-fade-in">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-400 text-sm font-medium tracking-wide uppercase">You Pay</span>
-            {isConnected && (
-              <div className="flex items-center gap-2 text-gray-500 text-xs">
-                <span>Balance: {inputBalanceFormatted || '0'}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs h-auto p-0"
-                  onClick={handleMaxInput}
-                >
-                  MAX
-                </Button>
+            {/* Enter Amount Message or Swap Details */}
+            {(!inputAmount || parseFloat(inputAmount) <= 0) ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 text-sm">Enter an amount</p>
               </div>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
-            <Input
-              placeholder="0.0"
-              value={inputAmount}
-              onChange={(e) => setInputAmount(e.target.value)}
-              className="bg-transparent border-none text-3xl font-bold text-white p-0 h-auto mono focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              type="number"
-              min="0"
-              step="any"
-            />
-            <Button
-              variant="ghost"
-              className="flex items-center gap-2 hover:bg-white/10"
-              onClick={() => setShowTokenSelect('input')}
-            >
-              <CoinIcon symbol={inputToken.symbol} coinType={inputToken.type} iconUrl={inputToken.iconUrl} size={24} />
-              <span className="text-white font-medium">{inputToken.symbol}</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </Button>
-          </div>
-          {inputAmount && inputPrice && (
-            <div className="text-xs text-gray-500 mt-1">
-              ≈ ${formatTokenAmount(parseFloat(inputAmount) * inputPrice.price, 2)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Swap Arrow */}
-      <div className="flex justify-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="rounded-xl bg-black/60 hover:bg-white/10 border border-white/10 transform hover:scale-105 transition-all"
-          onClick={handleFlipTokens}
-        >
-          <ArrowUpDown className="w-4 h-4 text-gray-700" />
-        </Button>
-      </div>
-
-      {/* You Receive */}
-      <Card className="bg-black/40 border-white/10 rounded-2xl card-hover animate-fade-in">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-400 text-sm font-medium tracking-wide uppercase">You Receive</span>
-            {isConnected && (
-              <span className="text-gray-500 text-xs">
-                Balance: {outputBalanceFormatted || '0'}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="text-3xl font-bold text-white mono">
-              {swapCalculation.isLoading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              className="flex items-center gap-2 hover:bg-white/10"
-              onClick={() => setShowTokenSelect('output')}
-            >
-              <CoinIcon symbol={outputToken.symbol} coinType={outputToken.type} iconUrl={outputToken.iconUrl} size={24} />
-              <span className="text-white font-medium">{outputToken.symbol}</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </Button>
-          </div>
-          {swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && outputPrice && (
-            <div className="text-xs text-gray-500 mt-1">
-              ≈ ${formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) * outputPrice.price, 2)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Swap Details */}
-      {swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && !swapCalculation.error && (
-        <Card className="bg-black/40 border-white/10 rounded-2xl animate-fade-in">
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {/* Spot Price */}
-              {swapCalculation.spotPriceBefore && (
-                <div className="flex items-center justify-between py-1">
-                  <span className="text-gray-400 text-sm font-medium">Spot Price</span>
-                  <span className="text-white text-sm font-medium mono">
-                    1 {inputToken.symbol} = {formatTokenAmount(swapCalculation.spotPriceBefore, 6)} {outputToken.symbol}
+            ) : swapCalculation.outputAmount && swapCalculation.outputAmount !== '0' && !swapCalculation.error && (
+              <div className="space-y-2 pt-2 border-t border-gray-800">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Rate</span>
+                  <span className="text-gray-300">
+                    1 {inputToken.symbol} = {inputAmount && parseFloat(inputAmount) > 0 
+                      ? formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) / parseFloat(inputAmount), 4)
+                      : '0'} {outputToken.symbol}
                   </span>
                 </div>
-              )}
-              
-              {/* Execution Price */}
-              <div className="flex items-center justify-between py-1">
-                <span className="text-gray-400 text-sm font-medium">Execution Price</span>
-                <span className="text-white text-sm font-medium mono">
-                  1 {inputToken.symbol} = {inputAmount && parseFloat(inputAmount) > 0 
-                    ? formatTokenAmount(parseFloat(formatSwapOutput(swapCalculation.outputAmount, outputToken.decimals)) / parseFloat(inputAmount), 6)
-                    : '0'} {outputToken.symbol}
-                </span>
-              </div>
-              
-              {/* Price Impact with Warning */}
-              <div className="flex items-center justify-between py-1">
-                <span className="text-gray-400 text-sm font-medium">Price Impact</span>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium ${
-                    swapCalculation.priceImpact > 5 ? "text-red-500" : 
-                    swapCalculation.priceImpact > 3 ? "text-yellow-500" : 
-                    "text-cyan-400"
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Price Impact</span>
+                  <span className={`font-medium ${
+                    swapCalculation.priceImpact > 5 ? "text-red-400" : 
+                    swapCalculation.priceImpact > 3 ? "text-yellow-400" : 
+                    "text-green-400"
                   }`}>
-                    {swapCalculation.priceImpact.toFixed(3)}%
+                    {swapCalculation.priceImpact.toFixed(2)}%
                   </span>
-                  {swapCalculation.priceImpact > 3 && (
-                    <Info className="w-3 h-3 text-yellow-500" />
-                  )}
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Min. received</span>
+                  <span className="text-gray-300">
+                    {formatSwapOutput(swapCalculation.minimumReceived, outputToken.decimals)} {outputToken.symbol}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Fee</span>
+                  <span className="text-gray-300">
+                    {((swapCalculation.pool?.feePercentage || 30) / 100).toFixed(2)}%
+                  </span>
                 </div>
               </div>
-              
-              {/* Minimum Received with Slippage */}
-              <div className="flex items-center justify-between py-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm font-medium">Min. Received</span>
-                  <span className="text-gray-500 text-xs">({slippage}% slippage)</span>
+            )}
+
+            {/* Swap Button */}
+            {isConnected ? (
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-xl font-semibold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-700"
+                onClick={handleSwap}
+                disabled={isSwapping || !inputAmount || parseFloat(inputAmount) <= 0 || !!swapCalculation.error}
+              >
+                {isSwapping ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Swapping...
+                  </>
+                ) : swapCalculation.error ? (
+                  'Insufficient liquidity'
+                ) : !inputAmount || parseFloat(inputAmount) <= 0 ? (
+                  'Enter an amount'
+                ) : (
+                  'Swap'
+                )}
+              </Button>
+            ) : (
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-xl font-semibold text-lg transition-all"
+                onClick={() => {
+                  // Find and click the wallet connect button
+                  const walletButton = document.querySelector('button[data-wallet-button]') || 
+                                     document.querySelector('button:has(.wallet-icon)') ||
+                                     document.querySelector('button[aria-label*="wallet" i]');
+                  if (walletButton instanceof HTMLElement) {
+                    walletButton.click();
+                  } else {
+                    toast.error('Please use the wallet button in the header to connect.');
+                  }
+                }}
+              >
+                Connect Wallet
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Settings */}
+      <div className="flex justify-end">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-200">
+              <Settings className="w-4 h-4 mr-1" />
+              Settings
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 bg-black border-gray-800">
+            <div className="space-y-4">
+              <h4 className="font-semibold text-white">Transaction Settings</h4>
+              <div>
+                <label className="text-sm text-gray-400">Slippage Tolerance (%)</label>
+                <div className="flex items-center gap-2 mt-2">
+                  <Input
+                    type="number"
+                    value={slippage}
+                    onChange={(e) => setSlippage(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-gray-800 border-gray-700 text-white"
+                    placeholder="0.5"
+                    step="0.1"
+                    min="0"
+                    max="50"
+                  />
+                  <Badge variant="outline" className="text-xs border-gray-700 text-gray-400">
+                    {slippage}%
+                  </Badge>
                 </div>
-                <span className="text-white text-sm font-medium mono">
-                  {formatSwapOutput(swapCalculation.minimumReceived, outputToken.decimals)} {outputToken.symbol}
-                </span>
               </div>
-              
-              {/* Trading Fee */}
-              <div className="flex items-center justify-between py-1">
-                <span className="text-gray-400 text-sm font-medium">Trading Fee</span>
-                <span className="text-gray-300 text-sm font-medium">
-                  {((swapCalculation.pool?.feePercentage || 30) / 100).toFixed(2)}%
-                </span>
-              </div>
-              
-              {/* Route */}
-              <div className="flex items-center justify-between py-1">
-                <span className="text-gray-400 text-sm font-medium">Route</span>
-                <span className="text-cyan-400 text-sm font-medium">{swapCalculation.route.join(' → ')}</span>
-              </div>
-              
-              {/* High Price Impact Warning */}
-              {swapCalculation.priceImpact > 5 && (
-                <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                  <p className="text-red-400 text-xs">
-                    ⚠️ High price impact! Consider reducing your trade size or splitting into smaller trades.
-                  </p>
-                </div>
-              )}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Swap Button */}
-      {isConnected ? (
-        <Button
-          className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-xl font-semibold text-lg tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleSwap}
-          disabled={isSwapping || !inputAmount || parseFloat(inputAmount) <= 0}
-        >
-          {isSwapping ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Swapping...
-            </>
-          ) : (
-            'Swap'
-          )}
-        </Button>
-      ) : (
-        <Button
-          className="w-full bg-cyan-500 hover:bg-cyan-400 text-black py-4 rounded-xl font-semibold text-lg tracking-wide transition-all"
-          onClick={() => {
-            // Find and click the wallet connect button
-            const walletButton = document.querySelector('button[data-wallet-button]') || 
-                               document.querySelector('button:has(.wallet-icon)') ||
-                               document.querySelector('button[aria-label*="wallet" i]');
-            if (walletButton instanceof HTMLElement) {
-              walletButton.click();
-            } else {
-              toast.error('Unable to find wallet button. Please use the wallet button in the header.');
-            }
-          }}
-        >
-          Connect Wallet
-        </Button>
-      )}
-
-      {/* Price Info */}
-      <div className="mt-6 space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-gray-400 text-sm font-medium">Token Prices</span>
-          <Info className="w-4 h-4 text-gray-400" />
-        </div>
-
-        <div className="space-y-2">
-          {inputPrice && (
-            <TokenPriceCard token={inputToken} price={inputPrice} />
-          )}
-          {outputPrice && (
-            <TokenPriceCard token={outputToken} price={outputPrice} />
-          )}
-        </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
-
-      {/* Token Selector */}
-      <TokenSelector
-        open={showTokenSelect === 'input'}
-        onClose={() => setShowTokenSelect(null)}
-        onSelect={setInputToken}
-        selectedToken={inputToken}
-      />
-      <TokenSelector
-        open={showTokenSelect === 'output'}
-        onClose={() => setShowTokenSelect(null)}
-        onSelect={setOutputToken}
-        selectedToken={outputToken}
-      />
       
       {/* Success Modal */}
       {swapResult && (
@@ -482,28 +385,6 @@ export function SwapInterface() {
         inputTokenSymbol={inputToken.symbol}
         outputTokenSymbol={outputToken.symbol}
       />
-    </div>
-  );
-}
-
-function TokenPriceCard({ token, price }: { token: Token; price: any }) {
-  return (
-    <div className="flex items-center justify-between p-3.5 bg-black/40 border border-white/10 rounded-xl hover:bg-white/5 transition-all animate-slide-in">
-      <div className="flex items-center gap-3">
-        <CoinIcon symbol={token.symbol} coinType={token.type} iconUrl={token.iconUrl} size={32} />
-        <div>
-          <div className="text-white font-medium text-sm">{token.symbol}</div>
-          <div className="text-gray-400 text-xs mt-0.5">
-            Vol: ${formatTokenAmount(price.volume24h, 0)}
-          </div>
-        </div>
-      </div>
-      <div className="text-right">
-        <div className="text-white font-medium text-sm mono">${price.price.toFixed(4)}</div>
-        <div className={`text-xs font-medium mt-0.5 ${price.change24h >= 0 ? 'text-cyan-400' : 'text-red-400'}`}>
-          {price.change24h >= 0 ? '+' : ''}{price.change24h.toFixed(2)}%
-        </div>
-      </div>
     </div>
   );
 }

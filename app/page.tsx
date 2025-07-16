@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Settings, BarChart3, ChevronDown, ArrowUpDown, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SwapInterface as NewSwapInterface } from "@/components/swap-interface"
-import { WalletTokens } from "@/components/wallet-tokens"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -87,9 +86,9 @@ export default function IotaApp() {
 
       <div className="px-6 py-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-12 gap-6">
-            {/* Trading Interface */}
-            <div className="col-span-12 lg:col-span-8">
+          <div className="flex justify-center">
+            {/* Trading Interface - Centered */}
+            <div className="w-full max-w-[480px]">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex items-center justify-between mb-6">
                 <TabsList className="bg-black/50 border border-white/10 p-1 rounded-xl">
@@ -129,13 +128,6 @@ export default function IotaApp() {
                   <DCAInterface />
                 </TabsContent>
               </Tabs>
-            </div>
-
-            {/* Wallet Balance Section */}
-            <div className="col-span-12 lg:col-span-4">
-              <div className="lg:pl-4">
-                <WalletTokens />
-              </div>
             </div>
           </div>
         </div>

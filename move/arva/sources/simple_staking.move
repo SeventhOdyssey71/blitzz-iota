@@ -34,7 +34,7 @@ module Blitz::simple_staking {
         ctx: &mut TxContext
     ) {
         let amount = coin::value(&iota_coin);
-        let stiota_amount = (amount * 1000000000) / pool.exchange_rate;
+        let stiota_amount = amount; // Simple 1:1 conversion for now
         
         balance::join(&mut pool.total_staked, coin::into_balance(iota_coin));
         
@@ -44,5 +44,24 @@ module Blitz::simple_staking {
         };
         
         transfer::public_transfer(stiota, tx_context::sender(ctx));
+    }
+
+    // Getter functions for testing
+    public fun get_amount(stiota: &StakedIOTA): u64 {
+        stiota.amount
+    }
+
+    public fun get_exchange_rate(pool: &StakingPool): u64 {
+        pool.exchange_rate
+    }
+
+    public fun get_total_staked(pool: &StakingPool): u64 {
+        balance::value(&pool.total_staked)
+    }
+
+    // Test-only init function
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(ctx);
     }
 }
