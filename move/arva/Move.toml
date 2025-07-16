@@ -7,5 +7,6 @@ Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-f
 
 [addresses]
 Blitz = "0x0"
+blitz = "0x0"
 iota_std = "0x1"
 iota = "0x2"
