@@ -27,7 +27,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 
 export function SiteHeader() {
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 
@@ -93,36 +92,6 @@ export function SiteHeader() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl [&>*]:bg-transparent [&>*:hover]:bg-transparent [&>*:focus]:bg-transparent">
                 <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">Cross Chain</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <button className="text-gray-400 hover:text-cyan-400 transition-colors font-medium px-3 py-2 rounded-md flex items-center gap-1">
-                  More <ChevronDown className="w-4 h-4 ml-1" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/95 border-white/10 backdrop-blur-xl w-48 [&>*]:bg-transparent [&>*:hover]:bg-transparent [&>*:focus]:bg-transparent">
-                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
-                  <User className="w-4 h-4 mr-2 text-gray-400" />
-                  Compensation
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
-                  <TrendingUp className="w-4 h-4 mr-2 text-gray-400" />
-                  Buy Crypto
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
-                  <Settings className="w-4 h-4 mr-2 text-gray-400" />
-                  IOTA Terminal
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
-                  <BarChart3 className="w-4 h-4 mr-2 text-gray-400" />
-                  Stats
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:text-cyan-400 focus:text-cyan-400 transition-colors cursor-pointer">
-                  <Info className="w-4 h-4 mr-2 text-gray-400" />
-                  Docs
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
@@ -232,55 +201,6 @@ export function SiteHeader() {
                           className="block py-2 text-gray-400 hover:text-cyan-400 transition-colors"
                         >
                           Cross Chain
-                        </Link>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* More Menu */}
-                    <AccordionItem value="more" className="border-white/10">
-                      <AccordionTrigger className="text-gray-300 hover:text-cyan-400 py-4">
-                        More
-                      </AccordionTrigger>
-                      <AccordionContent className="pl-4">
-                        <Link 
-                          href="#" 
-                          onClick={closeMobileMenu}
-                          className="flex items-center gap-3 py-2 text-gray-400 hover:text-cyan-400 transition-colors"
-                        >
-                          <User className="w-4 h-4" />
-                          Compensation
-                        </Link>
-                        <Link 
-                          href="#" 
-                          onClick={closeMobileMenu}
-                          className="flex items-center gap-3 py-2 text-gray-400 hover:text-cyan-400 transition-colors"
-                        >
-                          <TrendingUp className="w-4 h-4" />
-                          Buy Crypto
-                        </Link>
-                        <Link 
-                          href="#" 
-                          onClick={closeMobileMenu}
-                          className="flex items-center gap-3 py-2 text-gray-400 hover:text-cyan-400 transition-colors"
-                        >
-                          <Settings className="w-4 h-4" />
-                          IOTA Terminal
-                        </Link>
-                        <Link 
-                          href="#" 
-                          onClick={closeMobileMenu}
-                          className="flex items-center gap-3 py-2 text-gray-400 hover:text-cyan-400 transition-colors"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                          Stats
-                        </Link>
-                        <Link 
-                          href="#" 
-                          onClick={closeMobileMenu}
-                          className="flex items-center gap-3 py-2 text-gray-400 hover:text-cyan-400 transition-colors"
-                        >
-                          <Info className="w-4 h-4" />
-                          Docs
                         </Link>
                       </AccordionContent>
                     </AccordionItem>
