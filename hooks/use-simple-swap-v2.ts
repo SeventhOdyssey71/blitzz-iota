@@ -113,6 +113,16 @@ export function useSimpleSwapV2() {
         throw new Error(`Output token ${params.outputToken.symbol} doesn't match expected pool token`);
       }
       
+      // Log the exact types being used
+      console.log('Swap type validation:', {
+        poolCoinTypeA: pool.coinTypeA,
+        poolCoinTypeB: pool.coinTypeB,
+        inputTokenType: params.inputToken.type,
+        outputTokenType: params.outputToken.type,
+        isAToB,
+        swapFunction: isAToB ? 'swap_a_to_b' : 'swap_b_to_a'
+      });
+      
       // Calculate expected output to validate
       const FEE_NUMERATOR = BigInt(18); // 1.8% fee
       const FEE_DENOMINATOR = BigInt(1000);
@@ -180,22 +190,6 @@ export function useSimpleSwapV2() {
         coinType: params.inputToken.type,
         coins: coins.data?.map(c => ({ id: c.coinObjectId, balance: c.balance })) || [],
       });
-      
-      // Additional debug for stIOTA
-      if (params.inputToken.symbol === 'stIOTA') {
-        console.log('stIOTA swap debug:', {
-          expectedType: params.inputToken.type,
-          supportedType: SUPPORTED_COINS.stIOTA.type,
-          match: params.inputToken.type === SUPPORTED_COINS.stIOTA.type,
-        });
-        
-        // Try fetching with exact type
-        const certCoins = await client.getCoins({
-          owner: currentAccount.address,
-          coinType: '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT',
-        });
-        console.log('CERT coins found:', certCoins.data?.length || 0);
-      }
 
       if (!coins.data || coins.data.length === 0) {
         throw new Error(`No ${params.inputToken.symbol} balance found`);
@@ -242,6 +236,13 @@ export function useSimpleSwapV2() {
         }
       } else {
         // For non-IOTA tokens, simpler handling
+        // Validate coin types match
+        const invalidCoins = coins.data.filter(c => c.coinType !== params.inputToken.type);
+        if (invalidCoins.length > 0) {
+          console.error('Invalid coins detected:', invalidCoins);
+          throw new Error('Coin type mismatch detected');
+        }
+        
         const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
         
         console.log('Non-IOTA token handling:', {
@@ -249,6 +250,7 @@ export function useSimpleSwapV2() {
           totalBalance: totalBalance.toString(),
           inputAmount: inputAmount.toString(),
           needsSplit: totalBalance !== inputAmount,
+          coinTypes: coins.data.map(c => c.coinType),
         });
         
         let coinToSwap;
@@ -280,16 +282,33 @@ export function useSimpleSwapV2() {
           target: `${packageId}::simple_dex::swap_${isAToB ? 'a_to_b' : 'b_to_a'}`,
         });
         
+        // Ensure we're using the exact types from the pool
+        // Type arguments MUST match the pool's generic parameters exactly
+        const typeArgs = [pool.coinTypeA, pool.coinTypeB];
+        console.log('Move call type arguments:', typeArgs);
+        
         if (isAToB) {
+          console.log('Calling swap_a_to_b with:', {
+            target: `${packageId}::simple_dex::swap_a_to_b`,
+            typeArguments: typeArgs,
+            pool: pool.poolId,
+            coin: coinToSwap,
+          });
           tx.moveCall({
             target: `${packageId}::simple_dex::swap_a_to_b`,
-            typeArguments: [pool.coinTypeA, pool.coinTypeB],
+            typeArguments: typeArgs,
             arguments: [tx.object(pool.poolId), coinToSwap],
           });
         } else {
+          console.log('Calling swap_b_to_a with:', {
+            target: `${packageId}::simple_dex::swap_b_to_a`,
+            typeArguments: typeArgs,
+            pool: pool.poolId,
+            coin: coinToSwap,
+          });
           tx.moveCall({
             target: `${packageId}::simple_dex::swap_b_to_a`,
-            typeArguments: [pool.coinTypeA, pool.coinTypeB],
+            typeArguments: typeArgs,
             arguments: [tx.object(pool.poolId), coinToSwap],
           });
         }
