@@ -82,21 +82,19 @@ module Blitz::iota_stiota_swap_tests {
             test_scenario::return_shared(pool);
         };
         
-        // Check user received first stIOTA token
+        // Check user received stIOTA tokens
         test_scenario::next_tx(&mut scenario, USER);
         {
-            let stiota_coin1 = test_scenario::take_from_sender<StakedIOTA>(&scenario);
+            let ids = test_scenario::ids_for_sender<StakedIOTA>(&scenario);
+            assert!(vector::length(&ids) == 2, 0); // Should have 2 stIOTA objects
             
-            // Should receive 1 stIOTA
-            assert!(simple_staking::get_amount(&stiota_coin1) == 1000000000, 0);
-            
+            // Take and check first stIOTA
+            let stiota_coin1 = test_scenario::take_from_sender_by_id<StakedIOTA>(&scenario, *vector::borrow(&ids, 0));
+            assert!(simple_staking::get_amount(&stiota_coin1) == 1000000000, 1);
             test_scenario::return_to_sender(&scenario, stiota_coin1);
-        };
-        
-        // Check user received second stIOTA token
-        test_scenario::next_tx(&mut scenario, USER);
-        {
-            let stiota_coin2 = test_scenario::take_from_sender<StakedIOTA>(&scenario);
+            
+            // Take and check second stIOTA
+            let stiota_coin2 = test_scenario::take_from_sender_by_id<StakedIOTA>(&scenario, *vector::borrow(&ids, 1));
             
             // Should receive 2 stIOTA
             assert!(simple_staking::get_amount(&stiota_coin2) == 2000000000, 1);

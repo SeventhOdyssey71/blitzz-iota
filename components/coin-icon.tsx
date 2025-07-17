@@ -36,6 +36,7 @@ export function CoinIcon({ symbol, iconUrl, size = 24, className = '', coinType 
           width={size}
           height={size}
           className="rounded-full object-cover"
+          style={{ width: 'auto', height: 'auto' }}
           unoptimized
         />
       </div>
@@ -50,6 +51,7 @@ export function CoinIcon({ symbol, iconUrl, size = 24, className = '', coinType 
         width={size}
         height={size}
         className="rounded-full object-cover"
+        style={{ width: 'auto', height: 'auto' }}
         unoptimized
       />
     </div>
