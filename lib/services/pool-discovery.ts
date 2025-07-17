@@ -1,6 +1,6 @@
 'use client';
 
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 import { blitz_PACKAGE_ID, SUPPORTED_COINS, STAKING_POOL_ADDRESS, STIOTA_TYPE } from '@/config/iota.config';
 import { findMockPool, getAllMockPools } from './mock-pools';
 import { PoolTracker } from './pool-tracker';
@@ -62,12 +62,7 @@ export class PoolDiscovery {
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window as any).debugPools) {
       console.log('Finding pool for pair:', { coinTypeA, coinTypeB });
     }
-    const client = getIotaClientSafe();
-    
-    // Return null if client is not available (SSR)
-    if (!client) {
-      return null;
-    }
+    const client = getSafeIotaClient();
     
     // Clear any stale pool data on first load
     if (typeof window !== 'undefined' && !window.poolsCleared) {
@@ -192,7 +187,7 @@ export class PoolDiscovery {
             },
           });
           
-          if (poolObject.data?.content?.dataType === 'moveObject') {
+          if (poolObject && poolObject.data?.content?.dataType === 'moveObject') {
             const fields = poolObject.data.content.fields as any;
             
             // Parse the balance fields correctly

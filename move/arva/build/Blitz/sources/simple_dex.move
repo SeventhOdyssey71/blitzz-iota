@@ -8,9 +8,9 @@ module Blitz::simple_dex {
 
     // Error codes
     const E_ZERO_AMOUNT: u64 = 0;
-    // const E_INSUFFICIENT_LIQUIDITY: u64 = 1; // Unused constant
     const E_INSUFFICIENT_OUTPUT_AMOUNT: u64 = 2;
     const E_INSUFFICIENT_RESERVES: u64 = 3;
+    const E_SLIPPAGE_EXCEEDED: u64 = 5;
 
     // Constants
     const FEE_NUMERATOR: u64 = 18; // 1.8% fee
@@ -59,11 +59,14 @@ module Blitz::simple_dex {
         
         assert!(amount_a > 0 && amount_b > 0, E_ZERO_AMOUNT);
         
+        // Calculate initial LP supply using geometric mean
+        let initial_lp_supply = sqrt(amount_a * amount_b);
+        
         let pool = Pool<CoinA, CoinB> {
             id: object::new(ctx),
             reserve_a: coin::into_balance(coin_a),
             reserve_b: coin::into_balance(coin_b),
-            lp_supply: amount_a, // Initial LP supply equals amount_a
+            lp_supply: initial_lp_supply,
             fees_a: 0,
             fees_b: 0,
             total_volume_a: 0,
@@ -73,7 +76,7 @@ module Blitz::simple_dex {
         // Mint LP tokens to creator
         let lp_token = LPToken<CoinA, CoinB> {
             id: object::new(ctx),
-            amount: amount_a,
+            amount: initial_lp_supply,
         };
         
         transfer::share_object(pool);
@@ -150,16 +153,19 @@ module Blitz::simple_dex {
         pool: &mut Pool<CoinA, CoinB>,
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
-        _min_lp_amount: u64,
+        min_lp_amount: u64,
         ctx: &mut TxContext
     ) {
         let amount_a = coin::value(&coin_a);
         let amount_b = coin::value(&coin_b);
+        
+        assert!(amount_a > 0 && amount_b > 0, E_ZERO_AMOUNT);
+        
         let reserve_a = balance::value(&pool.reserve_a);
         let reserve_b = balance::value(&pool.reserve_b);
         
         // Calculate LP tokens to mint
-        let lp_amount = if (pool.lp_supply >= 0) {
+        let lp_amount = if (pool.lp_supply == 0) {
             // First liquidity provider - use geometric mean
             // sqrt(amount_a * amount_b)
             let product = amount_a * amount_b;
@@ -171,6 +177,9 @@ module Blitz::simple_dex {
             // Use the minimum to maintain ratio
             if (lp_from_a < lp_from_b) { lp_from_a } else { lp_from_b }
         };
+        
+        // Check minimum LP amount
+        assert!(lp_amount >= min_lp_amount, E_SLIPPAGE_EXCEEDED);
         
         // Add liquidity to pool
         balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
@@ -191,8 +200,8 @@ module Blitz::simple_dex {
     public entry fun remove_liquidity<CoinA, CoinB>(
         pool: &mut Pool<CoinA, CoinB>,
         lp_token: LPToken<CoinA, CoinB>,
-        _min_amount_a: u64,
-        _min_amount_b: u64,
+        min_amount_a: u64,
+        min_amount_b: u64,
         ctx: &mut TxContext
     ) {
         let lp_amount = lp_token.amount;
@@ -217,6 +226,10 @@ module Blitz::simple_dex {
             // LP amount equals total supply, return all reserves
             reserve_b
         };
+        
+        // Check minimum amounts
+        assert!(amount_a >= min_amount_a, E_SLIPPAGE_EXCEEDED);
+        assert!(amount_b >= min_amount_b, E_SLIPPAGE_EXCEEDED);
         
         // Update LP supply
         pool.lp_supply = pool.lp_supply - lp_amount;

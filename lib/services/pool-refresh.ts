@@ -1,14 +1,11 @@
 'use client';
 
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 import { PoolTracker } from './pool-tracker';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 
 export async function refreshPoolCache() {
-  const client = getIotaClientSafe();
-  if (!client) {
-    return;
-  }
+  const client = getSafeIotaClient();
   
   // Get all tracked pools
   const trackedPools = PoolTracker.getPools();
@@ -31,7 +28,7 @@ export async function refreshPoolCache() {
         },
       });
       
-      if (!poolObject.data) {
+      if (!poolObject || !poolObject.data) {
         // Pool not found, remove from tracker
         PoolTracker.removePool(pool.poolId);
       }

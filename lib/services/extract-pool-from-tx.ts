@@ -1,14 +1,11 @@
 'use client';
 
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 import { PoolTracker } from './pool-tracker';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 
 export async function extractPoolFromTransaction(txDigest: string) {
-  const client = getIotaClientSafe();
-  if (!client) {
-    throw new Error('IOTA client not available');
-  }
+  const client = getSafeIotaClient();
   
   try {
     console.log('Fetching transaction:', txDigest);
@@ -22,6 +19,10 @@ export async function extractPoolFromTransaction(txDigest: string) {
         showEvents: true,
       }
     });
+    
+    if (!tx) {
+      throw new Error('Transaction not found');
+    }
     
     console.log('Transaction details:', tx);
     

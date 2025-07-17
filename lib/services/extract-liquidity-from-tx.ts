@@ -1,6 +1,6 @@
 'use client';
 
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 import { refreshPoolCache } from './pool-refresh';
 
 interface LiquidityAdditionResult {
@@ -17,13 +17,7 @@ interface LiquidityAdditionResult {
 }
 
 export async function extractLiquidityFromTransaction(txDigest: string): Promise<LiquidityAdditionResult> {
-  const client = getIotaClientSafe();
-  if (!client) {
-    return {
-      success: false,
-      message: 'IOTA client not available'
-    };
-  }
+  const client = getSafeIotaClient();
   
   try {
     console.log('Fetching liquidity addition transaction:', txDigest);
@@ -38,6 +32,13 @@ export async function extractLiquidityFromTransaction(txDigest: string): Promise
         showInput: true,
       }
     });
+    
+    if (!tx) {
+      return {
+        success: false,
+        message: 'Transaction not found'
+      };
+    }
     
     // Look for mutated pool objects (liquidity additions modify existing pools)
     let poolInfo = null;
