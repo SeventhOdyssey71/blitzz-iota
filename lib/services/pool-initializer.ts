@@ -7,26 +7,33 @@ import { SUPPORTED_COINS } from '@/config/iota.config';
 export function initializeKnownPools() {
   if (typeof window === 'undefined') return;
   
-  // Clear old pools from previous contract deployments
-  const pools = PoolTracker.getPools();
-  const oldPoolIds = [
-    // Previous deployments
-    '0x392d2ce006b93d057026999fb6d08c6910449ea0b3998d1b54d57a0b8b5f100f',
-    '0x8c48e9e7347f8385bf400e269948b6d4d5460e84792cd18a512ddf998474f7d1',
-    '0x481854a6bbb4026817640e3ccb50879b3d2a132ed0f1e547f8babe47143e0eb6',
-    '0xbdf257ff7fb35bbb2b6ff24de08d26cc50833b3ea1f0b86e4d5051b5424ed767'
-  ];
+  // Check if we need to clear pools for new package
+  const CURRENT_PACKAGE_ID = '0x620f8a39ec678170db2b2ed8cee5cc6a3d5b4802acd8a8905919c2e7bd5d52bb';
+  const lastPackageId = localStorage.getItem('blitz_last_package_id');
   
-  // Filter out old pools
-  const validPools = pools.filter(p => !oldPoolIds.includes(p.poolId));
-  
-  if (validPools.length < pools.length) {
-    // Clear and re-save only valid pools
+  if (lastPackageId !== CURRENT_PACKAGE_ID) {
+    console.log('New package detected, clearing all pools...');
+    // Clear ALL pools since we have a new package
     PoolTracker.clearPools();
-    validPools.forEach(pool => {
-      PoolTracker.savePool(pool);
-    });
-    console.log('Cleared old pools from previous contract');
+    localStorage.removeItem('pool_cache');
+    localStorage.removeItem('blitz_pool_cache');
+    
+    // Clear any other pool-related storage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('pool') || key.includes('Pool'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Set the new package ID
+    localStorage.setItem('blitz_last_package_id', CURRENT_PACKAGE_ID);
+    
+    // Dispatch refresh event
+    window.dispatchEvent(new Event('pool-cache-refresh'));
+    console.log('All pools cleared for new package deployment');
   }
   
   // Check if we have any IOTA/stIOTA pool
