@@ -6,10 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start",
-    "deploy:contracts": "node scripts/deploy-contracts.js",
-    "reset:pools": "tsx scripts/reset-pools.ts",
-    "create:pools": "tsx scripts/create-pools.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
