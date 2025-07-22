@@ -13,12 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { 
   ChevronDown, 
-  User, 
-  TrendingUp, 
-  BarChart3, 
-  Info,
   UserCircle,
-  Settings,
   Menu
 } from 'lucide-react'
 import { WalletButtonV2 } from '@/components/wallet-button-v2'
@@ -44,10 +39,10 @@ export function SiteHeader() {
               <Image 
                 src="/larplogo.png" 
                 alt="IOTA Logo" 
-                width={40} 
-                height={32} 
+                width={24} 
+                height={24} 
                 className="rounded-lg"
-                style={{ width: 'auto', height: 'auto' }}
+                style={{ width: '24px', height: '24px' }}
               />
               <span className="text-white font-bold text-2xl tracking-wider" style={{ fontFamily: 'Orbitron, monospace' }}>BLITZZ</span>
             </Link>

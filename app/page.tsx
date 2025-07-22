@@ -82,14 +82,9 @@ export default function IotaApp() {
   }, []);
 
   return (
-    <div>
-
-      <div className="px-6 py-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center">
-            {/* Trading Interface - Centered */}
-            <div className="w-full max-w-[480px]">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <div className="w-full min-h-[calc(100vh-200px)] flex items-center justify-center px-6 py-8">
+      <div className="w-full max-w-[480px]">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex items-center justify-between mb-6">
                 <TabsList className="bg-black/50 border border-white/10 p-1 rounded-xl">
                   <TabsTrigger value="swap" className="data-[state=active]:bg-white/10 data-[state=active]:text-cyan-400 data-[state=active]:border data-[state=active]:border-cyan-500/30 text-gray-400 font-medium transition-all rounded-lg">
@@ -128,9 +123,6 @@ export default function IotaApp() {
                   <DCAInterface />
                 </TabsContent>
               </Tabs>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )

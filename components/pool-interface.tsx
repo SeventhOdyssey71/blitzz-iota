@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Info, Loader2, Minus } from 'lucide-react';
+import { Plus, Info, Loader2 } from 'lucide-react';
 import { useCurrentAccount } from '@iota/dapp-kit';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
