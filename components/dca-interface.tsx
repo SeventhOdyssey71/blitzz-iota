@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@iota/dapp-kit"
 import { useWalletBalance } from "@/hooks/use-wallet-balance"
-import { TokenSelect } from "@/components/token-select"
+import { TokenSelector } from "@/components/token-selector"
 import { toast } from "sonner"
 import { TransactionBlock } from "@iota/iota-sdk/transactions"
 import { IOTA_CONFIG } from "@/config/iota.config"
@@ -381,7 +381,7 @@ export function DCAInterface() {
       </Button>
 
       {/* Token Select Modals */}
-      <TokenSelect
+      <TokenSelector
         isOpen={isFromTokenSelectOpen}
         onClose={() => setIsFromTokenSelectOpen(false)}
         onSelect={(token) => {
@@ -391,7 +391,7 @@ export function DCAInterface() {
         selectedToken={fromToken}
       />
 
-      <TokenSelect
+      <TokenSelector
         isOpen={isToTokenSelectOpen}
         onClose={() => setIsToTokenSelectOpen(false)}
         onSelect={(token) => {
