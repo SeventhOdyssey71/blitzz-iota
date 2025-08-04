@@ -125,6 +125,7 @@ BLITZZ has established a strong presence across multiple channels:
 - Mobile UI optimization
 - Community building and marketing campaign
 - Onboard initial liquidity providers
+
 - Create educational content and tutorials
 
 ### To be sent to:
