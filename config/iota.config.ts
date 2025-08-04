@@ -66,3 +66,32 @@ export const DEFAULT_DEADLINE = 20; // 20 minutes
 // Staking Pool Configuration
 export const STAKING_POOL_ADDRESS = '0x174ff721e0c0e85814cbe5d4f908c9312071c78972238dac7a97e018e0ae6951';
 export const STIOTA_TYPE = '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT';
+
+// Main configuration export
+export const IOTA_CONFIG = {
+  chain: DEFAULT_NETWORK,
+  networks: IOTA_NETWORKS,
+  contracts: {
+    packageId: blitz_PACKAGE_ID[DEFAULT_NETWORK],
+    memeFactoryPackageId: MEME_FACTORY_PACKAGE_ID[DEFAULT_NETWORK],
+    pools: {
+      'vUSD_IOTA': '0x0', // To be deployed
+      'IOTA_vUSD': '0x0', // To be deployed
+      'stIOTA_IOTA': '0x0', // To be deployed
+      'IOTA_stIOTA': '0x0', // To be deployed
+    },
+    limitOrderBook: {
+      'vUSD_IOTA': '0x0', // To be deployed
+      'IOTA_vUSD': '0x0', // To be deployed
+      'stIOTA_IOTA': '0x0', // To be deployed
+      'IOTA_stIOTA': '0x0', // To be deployed
+    },
+    dcaRegistry: '0x0', // To be deployed
+  },
+  supportedCoins: SUPPORTED_COINS,
+  poolCreationFee: POOL_CREATION_FEE,
+  defaultSlippage: DEFAULT_SLIPPAGE,
+  defaultDeadline: DEFAULT_DEADLINE,
+  stakingPoolAddress: STAKING_POOL_ADDRESS,
+  stIotaType: STIOTA_TYPE,
+} as const;
