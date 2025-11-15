@@ -1,4 +1,4 @@
-import { TransactionBlock } from '@iota/iota-sdk/transactions';
+import { Transaction } from '@iota/iota-sdk/transactions';
 import { IotaClient, IotaObjectRef } from '@iota/iota-sdk/client';
 import { MEME_FACTORY_PACKAGE_ID, MEME_PLATFORM_ID } from '@/config/iota.config';
 
@@ -52,7 +52,7 @@ export class MemeTokenFactory {
 
   // Create a new meme token
   async createToken(
-    tx: TransactionBlock,
+    tx: Transaction,
     witness: any, // The witness object for the token type
     payment: IotaObjectRef,
     symbol: string,
@@ -80,7 +80,7 @@ export class MemeTokenFactory {
 
   // Buy tokens from bonding curve
   async buyTokens(
-    tx: TransactionBlock,
+    tx: Transaction,
     tokenType: string,
     bondingCurveId: string,
     payment: IotaObjectRef,
@@ -101,7 +101,7 @@ export class MemeTokenFactory {
 
   // Sell tokens back to bonding curve
   async sellTokens(
-    tx: TransactionBlock,
+    tx: Transaction,
     tokenType: string,
     bondingCurveId: string,
     tokens: IotaObjectRef,
@@ -152,7 +152,7 @@ export class MemeTokenFactory {
   // Get token price from bonding curve
   async getTokenPrice(tokenType: string, bondingCurveId: string): Promise<string> {
     try {
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       
       const result = await this.client.devInspectTransactionBlock({
         transactionBlock: tx,

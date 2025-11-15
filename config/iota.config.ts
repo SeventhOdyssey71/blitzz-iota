@@ -19,12 +19,12 @@ export const IOTA_NETWORKS = {
   },
 } as const;
 
-export const DEFAULT_NETWORK = 'testnet';
+export const DEFAULT_NETWORK = 'mainnet';
 
 export const blitz_PACKAGE_ID = {
-  mainnet: '0x0', // To be deployed
+  mainnet: '0x9bc9c878bb3cede9dcd86ef12d48c1fbe52732463d294ba40e4c02aa04a59cf7', // Newly deployed package with latest features
   testnet: '0x620f8a39ec678170db2b2ed8cee5cc6a3d5b4802acd8a8905919c2e7bd5d52bb', // Updated with improved liquidity and error handling
-  devnet: '0x0', // To be deployed
+  devnet: '0x9bc9c878bb3cede9dcd86ef12d48c1fbe52732463d294ba40e4c02aa04a59cf7', // Same as mainnet for testing
 } as const;
 
 export const MEME_FACTORY_PACKAGE_ID = {
@@ -64,7 +64,7 @@ export const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 export const DEFAULT_DEADLINE = 20; // 20 minutes
 
 // Staking Pool Configuration
-export const STAKING_POOL_ADDRESS = '0x174ff721e0c0e85814cbe5d4f908c9312071c78972238dac7a97e018e0ae6951';
+export const STAKING_POOL_ADDRESS = '0xae56600fb70783adec66c0fc1130ce18af2cff35e0c0d8203b2b009f1052215f';
 export const STIOTA_TYPE = '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT';
 
 // Main configuration export
