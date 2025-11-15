@@ -44,7 +44,7 @@ export function SiteHeader() {
                 className="rounded-lg"
                 style={{ width: '24px', height: '24px' }}
               />
-              <span className="text-white font-bold text-2xl tracking-wider" style={{ fontFamily: 'Orbitron, monospace' }}>BLITZZ</span>
+              <span className="text-white font-bold text-2xl tracking-wider font-grotesk">BLITZZ</span>
             </Link>
           </div>
 

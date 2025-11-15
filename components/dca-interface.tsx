@@ -11,9 +11,9 @@ import { useCurrentAccount, useSignAndExecuteTransaction } from "@iota/dapp-kit"
 import { useWalletBalance } from "@/hooks/use-wallet-balance"
 import { TokenSelector } from "@/components/token-selector"
 import { toast } from "sonner"
-import { TransactionBlock } from "@iota/iota-sdk/transactions"
+import { Transaction } from "@iota/iota-sdk/transactions"
 import { IOTA_CONFIG } from "@/config/iota.config"
-import { formatBalance } from "@/lib/utils"
+import { formatBalance } from "@/lib/utils/format"
 
 interface Token {
   symbol: string
@@ -118,7 +118,7 @@ export function DCAInterface() {
 
     setLoading(true)
     try {
-      const tx = new TransactionBlock()
+      const tx = new Transaction()
       
       // Get the DCA registry ID and pool ID
       const dcaRegistryId = IOTA_CONFIG.contracts.dcaRegistry

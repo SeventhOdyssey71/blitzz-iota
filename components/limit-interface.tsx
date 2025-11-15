@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@iota/dapp-kit"
-import { useBalance } from "@/hooks/useBalance"
+import { useWalletBalance } from "@/hooks/use-wallet-balance"
 import { TokenSelect } from "@/components/token-select"
 import { toast } from "sonner"
-import { TransactionBlock } from "@iota/iota-sdk/transactions"
+import { Transaction } from "@iota/iota-sdk/transactions"
 import { IOTA_CONFIG } from "@/config/iota.config"
-import { formatBalance } from "@/lib/utils"
+import { formatBalance } from "@/lib/utils/format"
 
 interface Token {
   symbol: string
@@ -48,8 +48,8 @@ export function LimitInterface() {
 
   const account = useCurrentAccount()
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction()
-  const { balance: fromBalance } = useBalance(fromToken.type)
-  const { balance: toBalance } = useBalance(toToken.type)
+  const { balance: fromBalance } = useWalletBalance(fromToken.type)
+  const { balance: toBalance } = useWalletBalance(toToken.type)
 
   // Calculate the other amount based on price
   useEffect(() => {
@@ -105,7 +105,7 @@ export function LimitInterface() {
 
     setLoading(true)
     try {
-      const tx = new TransactionBlock()
+      const tx = new Transaction()
       
       // Get the order book ID (this should be stored in config or fetched)
       const orderBookId = IOTA_CONFIG.contracts.limitOrderBook[`${fromToken.symbol}_${toToken.symbol}`]

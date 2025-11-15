@@ -11,9 +11,9 @@ const config: Config = {
   theme: {
   	extend: {
   		fontFamily: {
-  			'suprema': ['TWK Everett', 'sans-serif'],
-  			'inter': ['var(--font-inter)', 'sans-serif'],
-  			'twk': ['TWK Everett', 'sans-serif'],
+  			'power': ['Power Grotesk', 'sans-serif'],
+  			'grotesk': ['Power Grotesk', 'sans-serif'],
+  			'sans': ['Power Grotesk', 'sans-serif'],
   		},
   		colors: {
   			background: 'hsl(var(--background))',

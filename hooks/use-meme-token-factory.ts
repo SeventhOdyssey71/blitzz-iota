@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@iota/dapp-kit';
-import { TransactionBlock } from '@iota/iota-sdk/transactions';
+import { Transaction } from '@iota/iota-sdk/transactions';
 import { IotaClient } from '@iota/iota-sdk/client';
 import { toast } from 'sonner';
 import { MemeTokenFactory, CREATION_FEE, TokenInfo, BondingCurveInfo } from '@/lib/contracts/meme-token-factory';
@@ -37,7 +37,7 @@ export function useMemeTokenFactory() {
     setIsLoading(true);
     
     try {
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       
       // Split coins for payment
       const [payment] = tx.splitCoins(tx.gas, [tx.pure(CREATION_FEE)]);
@@ -105,7 +105,7 @@ export function useMemeTokenFactory() {
     setIsLoading(true);
     
     try {
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       
       // Split coins for payment
       const [payment] = tx.splitCoins(tx.gas, [tx.pure(iotaAmount.toString())]);
@@ -163,7 +163,7 @@ export function useMemeTokenFactory() {
     setIsLoading(true);
     
     try {
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       
       // Sell tokens
       const iota = await factory.sellTokens(
