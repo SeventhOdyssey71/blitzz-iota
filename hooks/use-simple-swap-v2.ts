@@ -41,18 +41,25 @@ export function useSimpleSwapV2() {
       const inputAmount = parseTokenAmount(params.inputAmount, params.inputToken.decimals);
       
       // Find pool for swap
+      console.log('Looking for pool:', {
+        inputToken: params.inputToken.type,
+        outputToken: params.outputToken.type
+      });
+      
       const pool = await PoolService.findPool(
         params.inputToken.type,
         params.outputToken.type,
         'testnet'
       );
 
+      console.log('Pool found:', pool);
+
       if (!pool) {
-        throw new Error(`No liquidity pool found for ${params.inputToken.symbol} → ${params.outputToken.symbol}`);
+        throw new Error(`No liquidity pool found for ${params.inputToken.symbol} → ${params.outputToken.symbol}. Please create a pool first.`);
       }
 
       if (!pool.poolId || pool.reserveA === BigInt(0) || pool.reserveB === BigInt(0)) {
-        throw new Error('Pool has no liquidity');
+        throw new Error('Pool has no liquidity. Reserves: A=' + pool.reserveA.toString() + ', B=' + pool.reserveB.toString());
       }
 
       // Determine swap direction
@@ -102,6 +109,15 @@ export function useSimpleSwapV2() {
       const typeArgs = [pool.coinTypeA, pool.coinTypeB];
       const target = `${packageId}::simple_dex::swap_${isAToB ? 'a_to_b' : 'b_to_a'}`;
       
+      console.log('Swap transaction details:', {
+        target,
+        typeArgs,
+        poolId: pool.poolId,
+        inputAmount: inputAmount.toString(),
+        isAToB,
+        coinToSwapValue: coinToSwap
+      });
+      
       tx.moveCall({
         target,
         typeArguments: typeArgs,
@@ -126,7 +142,8 @@ export function useSimpleSwapV2() {
             onSuccess: (result) => {
               if (result.effects?.status !== 'success') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Transaction failed on chain';
-                reject(new Error(errorMsg));
+                toast.error('Swap failed', { description: errorMsg });
+                resolve({ success: false, error: errorMsg });
                 return;
               }
 
@@ -139,7 +156,7 @@ export function useSimpleSwapV2() {
             onError: (error) => {
               const errorMsg = error?.message || 'Transaction failed';
               toast.error('Swap failed', { description: errorMsg });
-              reject(error);
+              resolve({ success: false, error: errorMsg });
             },
           }
         );
