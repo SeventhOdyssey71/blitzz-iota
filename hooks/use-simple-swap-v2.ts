@@ -168,11 +168,7 @@ export function useSimpleSwapV2() {
                 }
               }
 
-              // Show success toast with actual swap amounts (format input to 2dp as well)
-              const formattedInputAmount = parseFloat(params.inputAmount).toFixed(2);
-              toast.success(`Swapped ${formattedInputAmount} ${params.inputToken.symbol} for ${actualOutputAmount} ${params.outputToken.symbol}`, {
-                description: `Transaction: ${result.digest.slice(0, 10)}...`,
-              });
+              // Don't show toast here - let the UI component handle the success display
 
               resolve({ success: true, digest: result.digest });
             },
