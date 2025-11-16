@@ -155,6 +155,13 @@ export function useSimpleSwapV2() {
             },
             onError: (error) => {
               const errorMsg = error?.message || 'Transaction failed';
+              
+              // Check if this is a user rejection - don't show toast for these
+              if (errorMsg.includes('Rejected from user') || errorMsg.includes('User rejected')) {
+                resolve({ success: false, error: errorMsg, userRejected: true });
+                return;
+              }
+              
               toast.error('Swap failed', { description: errorMsg });
               resolve({ success: false, error: errorMsg });
             },
@@ -163,7 +170,12 @@ export function useSimpleSwapV2() {
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Swap failed', { description: errorMsg });
+      
+      // Don't show toast for user rejections
+      if (!errorMsg.includes('Rejected from user') && !errorMsg.includes('User rejected')) {
+        toast.error('Swap failed', { description: errorMsg });
+      }
+      
       return { success: false, error: errorMsg };
     } finally {
       setIsSwapping(false);
