@@ -79,8 +79,8 @@ export function useSimpleSwapV2() {
 
       const totalBalance = coins.data.reduce((sum, coin) => sum + BigInt(coin.balance), BigInt(0));
       
-      // For IOTA, ensure we have enough for swap + gas (increased for transaction complexity)
-      const gasNeeded = 500000000n; // 0.5 IOTA - increased for complex swap transactions
+      // For IOTA, ensure we have enough for swap + gas (large budget for complex transactions)
+      const gasNeeded = 2000000000n; // 2 IOTA - large gas budget for complex swap transactions
       const minRequired = params.inputToken.type === SUPPORTED_COINS.IOTA.type 
         ? inputAmount + gasNeeded 
         : inputAmount;
@@ -115,7 +115,7 @@ export function useSimpleSwapV2() {
       });
 
       // Set gas budget that matches our validation and handles transaction complexity
-      tx.setGasBudget(500000000); // 0.5 IOTA - matches gasNeeded and handles complex transactions
+      tx.setGasBudget(2000000000); // 2 IOTA - large budget to ensure transaction execution
 
       // Execute transaction with proper options
       return new Promise((resolve, reject) => {
