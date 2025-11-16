@@ -83,52 +83,24 @@ export function useSimpleSwapV2() {
 
       const totalBalance = coins.data.reduce((sum, coin) => sum + BigInt(coin.balance), BigInt(0));
       
-      // For IOTA, ensure we have enough for both swap and gas
-      const minRequiredBalance = params.inputToken.type === SUPPORTED_COINS.IOTA.type 
-        ? inputAmount + 100000000n // Add 0.1 IOTA for gas
-        : inputAmount;
-        
-      if (totalBalance < minRequiredBalance) {
-        const shortfall = minRequiredBalance - totalBalance;
-        throw new Error(`Insufficient ${params.inputToken.symbol} balance. Need ${shortfall.toString()} more for swap and gas fees.`);
+      // Basic balance check - let the wallet handle gas payment
+      if (totalBalance < inputAmount) {
+        throw new Error(`Insufficient ${params.inputToken.symbol} balance`);
       }
 
-      // Handle coin preparation for swap
+      // Handle coin preparation for swap - consistent approach for all tokens
+      const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
       let coinToSwap;
       
-      if (params.inputToken.type === SUPPORTED_COINS.IOTA.type) {
-        // For IOTA, we need to be careful not to use gas coins
-        // Get IOTA coins excluding gas budget
-        const iotaCoins = coins.data.filter(coin => BigInt(coin.balance) >= 1000000n); // At least 0.001 IOTA
-        
-        if (iotaCoins.length === 0) {
-          throw new Error('Insufficient IOTA balance for swap and gas fees');
-        }
-        
-        const coinRefs = iotaCoins.map(c => tx.object(c.coinObjectId));
-        
-        if (iotaCoins.length === 1 && BigInt(iotaCoins[0].balance) > inputAmount + 10000000n) {
-          // Split from the single coin, leaving enough for gas
-          [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
-        } else if (iotaCoins.length > 1) {
-          // Merge coins first, then split
-          tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
-          [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
-        } else {
-          throw new Error('Insufficient IOTA balance. Need more for gas fees.');
-        }
+      if (coins.data.length === 1 && BigInt(coins.data[0].balance) === inputAmount) {
+        // Use the exact coin if it matches the amount perfectly
+        coinToSwap = coinRefs[0];
       } else {
-        // For non-IOTA tokens, use standard logic
-        const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
-        
-        if (coins.data.length === 1 && BigInt(coins.data[0].balance) === inputAmount) {
-          coinToSwap = coinRefs[0];
-        } else {
-          if (coinRefs.length > 1) {
-            tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
-          }
-          [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
+        // Merge all coins if multiple, then split the exact amount needed
+        if (coinRefs.length > 1) {
+          tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
         }
+        [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
       }
 
       // Execute the swap
@@ -141,12 +113,8 @@ export function useSimpleSwapV2() {
         arguments: [tx.object(pool.poolId), coinToSwap],
       });
 
-      // Set appropriate gas budget based on transaction complexity
-      const baseGas = 20000000; // 0.02 IOTA base
-      const complexityGas = 30000000; // Additional 0.03 IOTA for swap operations
-      const gasBudget = baseGas + complexityGas; // Total: 0.05 IOTA
-      
-      tx.setGasBudget(gasBudget);
+      // Set appropriate gas budget
+      tx.setGasBudget(100000000); // 0.1 IOTA
 
       // Execute transaction with proper options
       return new Promise((resolve, reject) => {
