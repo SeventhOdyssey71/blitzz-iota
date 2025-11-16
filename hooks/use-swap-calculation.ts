@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useIotaClient } from '@iota/dapp-kit';
-import { PoolDiscovery, PoolInfo } from '@/lib/services/pool-discovery';
+import { PoolService, PoolInfo } from '@/lib/services/pool-service';
 import { parseTokenAmount, formatBalance } from '@/lib/utils/format';
 
 interface SwapCalculation {
@@ -51,7 +51,7 @@ export function useSwapCalculation(
 
       try {
         // Find the pool for this pair
-        const pool = await PoolDiscovery.findPoolsForPair(
+        const pool = await PoolService.findPool(
           inputToken.type,
           outputToken.type,
           'testnet'
@@ -82,15 +82,15 @@ export function useSwapCalculation(
         const isAToB = pool.coinTypeA === inputToken.type;
 
         // Calculate output amount using AMM formula
-        const swapResult = PoolDiscovery.calculateOutputAmount(
+        const swapResult = PoolService.calculateSwapQuote(
           pool,
           inputAmountBigInt,
-          isAToB
+          isAToB,
+          slippage
         );
 
-        // Use the calculated minimum received from the pool (includes slippage)
-        const customSlippageMultiplier = BigInt(Math.floor((100 - slippage) * 100));
-        const customMinimumReceived = (swapResult.outputAmount * customSlippageMultiplier) / 10000n;
+        // Use the minimum received from swap quote (already includes slippage)
+        const customMinimumReceived = swapResult.minimumReceived;
 
         setCalculation({
           outputAmount: swapResult.outputAmount.toString(),
@@ -100,8 +100,6 @@ export function useSwapCalculation(
           pool,
           isLoading: false,
           error: null,
-          spotPriceBefore: swapResult.spotPriceBefore,
-          spotPriceAfter: swapResult.spotPriceAfter,
         });
       } catch (error) {
         setCalculation(prev => ({

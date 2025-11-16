@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '@iota/dapp-kit';
 import { parseTokenAmount } from '@/lib/utils/format';
 import { toast } from 'sonner';
-import { PoolDiscovery } from '@/lib/services/pool-discovery';
+import { PoolService } from '@/lib/services/pool-service';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
 
@@ -41,7 +41,7 @@ export function useSimpleSwapV2() {
       const inputAmount = parseTokenAmount(params.inputAmount, params.inputToken.decimals);
       
       // Find pool for swap
-      const pool = await PoolDiscovery.findPoolsForPair(
+      const pool = await PoolService.findPool(
         params.inputToken.type,
         params.outputToken.type,
         'testnet'

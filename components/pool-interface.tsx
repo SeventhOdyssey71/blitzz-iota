@@ -17,7 +17,7 @@ import { useAddLiquidity } from '@/hooks/use-add-liquidity';
 import { useRemoveLiquidityV2 } from '@/hooks/use-remove-liquidity-v2';
 import { usePoolInfo } from '@/hooks/use-pool-info';
 import { useLPTokens } from '@/hooks/use-lp-tokens';
-import { refreshPoolCache } from '@/lib/services/pool-refresh';
+import { PoolService } from '@/lib/services/pool-service';
 import { useTokenPrices } from '@/hooks/use-token-price';
 
 export function PoolInterface() {
@@ -140,19 +140,11 @@ export function PoolInterface() {
         setIotaAmount('');
         setStIotaAmount('');
         
-        // Extract liquidity info from transaction if available
-        if (result.digest) {
-          const { extractLiquidityFromTransaction } = await import('@/lib/services/extract-liquidity-from-tx');
-          extractLiquidityFromTransaction(result.digest).then((liquidityResult) => {
-            if (liquidityResult.success) {
-              console.log('Liquidity addition tracked:', liquidityResult);
-            }
-          });
-        }
+        // Transaction successful, clear cache to refresh pool data
         
         // Refresh pool cache to ensure swap can find the pool
         setTimeout(() => {
-          refreshPoolCache();
+          PoolService.clearCache();
           refreshPoolInfo();
         }, 2000);
       }

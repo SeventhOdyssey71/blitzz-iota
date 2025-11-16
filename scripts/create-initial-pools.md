@@ -28,7 +28,7 @@ To debug in browser console:
 window.debugPools = true;
 
 // Check for existing pools
-await PoolDiscovery.findPoolsForPair(
+await PoolService.findPool(
   '0x2::iota::IOTA',
   '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT',
   'testnet'

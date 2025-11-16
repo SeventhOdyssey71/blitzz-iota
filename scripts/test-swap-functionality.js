@@ -11,12 +11,12 @@ window.testSwapFunctionality = async function() {
     // Enable debug mode
     window.debugPools = true;
     
-    const { PoolDiscovery } = await import('/lib/services/pool-discovery.js');
+    const { PoolService } = await import('/lib/services/pool-service.js');
     const { SUPPORTED_COINS } = await import('/config/iota.config.js');
     
     // Test pool discovery
     console.log('1. Testing pool discovery...');
-    const pool = await PoolDiscovery.findPoolsForPair(
+    const pool = await PoolService.findPool(
       SUPPORTED_COINS.IOTA.type,
       SUPPORTED_COINS.stIOTA.type,
       'testnet'
@@ -37,7 +37,7 @@ window.testSwapFunctionality = async function() {
       const inputAmount = BigInt('1000000000'); // 1 IOTA
       const isAToB = pool.coinTypeA === SUPPORTED_COINS.IOTA.type;
       
-      const result = PoolDiscovery.calculateOutputAmount(pool, inputAmount, isAToB);
+      const result = PoolService.calculateSwapQuote(pool, inputAmount, isAToB, 0.5);
       console.log('✅ Swap calculation works:', {
         inputAmount: inputAmount.toString(),
         outputAmount: result.outputAmount.toString(),

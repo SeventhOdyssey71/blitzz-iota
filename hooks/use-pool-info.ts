@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { PoolDiscovery, PoolInfo } from '@/lib/services/pool-discovery';
+import { PoolService, PoolInfo } from '@/lib/services/pool-service';
 
 interface UsePoolInfoResult {
   poolInfo: PoolInfo | null;
@@ -32,7 +32,7 @@ export function usePoolInfo(coinTypeA: string, coinTypeB: string): UsePoolInfoRe
 
     try {
       setError(null);
-      const pool = await PoolDiscovery.findPoolsForPair(coinTypeA, coinTypeB, 'testnet');
+      const pool = await PoolService.findPool(coinTypeA, coinTypeB, 'testnet');
       setPoolInfo(pool);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch pool info'));

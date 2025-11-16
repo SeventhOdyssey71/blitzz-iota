@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PoolInfo } from '@/lib/services/pool-discovery';
+import { PoolInfo } from '@/lib/services/pool-service';
 import { useTokenPrice } from './use-token-price';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 
