@@ -44,7 +44,7 @@ export function SiteHeader() {
                 className="rounded-lg"
                 style={{ width: '24px', height: '24px' }}
               />
-              <span className="text-white font-bold text-2xl tracking-wider font-grotesk">Iota</span>
+              <span className="text-white font-bold text-2xl tracking-wider font-grotesk">Blitzz</span>
             </Link>
           </div>
 
