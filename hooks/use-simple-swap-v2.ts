@@ -164,12 +164,13 @@ export function useSimpleSwapV2() {
                   change.owner === currentAccount?.address
                 );
                 if (outputChange) {
-                  actualOutputAmount = (Math.abs(Number(outputChange.amount)) / Math.pow(10, params.outputToken.decimals)).toFixed(4);
+                  actualOutputAmount = (Math.abs(Number(outputChange.amount)) / Math.pow(10, params.outputToken.decimals)).toFixed(2);
                 }
               }
 
-              // Show success toast with actual swap amounts
-              toast.success(`Swapped ${params.inputAmount} ${params.inputToken.symbol} for ${actualOutputAmount} ${params.outputToken.symbol}`, {
+              // Show success toast with actual swap amounts (format input to 2dp as well)
+              const formattedInputAmount = parseFloat(params.inputAmount).toFixed(2);
+              toast.success(`Swapped ${formattedInputAmount} ${params.inputToken.symbol} for ${actualOutputAmount} ${params.outputToken.symbol}`, {
                 description: `Transaction: ${result.digest.slice(0, 10)}...`,
               });
 
