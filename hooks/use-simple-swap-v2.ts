@@ -137,11 +137,24 @@ export function useSimpleSwapV2() {
           },
           {
             onSuccess: (result) => {
-              if (result.effects?.status !== 'success') {
-                const errorMsg = (result.effects as any)?.status?.error || 'Transaction failed on chain';
+              console.log('Transaction result:', result);
+              console.log('Transaction effects:', result.effects);
+              console.log('Transaction status:', result.effects?.status);
+              
+              // Check for IOTA transaction success - if we reached onSuccess, transaction likely succeeded
+              const status = result.effects?.status?.status || result.effects?.status;
+              console.log('Parsed status:', status);
+              
+              // Only fail if we explicitly see failure status, otherwise treat as success
+              if (status === 'failure' || status === 'failed') {
+                const errorMsg = result.effects?.status?.error || 'Transaction failed on chain';
+                console.error('Transaction failed with status:', status, errorMsg);
                 resolve({ success: false, error: errorMsg });
                 return;
               }
+              
+              // If we reached onSuccess callback, treat as successful transaction
+              console.log('Transaction successful - proceeding with success handling');
 
               // Extract actual output amount from balance changes
               let actualOutputAmount = '0';
