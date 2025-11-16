@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '@iota/dapp-kit';
 import { parseTokenAmount } from '@/lib/utils/format';
-import { toast } from 'sonner';
 import { PoolService } from '@/lib/services/pool-service';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
@@ -142,27 +141,14 @@ export function useSimpleSwapV2() {
             onSuccess: (result) => {
               if (result.effects?.status !== 'success') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Transaction failed on chain';
-                toast.error('Swap failed', { description: errorMsg });
                 resolve({ success: false, error: errorMsg });
                 return;
               }
-
-              toast.success('Swap successful!', {
-                description: `Transaction: ${result.digest.slice(0, 10)}...`,
-              });
 
               resolve({ success: true, digest: result.digest });
             },
             onError: (error) => {
               const errorMsg = error?.message || 'Transaction failed';
-              
-              // Check if this is a user rejection - don't show toast for these
-              if (errorMsg.includes('Rejected from user') || errorMsg.includes('User rejected')) {
-                resolve({ success: false, error: errorMsg, userRejected: true });
-                return;
-              }
-              
-              toast.error('Swap failed', { description: errorMsg });
               resolve({ success: false, error: errorMsg });
             },
           }
@@ -170,12 +156,6 @@ export function useSimpleSwapV2() {
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Don't show toast for user rejections
-      if (!errorMsg.includes('Rejected from user') && !errorMsg.includes('User rejected')) {
-        toast.error('Swap failed', { description: errorMsg });
-      }
-      
       return { success: false, error: errorMsg };
     } finally {
       setIsSwapping(false);

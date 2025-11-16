@@ -52,9 +52,10 @@ export function PoolDebug() {
     setResult('Pool cache cleared. Try testing pool discovery again.');
   };
 
-  if (process.env.NODE_ENV !== 'development') {
-    return null; // Only show in development
-  }
+  // Temporarily show in all environments for debugging
+  // if (process.env.NODE_ENV !== 'development') {
+  //   return null;
+  // }
 
   return (
     <div className="p-4 bg-gray-800 rounded-lg m-4">
