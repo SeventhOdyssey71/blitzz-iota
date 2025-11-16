@@ -104,10 +104,6 @@ export function useSwapCalculation(
           spotPriceAfter: swapResult.spotPriceAfter,
         });
       } catch (error) {
-        // Only log errors that aren't about missing pools
-        if (error instanceof Error && !error.message.includes('No liquidity pool found')) {
-          console.error('Swap calculation error:', error);
-        }
         setCalculation(prev => ({
           ...prev,
           isLoading: false,

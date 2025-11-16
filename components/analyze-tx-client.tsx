@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { extractPoolFromTransaction } from '@/lib/services/extract-pool-from-tx';
 import { PoolTracker } from '@/lib/services/pool-tracker';
 import { SUPPORTED_COINS } from '@/config/iota.config';
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 
 export function AnalyzeTransactionClient() {
   const [analyzing, setAnalyzing] = useState(false);
@@ -58,7 +58,7 @@ export function AnalyzeTransactionClient() {
         log.push('=== Verifying Pool Details ===');
         
         // Get the IOTA client to fetch pool state
-        const client = getIotaClientSafe();
+        const client = getSafeIotaClient();
         if (client && result.poolId) {
           try {
             const poolObject = await client.getObject({
@@ -69,8 +69,8 @@ export function AnalyzeTransactionClient() {
               }
             });
             
-            if (poolObject.data && poolObject.data.content && poolObject.data.content.type === 'moveObject') {
-              const fields = poolObject.data.content.fields as any;
+            if (poolObject.data && poolObject.data.content && 'type' in poolObject.data.content && poolObject.data.content.type === 'moveObject') {
+              const fields = (poolObject.data.content as any).fields;
               log.push('Pool reserves:');
               log.push(`- Reserve A: ${fields.reserve_a} (${fields.reserve_a / 1e9} tokens)`);
               log.push(`- Reserve B: ${fields.reserve_b} (${fields.reserve_b / 1e9} tokens)`);

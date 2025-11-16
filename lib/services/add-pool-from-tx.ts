@@ -1,7 +1,7 @@
 'use client';
 
 import { PoolTracker } from './pool-tracker';
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 
 interface PoolCreatedEvent {
   pool_id: string;
@@ -17,7 +17,7 @@ export async function addPoolFromTransactionDigest(
 ) {
   console.log('Fetching transaction:', txDigest);
   
-  const client = getIotaClientSafe();
+  const client = getSafeIotaClient();
   if (!client) {
     throw new Error('IOTA client not available');
   }

@@ -14,13 +14,14 @@ import { useCurrentAccount } from "@iota/dapp-kit"
 import { useWalletBalance } from "@/hooks/use-wallet-balance"
 import { toast } from "sonner"
 import { TokenInfo, BondingCurveInfo, BONDING_CURVE_TARGET } from "@/lib/contracts/meme-token-factory"
-import { MEME_FACTORY_PACKAGE_ID } from "@/config/iota.config"
+import { MEME_FACTORY_PACKAGE_ID, blitz_PACKAGE_ID } from "@/config/iota.config"
 import { MemeTokenService } from "@/lib/services/meme-token-service"
 
 // This would come from URL params or search
 const MOCK_BONDING_CURVE_ID = process.env.NEXT_PUBLIC_SAMPLE_BONDING_CURVE_ID || ""
 
-export default function CoinDetailPage({ params }: { params: { ticker: string } }) {
+export default async function CoinDetailPage({ params }: { params: Promise<{ ticker: string }> }) {
+  const { ticker } = await params;
   const currentAccount = useCurrentAccount()
   const { 
     buyTokens, 
@@ -43,14 +44,14 @@ export default function CoinDetailPage({ params }: { params: { ticker: string } 
   
   // Get user balances
   const { balance: iotaBalance } = useWalletBalance("0x2::iota::IOTA")
-  const { balance: tokenBalance } = useWalletBalance(`${MEME_FACTORY_PACKAGE_ID.testnet}::${params.ticker}::${params.ticker.toUpperCase()}`)
+  const { balance: tokenBalance } = useWalletBalance(`${MEME_FACTORY_PACKAGE_ID.testnet}::${ticker}::${ticker.toUpperCase()}`)
   
   // Fetch token info
   useEffect(() => {
     const fetchInfo = async () => {
       const service = MemeTokenService.getInstance()
       const tokens = await service.getTokens()
-      const token = tokens.find(t => t.symbol.toLowerCase() === params.ticker.toLowerCase())
+      const token = tokens.find(t => t.symbol.toLowerCase() === ticker.toLowerCase())
       if (token) {
         setTokenInfo(token)
         if (token.bondingCurveId && !service.isInMockMode()) {
@@ -123,7 +124,7 @@ export default function CoinDetailPage({ params }: { params: { ticker: string } 
     
     const iotaAmount = parseTokenAmount(buyAmount)
     await buyTokens(
-      `${blitz_PACKAGE_ID.testnet}::${params.ticker}::${params.ticker.toUpperCase()}`,
+      `${blitz_PACKAGE_ID.testnet}::${ticker}::${ticker.toUpperCase()}`,
       MOCK_BONDING_CURVE_ID,
       iotaAmount,
       0n, // No slippage protection for now
@@ -268,7 +269,7 @@ export default function CoinDetailPage({ params }: { params: { ticker: string } 
 
                 <div className="p-6 bg-black/50 rounded-xl border border-white/10">
                   <p className="text-white/80 leading-relaxed">
-                    {tokenInfo.description || "A community-driven meme token on the IOTA network. Trade on the bonding curve until graduation to DEX."}
+                    {tokenInfo?.description || "A community-driven meme token on the IOTA network. Trade on the bonding curve until graduation to DEX."}
                   </p>
                 </div>
               </CardContent>

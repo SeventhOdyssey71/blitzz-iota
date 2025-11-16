@@ -232,9 +232,7 @@ export default function LaunchpadPage() {
             {displayedTokens.map((coin) => (
             <Link key={coin.id} href={`/launchpad/coin/${coin.symbol.toLowerCase()}`}>
               <Card
-                className={`glass-dark border hover:border-cyan-500/50 transition-all duration-300 hover:scale-[1.02] rounded-2xl ${
-                  coin.hasGoldenBorder ? "border-cyan-500/50" : "border-white/10"
-                }`}
+                className="glass-dark border border-white/10 hover:border-cyan-500/50 transition-all duration-300 hover:scale-[1.02] rounded-2xl"
               >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4 mb-4">

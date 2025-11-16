@@ -1,11 +1,11 @@
 'use client';
 
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 import { PoolTracker } from './pool-tracker';
 import { blitz_PACKAGE_ID } from '@/config/iota.config';
 
 export async function refreshAndTrackAllPools() {
-  const client = getIotaClientSafe();
+  const client = getSafeIotaClient();
   if (!client) {
     console.error('IOTA client not available');
     return;
@@ -52,7 +52,7 @@ export async function refreshAndTrackAllPools() {
 }
 
 export async function extractAndTrackPoolFromTx(txHash: string) {
-  const client = getIotaClientSafe();
+  const client = getSafeIotaClient();
   if (!client) {
     console.error('IOTA client not available');
     return null;

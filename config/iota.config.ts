@@ -19,12 +19,12 @@ export const IOTA_NETWORKS = {
   },
 } as const;
 
-export const DEFAULT_NETWORK = 'mainnet';
+export const DEFAULT_NETWORK = 'testnet';
 
 export const blitz_PACKAGE_ID = {
-  mainnet: '0x9bc9c878bb3cede9dcd86ef12d48c1fbe52732463d294ba40e4c02aa04a59cf7', // Newly deployed package with latest features
-  testnet: '0x620f8a39ec678170db2b2ed8cee5cc6a3d5b4802acd8a8905919c2e7bd5d52bb', // Updated with improved liquidity and error handling
-  devnet: '0x9bc9c878bb3cede9dcd86ef12d48c1fbe52732463d294ba40e4c02aa04a59cf7', // Same as mainnet for testing
+  mainnet: '0x9bc9c878bb3cede9dcd86ef12d48c1fbe52732463d294ba40e4c02aa04a59cf7', // Production deployment
+  testnet: '0x77b13360aed35d4ce94326e1dd52ec783f16b94c851a4c1b3ed98bb52ce31187', // Latest deployment - November 2024
+  devnet: '0x77b13360aed35d4ce94326e1dd52ec783f16b94c851a4c1b3ed98bb52ce31187', // Latest development deployment
 } as const;
 
 export const MEME_FACTORY_PACKAGE_ID = {
@@ -64,7 +64,7 @@ export const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 export const DEFAULT_DEADLINE = 20; // 20 minutes
 
 // Staking Pool Configuration
-export const STAKING_POOL_ADDRESS = '0xae56600fb70783adec66c0fc1130ce18af2cff35e0c0d8203b2b009f1052215f';
+export const STAKING_POOL_ADDRESS = '0xca1239c9b8162ea0d9b0e46fa22705ce739ac74da63de1e17f94b1b8544cb3e1';
 export const STIOTA_TYPE = '0x1461ef74f97e83eb024a448ab851f980f4e577a97877069c72b44b5fe9929ee3::cert::CERT';
 
 // Main configuration export
@@ -75,18 +75,20 @@ export const IOTA_CONFIG = {
     packageId: blitz_PACKAGE_ID[DEFAULT_NETWORK],
     memeFactoryPackageId: MEME_FACTORY_PACKAGE_ID[DEFAULT_NETWORK],
     pools: {
-      'vUSD_IOTA': '0x0', // To be deployed
-      'IOTA_vUSD': '0x0', // To be deployed
-      'stIOTA_IOTA': '0x0', // To be deployed
-      'IOTA_stIOTA': '0x0', // To be deployed
+      // All pools reset - ready for fresh deployment
+      'vUSD_IOTA': '0x0',
+      'IOTA_vUSD': '0x0', 
+      'stIOTA_IOTA': '0x0',
+      'IOTA_stIOTA': '0x0',
     },
     limitOrderBook: {
-      'vUSD_IOTA': '0x0', // To be deployed
-      'IOTA_vUSD': '0x0', // To be deployed
-      'stIOTA_IOTA': '0x0', // To be deployed
-      'IOTA_stIOTA': '0x0', // To be deployed
+      // All order books reset - ready for fresh deployment
+      'vUSD_IOTA': '0x0',
+      'IOTA_vUSD': '0x0',
+      'stIOTA_IOTA': '0x0', 
+      'IOTA_stIOTA': '0x0',
     },
-    dcaRegistry: '0x0', // To be deployed
+    dcaRegistry: '0x0', // Reset - ready for fresh deployment
   },
   supportedCoins: SUPPORTED_COINS,
   poolCreationFee: POOL_CREATION_FEE,

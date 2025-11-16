@@ -28,10 +28,18 @@ export interface SwapRoute {
   path: string[];
 }
 
-// Cache for pool data
+// Cache for pool data - starts fresh each time
 const POOL_CACHE: Map<string, PoolInfo> = new Map();
-const CACHE_DURATION = 10000; // 10 seconds for faster updates
+const CACHE_DURATION = 5000; // 5 seconds for faster updates
 let lastCacheUpdate = 0;
+
+// Clear all cache on startup
+if (typeof window !== 'undefined' && !window.poolDiscoveryCleared) {
+  POOL_CACHE.clear();
+  lastCacheUpdate = 0;
+  window.poolDiscoveryCleared = true;
+  console.log('✓ Pool discovery cache cleared on startup');
+}
 
 // Clear cache on pool refresh event
 if (typeof window !== 'undefined') {
@@ -64,13 +72,7 @@ export class PoolDiscovery {
     }
     const client = getSafeIotaClient();
     
-    // Clear any stale pool data on first load
-    if (typeof window !== 'undefined' && !window.poolsCleared) {
-      console.log('Clearing stale pool data...');
-      POOL_CACHE.clear();
-      lastCacheUpdate = 0;
-      window.poolsCleared = true;
-    }
+    // Use cached data when available
     
     // Special handling for IOTA <-> stIOTA staking pool
     const iotaType = SUPPORTED_COINS.IOTA.type;
@@ -103,7 +105,7 @@ export class PoolDiscovery {
       return null;
     }
 
-    // Check cache first
+    // Check cache for recently fetched pools
     const cacheKey = `${coinTypeA}-${coinTypeB}`;
     const reverseCacheKey = `${coinTypeB}-${coinTypeA}`;
     
@@ -145,7 +147,7 @@ export class PoolDiscovery {
         });
       }
       
-      // Then check tracked pools (from localStorage)
+      // Check tracked pools for newly created pools
       let poolId = knownPoolId || PoolTracker.findPool(coinTypeA, coinTypeB);
       
       // Get all tracked pools for debugging
@@ -242,7 +244,7 @@ export class PoolDiscovery {
   static async findAllPools(
     network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'
   ): Promise<PoolInfo[]> {
-    const client = getIotaClientSafe();
+    const client = getSafeIotaClient();
     const packageId = blitz_PACKAGE_ID[network];
     const pools: PoolInfo[] = [];
 

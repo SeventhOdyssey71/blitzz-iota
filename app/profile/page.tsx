@@ -69,7 +69,7 @@ export default function ProfilePage() {
             symbol: meta?.symbol || balance.coinType.split('::').pop() || 'UNKNOWN',
             name: meta?.name,
             decimals: meta?.decimals || 9,
-            iconUrl: meta?.iconUrl,
+            iconUrl: meta?.iconUrl || undefined,
             balance: formatBalance(balance.totalBalance, meta?.decimals || 9),
           }
         })
