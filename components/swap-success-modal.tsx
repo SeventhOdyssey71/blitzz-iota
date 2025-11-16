@@ -52,7 +52,7 @@ export function SwapSuccessModal({
 
   const openExplorer = () => {
     if (txHash) {
-      window.open(`https://explorer.iota.cafe/txblock/${txHash}`, '_blank');
+      window.open(`https://explorer.iota.org/transaction/${txHash}`, '_blank');
     }
   };
 

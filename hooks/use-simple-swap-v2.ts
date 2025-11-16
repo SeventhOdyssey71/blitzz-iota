@@ -38,6 +38,7 @@ export function useSimpleSwapV2() {
 
     try {
       setIsSwapping(true);
+      const startTime = Date.now();
       const inputAmount = parseTokenAmount(params.inputAmount, params.inputToken.decimals);
       
       // Find pool for swap
@@ -168,9 +169,13 @@ export function useSimpleSwapV2() {
                 }
               }
 
+              // Calculate actual execution time
+              const endTime = Date.now();
+              const executionTime = (endTime - startTime) / 1000; // Convert to seconds
+
               // Don't show toast here - let the UI component handle the success display
 
-              resolve({ success: true, digest: result.digest });
+              resolve({ success: true, digest: result.digest, executionTime });
             },
             onError: (error) => {
               const errorMsg = error?.message || 'Transaction failed';
