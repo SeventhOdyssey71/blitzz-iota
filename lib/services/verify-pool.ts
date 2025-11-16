@@ -1,11 +1,11 @@
 'use client';
 
-import { getIotaClientSafe } from '@/lib/iota/client-wrapper';
+import { getSafeIotaClient } from '@/lib/iota/safe-client';
 import { PoolTracker } from './pool-tracker';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 
 export async function verifyAndUpdatePool(poolId: string) {
-  const client = getIotaClientSafe();
+  const client = getSafeIotaClient();
   if (!client) {
     console.error('IOTA client not available');
     return false;
@@ -37,7 +37,7 @@ export async function verifyAndUpdatePool(poolId: string) {
 }
 
 export async function findCorrectPool(coinTypeA: string, coinTypeB: string) {
-  const client = getIotaClientSafe();
+  const client = getSafeIotaClient();
   if (!client) {
     console.error('IOTA client not available');
     return null;

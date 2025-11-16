@@ -1,6 +1,6 @@
 'use client';
 
-import { TransactionBlock } from '@iota/iota-sdk/transactions';
+import { Transaction } from '@iota/iota-sdk/transactions';
 import { getIotaClient } from '@/lib/iota/client';
 import { MemeTokenFactory, TokenInfo, CREATION_FEE, PLATFORM_ID } from '@/lib/contracts/meme-token-factory';
 import { MEME_FACTORY_PACKAGE_ID } from '@/config/iota.config';

@@ -13,6 +13,8 @@ interface PoolRecord {
 
 const POOL_STORAGE_KEY = 'blitz_created_pools';
 
+// Pool tracker keeps track of newly created pools
+
 export class PoolTracker {
   static getPools(): PoolRecord[] {
     if (typeof window === 'undefined') return [];

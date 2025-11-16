@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import { useSimpleSwapV2 } from '@/hooks/use-simple-swap-v2';
 import { TokenDropdown } from '@/components/token-dropdown';
 import { SwapSuccessModal } from '@/components/swap-success-modal';
-import { SwapTransactionPanel } from '@/components/swap-transaction-panel';
 
 interface Token {
   symbol: string;
@@ -39,13 +38,13 @@ export function SwapInterface() {
   const [inputAmount, setInputAmount] = useState('');
   const [slippage, setSlippage] = useState(0.5);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showTransactionPanel, setShowTransactionPanel] = useState(false);
-  const [currentTxHash, setCurrentTxHash] = useState<string>('');
   const [swapResult, setSwapResult] = useState<{
     inputAmount: string;
     outputAmount: string;
     txHash: string;
     executionTime: number;
+    isSuccess: boolean;
+    errorMessage?: string;
   } | null>(null);
   
   // Use the swap hook
@@ -90,6 +89,7 @@ export function SwapInterface() {
     }
 
 
+    const startTime = Date.now();
     const result: any = await executeSwap({
       inputToken,
       outputToken,
@@ -98,12 +98,18 @@ export function SwapInterface() {
       slippage,
     });
 
+    const executionTime = (Date.now() - startTime) / 1000;
+
     if (result.success && result.digest) {
-      // Store the transaction hash
-      setCurrentTxHash(result.digest);
-      
-      // Show the transaction panel
-      setShowTransactionPanel(true);
+      // Show success notification card
+      setSwapResult({
+        inputAmount,
+        outputAmount: swapCalculation.outputAmount || '0',
+        txHash: result.digest,
+        executionTime,
+        isSuccess: true,
+      });
+      setShowSuccessModal(true);
       
       // Clear input
       setInputAmount('');
@@ -117,6 +123,17 @@ export function SwapInterface() {
       // Also do an immediate refresh
       refetchInputBalance();
       refetchOutputBalance();
+    } else {
+      // Show failure notification card
+      setSwapResult({
+        inputAmount,
+        outputAmount: swapCalculation.outputAmount || '0',
+        txHash: '',
+        executionTime,
+        isSuccess: false,
+        errorMessage: result.error || 'Transaction failed',
+      });
+      setShowSuccessModal(true);
     }
   };
 
@@ -372,19 +389,11 @@ export function SwapInterface() {
           outputToken={outputToken}
           txHash={swapResult.txHash}
           executionTime={swapResult.executionTime}
+          isSuccess={swapResult.isSuccess}
+          errorMessage={swapResult.errorMessage}
         />
       )}
       
-      {/* Transaction Details Panel */}
-      <SwapTransactionPanel
-        txHash={currentTxHash}
-        isOpen={showTransactionPanel}
-        onClose={() => setShowTransactionPanel(false)}
-        expectedInputAmount={inputAmount}
-        expectedOutputAmount={swapCalculation?.outputAmount}
-        inputTokenSymbol={inputToken.symbol}
-        outputTokenSymbol={outputToken.symbol}
-      />
     </div>
   );
 }

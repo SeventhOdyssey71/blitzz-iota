@@ -5,7 +5,7 @@ import { SUPPORTED_COINS } from './iota.config';
 
 export const KNOWN_POOLS = {
   testnet: {
-    // Pools will be discovered from transactions
+    // Fresh reset - pools will be discovered from new transactions
   },
   mainnet: {},
   devnet: {},

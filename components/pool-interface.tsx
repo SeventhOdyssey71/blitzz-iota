@@ -17,7 +17,6 @@ import { useAddLiquidity } from '@/hooks/use-add-liquidity';
 import { useRemoveLiquidityV2 } from '@/hooks/use-remove-liquidity-v2';
 import { usePoolInfo } from '@/hooks/use-pool-info';
 import { useLPTokens } from '@/hooks/use-lp-tokens';
-import { useLPTokensV2 } from '@/hooks/use-lp-tokens-v2';
 import { refreshPoolCache } from '@/lib/services/pool-refresh';
 import { useTokenPrices } from '@/hooks/use-token-price';
 
@@ -42,17 +41,11 @@ export function PoolInterface() {
   );
   
   // Add/Remove liquidity hooks
-  const { addLiquidity, isAdding } = useAddLiquidity();
+  const { addLiquidity, isLoading: isAdding } = useAddLiquidity();
   const { removeLiquidity, isRemoving } = useRemoveLiquidityV2();
   
-  // Get LP tokens - using V2 for debugging
-  const { lpTokens: lpTokensV1, isLoading: isLoadingLPV1 } = useLPTokens();
-  const { lpTokens: lpTokensV2, isLoading: isLoadingLPV2 } = useLPTokensV2();
-  
-  
-  // Use V2 for now to see all tokens
-  const lpTokens = lpTokensV2;
-  const isLoadingLP = isLoadingLPV2;
+  // Get LP tokens
+  const { lpTokens, isLoading: isLoadingLP } = useLPTokens();
   
   // Get token prices
   const { prices: tokenPrices } = useTokenPrices(['IOTA', 'stIOTA']);
@@ -61,11 +54,12 @@ export function PoolInterface() {
   
   // Refresh pool info after adding liquidity
   const refreshPoolInfo = () => {
-    // Clear pool cache
-    localStorage.removeItem('blitz_created_pools');
-    localStorage.removeItem('pool_cache');
+    // Clear pool cache and dispatch refresh events
     window.dispatchEvent(new Event('pool-cache-refresh'));
-    window.location.reload();
+    // Small delay to ensure event is processed
+    setTimeout(() => {
+      window.dispatchEvent(new Event('pool-cache-refresh'));
+    }, 1000);
   };
   
   // Calculate pool share
@@ -180,11 +174,10 @@ export function PoolInterface() {
     const lpAmount = lpToken.amount;
     
     const result = await removeLiquidity({
-      tokenA: SUPPORTED_COINS.IOTA,
-      tokenB: SUPPORTED_COINS.stIOTA,
       lpTokenId: selectedLPToken,
-      lpAmount,
-      poolId: poolInfo?.poolId, // Pass pool ID if available
+      coinTypeA: SUPPORTED_COINS.IOTA.type,
+      coinTypeB: SUPPORTED_COINS.stIOTA.type,
+      amount: lpAmount,
     });
     
     if (result.success) {
@@ -200,15 +193,11 @@ export function PoolInterface() {
     
     // Auto-calculate proportional amount for stIOTA
     if (value) {
-      if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
-        // Existing pool - maintain ratio
-        const iotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
-        const stIotaAmountBig = (iotaAmountBig * poolInfo.reserveB) / poolInfo.reserveA;
-        setStIotaAmount(formatBalance(stIotaAmountBig.toString(), 9, 6));
-      } else {
-        // New pool - 1:1 ratio for IOTA/stIOTA
-        setStIotaAmount(value);
-      }
+      // For IOTA/stIOTA pair, always use 1:1 ratio as they have equivalent value
+      // This ensures fair pricing regardless of any existing imbalanced pools
+      setStIotaAmount(value);
+    } else {
+      setStIotaAmount('');
     }
   };
   
@@ -217,15 +206,11 @@ export function PoolInterface() {
     
     // Auto-calculate proportional amount for IOTA
     if (value) {
-      if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
-        // Existing pool - maintain ratio
-        const stIotaAmountBig = BigInt(Math.floor(parseFloat(value || '0') * 1e9));
-        const iotaAmountBig = (stIotaAmountBig * poolInfo.reserveA) / poolInfo.reserveB;
-        setIotaAmount(formatBalance(iotaAmountBig.toString(), 9, 6));
-      } else {
-        // New pool - 1:1 ratio for IOTA/stIOTA
-        setIotaAmount(value);
-      }
+      // For IOTA/stIOTA pair, always use 1:1 ratio as they have equivalent value
+      // This ensures fair pricing regardless of any existing imbalanced pools
+      setIotaAmount(value);
+    } else {
+      setIotaAmount('');
     }
   };
   
@@ -431,19 +416,17 @@ export function PoolInterface() {
               )}
               
               {/* Pool Ratio Info */}
-              {poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0 && (
-                <div className="bg-black/20 border border-white/10 rounded-lg p-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Current Pool Ratio</span>
-                    <span className="text-white font-medium">
-                      1 IOTA : {formatBalance((poolInfo.reserveB * BigInt(1e9) / poolInfo.reserveA).toString(), 9, 6)} stIOTA
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    You must add liquidity in this ratio
-                  </div>
+              <div className="bg-black/20 border border-white/10 rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">Current Pool Ratio</span>
+                  <span className="text-white font-medium">
+                    1 IOTA : 1 stIOTA
+                  </span>
                 </div>
-              )}
+                <div className="text-xs text-gray-500 mt-1">
+                  1:1 ratio for equivalent value tokens
+                </div>
+              </div>
               
               {/* IOTA Input */}
               <div className="space-y-2">
