@@ -74,7 +74,7 @@ export function SwapSuccessModal({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-medium text-lg leading-tight">
-              {isSuccess ? 'Swap' : 'Failed swap'} {parseFloat(inputAmount).toFixed(2)} {inputToken.symbol} to minimum {(parseFloat(outputAmount) / Math.pow(10, outputToken.decimals)).toFixed(2)} {outputToken.symbol}
+              {isSuccess ? 'Swap' : 'Failed swap'} {parseFloat(inputAmount).toFixed(2)} {inputToken.symbol} for {(parseFloat(outputAmount) / Math.pow(10, outputToken.decimals)).toFixed(2)} {outputToken.symbol}
             </h3>
           </div>
           <button
@@ -101,13 +101,13 @@ export function SwapSuccessModal({
             {isSuccess ? (
               txHash ? (
                 <>
-                  {txHash.slice(0, 8)}...{txHash.slice(-6)} (Completed in ~{executionTime.toFixed(1)}s)
+                  {txHash.slice(0, 8)}...{txHash.slice(-6)}
                 </>
               ) : (
-                `Completed in ~${executionTime.toFixed(1)}s`
+                'Transaction completed'
               )
             ) : (
-              errorMessage || `Transaction failed (attempted in ~${executionTime.toFixed(1)}s)`
+              errorMessage || 'Transaction failed'
             )}
           </span>
           
