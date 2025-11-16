@@ -27,7 +27,6 @@ export class PoolService {
   static clearCache() {
     this.pools.clear();
     this.lastUpdate = 0;
-    console.log('Pool cache cleared');
   }
 
   static async findPool(
@@ -121,13 +120,11 @@ export class PoolService {
                     this.pools.set(`${poolCoinTypeA}-${poolCoinTypeB}`, poolInfo);
                     this.lastUpdate = Date.now();
 
-                    console.log('Found pool:', poolInfo);
                     return poolInfo;
                   }
                 }
               }
             } catch (err) {
-              console.warn('Failed to fetch pool:', poolId, err);
               continue;
             }
           }
