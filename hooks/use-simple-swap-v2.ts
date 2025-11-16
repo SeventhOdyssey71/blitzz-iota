@@ -143,6 +143,23 @@ export function useSimpleSwapV2() {
                 return;
               }
 
+              // Extract actual output amount from balance changes
+              let actualOutputAmount = '0';
+              if (result.balanceChanges) {
+                const outputChange = result.balanceChanges.find((change: any) =>
+                  change.coinType === params.outputToken.type &&
+                  change.owner === currentAccount?.address
+                );
+                if (outputChange) {
+                  actualOutputAmount = (Math.abs(Number(outputChange.amount)) / Math.pow(10, params.outputToken.decimals)).toFixed(4);
+                }
+              }
+
+              // Show success toast with actual swap amounts
+              toast.success(`Swapped ${params.inputAmount} ${params.inputToken.symbol} for ${actualOutputAmount} ${params.outputToken.symbol}`, {
+                description: `Transaction: ${result.digest.slice(0, 10)}...`,
+              });
+
               resolve({ success: true, digest: result.digest });
             },
             onError: (error) => {
