@@ -74,7 +74,7 @@ export function SwapSuccessModal({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-medium text-lg leading-tight">
-              {isSuccess ? 'Swap' : 'Failed swap'} {parseFloat(inputAmount).toFixed(2)} {inputToken.symbol} to minimum {parseFloat(outputAmount).toFixed(2)} {outputToken.symbol}
+              {isSuccess ? 'Swap' : 'Failed swap'} {parseFloat(inputAmount).toFixed(2)} {inputToken.symbol} to minimum {(parseFloat(outputAmount) / Math.pow(10, outputToken.decimals)).toFixed(2)} {outputToken.symbol}
             </h3>
           </div>
           <button
