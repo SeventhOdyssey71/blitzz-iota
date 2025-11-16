@@ -9,6 +9,7 @@ import { DCAInterface } from "@/components/dca-interface-simple"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { PoolService } from "@/lib/services/pool-service"
+import { PoolDebug } from "@/components/pool-debug"
 
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
@@ -23,6 +24,7 @@ export default function IotaApp() {
   return (
     <div className="w-full min-h-[calc(100vh-200px)] flex items-center justify-center px-6 py-8">
       <div className="w-full max-w-[480px]">
+        <PoolDebug />
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex items-center justify-between mb-6">
                 <TabsList className="bg-black/50 border border-white/10 p-1 rounded-xl">
