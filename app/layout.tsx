@@ -6,7 +6,6 @@ import { IotaProviders } from '@/lib/iota/providers'
 import { Toaster } from 'sonner'
 import { SiteHeader } from '@/components/header/site-header'
 import { SiteFooter } from '@/components/footer/site-footer'
-import { PoolInitializerClient } from '@/components/pool-initializer-client'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -33,7 +32,6 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className="font-suprema min-h-screen flex flex-col">
         <IotaProviders>
-          <PoolInitializerClient />
           <SiteHeader />
           <main className="flex-1">
             {children}

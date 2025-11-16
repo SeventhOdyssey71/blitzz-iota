@@ -6,8 +6,7 @@ import { Transaction } from '@iota/iota-sdk/transactions';
 import { toast } from 'sonner';
 import { parseTokenAmount, formatBalance } from '@/lib/utils/format';
 import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
-import { PoolDiscovery } from '@/lib/services/pool-discovery';
-import { PoolTracker } from '@/lib/services/pool-tracker';
+import { PoolService } from '@/lib/services/pool-service';
 
 interface AddLiquidityParams {
   tokenA: {
@@ -51,7 +50,7 @@ export function useAddLiquidity() {
       const amountB = parseTokenAmount(params.amountB, params.tokenB.decimals);
       
       // Find existing pool
-      const pool = await PoolDiscovery.findPoolsForPair(
+      const pool = await PoolService.findPool(
         params.tokenA.type,
         params.tokenB.type,
         'testnet'
@@ -180,7 +179,7 @@ export function useAddLiquidity() {
                 return;
               }
 
-              // Track new pool if created
+              // Clear pool cache to refresh with new pool
               let poolId = pool?.poolId;
               if (!pool && (result as any).objectChanges) {
                 const createdPool = (result as any).objectChanges.find(
@@ -190,20 +189,11 @@ export function useAddLiquidity() {
                 
                 if (createdPool && createdPool.objectId) {
                   poolId = createdPool.objectId;
-                  PoolTracker.addPool(poolId, params.tokenA.type, params.tokenB.type);
-                  PoolTracker.savePool({
-                    poolId,
-                    coinTypeA: params.tokenA.type,
-                    coinTypeB: params.tokenB.type,
-                    network: 'testnet',
-                  });
                 }
               }
 
-              // Refresh pool cache
-              setTimeout(() => {
-                window.dispatchEvent(new Event('pool-cache-refresh'));
-              }, 1000);
+              // Clear pool cache to refresh with new data
+              PoolService.clearCache();
 
               toast.success('Liquidity added successfully!', {
                 description: `Transaction: ${result.digest.slice(0, 10)}...`,

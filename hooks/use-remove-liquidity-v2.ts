@@ -5,7 +5,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { toast } from 'sonner';
 import { blitz_PACKAGE_ID } from '@/config/iota.config';
-import { PoolDiscovery } from '@/lib/services/pool-discovery';
+import { PoolService } from '@/lib/services/pool-service';
 
 interface RemoveLiquidityParams {
   lpTokenId: string;
@@ -36,7 +36,7 @@ export function useRemoveLiquidityV2() {
 
     try {
       // Find the pool for this LP token pair
-      const pool = await PoolDiscovery.findPoolsForPair(
+      const pool = await PoolService.findPool(
         params.coinTypeA,
         params.coinTypeB,
         'testnet'

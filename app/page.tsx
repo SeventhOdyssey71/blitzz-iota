@@ -8,77 +8,17 @@ import { LimitInterface } from "@/components/limit-interface-simple"
 import { DCAInterface } from "@/components/dca-interface-simple"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { refreshPoolCache } from "@/lib/services/pool-refresh"
-import { addPoolFromTransaction } from "@/lib/services/add-pool-manual"
-import { extractPoolFromTransaction } from "@/lib/services/extract-pool-from-tx"
-import { ensureCriticalPools } from "@/lib/services/ensure-pools"
-
-// Import debug tools in development
-// Commented out to reduce console noise
-// if (process.env.NODE_ENV === 'development') {
-//   import('@/lib/services/debug-pool');
-// }
-
-// Import refresh tools
-import('@/lib/services/refresh-and-track-pools');
-import('@/lib/services/verify-pool');
-import('@/lib/services/cleanup-pools');
+import { PoolService } from "@/lib/services/pool-service"
 
 export default function IotaApp() {
   const [activeTab, setActiveTab] = useState("swap")
   
-  // Ensure critical pools are tracked on mount
-  useEffect(() => {
-    ensureCriticalPools();
-  }, []);
-  
-  // Refresh pool cache when switching to swap tab
+  // Clear pool cache when switching to swap tab for fresh data
   useEffect(() => {
     if (activeTab === "swap") {
-      refreshPoolCache();
+      PoolService.clearCache();
     }
   }, [activeTab]);
-  
-  // Make functions available in console for debugging
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).addPoolFromTransaction = addPoolFromTransaction;
-      (window as any).extractPoolFromTransaction = extractPoolFromTransaction;
-      (window as any).refreshPoolCache = refreshPoolCache;
-      
-      // Auto-add recent liquidity pool
-      const checkRecentPool = async () => {
-        const txHash = 'DBJiftpbLE9JJ3e5N6rtLUHsMs3FZkbaYHJRaRdp5WR2';
-        try {
-          const result = await extractPoolFromTransaction(txHash);
-          if (result && result.success && result.poolId) {
-            console.log('Recent pool auto-added:', result.poolId);
-          }
-        } catch (error) {
-          // Silently handle error
-        }
-      };
-      
-      // Check recent liquidity addition
-      const checkRecentLiquidity = async () => {
-        const liquidityTxHash = 'CLS5t6kzs2cxYuUx9r2faJU9o88beoeCoNSStrymWeEq';
-        try {
-          const { extractLiquidityFromTransaction } = await import('@/lib/services/extract-liquidity-from-tx');
-          const result = await extractLiquidityFromTransaction(liquidityTxHash);
-          if (result.success) {
-            console.log('Recent liquidity addition detected:', result);
-            refreshPoolCache();
-          }
-        } catch (error) {
-          // Silently handle error
-        }
-      };
-      
-      // Run after a short delay
-      setTimeout(checkRecentPool, 2000);
-      setTimeout(checkRecentLiquidity, 3000);
-    }
-  }, []);
 
   return (
     <div className="w-full min-h-[calc(100vh-200px)] flex items-center justify-center px-6 py-8">
