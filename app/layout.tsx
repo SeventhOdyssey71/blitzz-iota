@@ -13,9 +13,9 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Iota - DeFi Platform on IOTA',
+  title: 'Blitzz - DeFi Platform on IOTA',
   description: 'Decentralized Finance Platform on IOTA',
-  generator: 'Iota',
+  generator: 'Blitzz',
   icons: {
     icon: '/larplogo.png',
     shortcut: '/larplogo.png',
