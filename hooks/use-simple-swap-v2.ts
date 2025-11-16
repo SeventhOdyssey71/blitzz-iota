@@ -40,18 +40,11 @@ export function useSimpleSwapV2() {
       const inputAmount = parseTokenAmount(params.inputAmount, params.inputToken.decimals);
       
       // Find pool for swap
-      console.log('Looking for pool:', {
-        inputToken: params.inputToken.type,
-        outputToken: params.outputToken.type
-      });
-      
       const pool = await PoolService.findPool(
         params.inputToken.type,
         params.outputToken.type,
         'testnet'
       );
-
-      console.log('Pool found:', pool);
 
       if (!pool) {
         throw new Error(`No liquidity pool found for ${params.inputToken.symbol} → ${params.outputToken.symbol}. Please create a pool first.`);
@@ -87,35 +80,25 @@ export function useSimpleSwapV2() {
         throw new Error(`Insufficient ${params.inputToken.symbol} balance`);
       }
 
+      // Create coin reference for swap - same logic for all tokens
+      const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
+      
       let coinToSwap;
       
-      if (params.inputToken.type === SUPPORTED_COINS.IOTA.type) {
-        [coinToSwap] = tx.splitCoins(tx.gas, [inputAmount]);
+      if (coins.data.length === 1 && BigInt(coins.data[0].balance) === inputAmount) {
+        // Use the exact coin if it matches the amount
+        coinToSwap = coinRefs[0];
       } else {
-        const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
-        
-        if (coins.data.length === 1 && BigInt(coins.data[0].balance) === inputAmount) {
-          coinToSwap = coinRefs[0];
-        } else {
-          if (coinRefs.length > 1) {
-            tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
-          }
-          [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
+        // Merge all coins if multiple, then split the exact amount needed
+        if (coinRefs.length > 1) {
+          tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
         }
+        [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
       }
 
       // Execute the swap
       const typeArgs = [pool.coinTypeA, pool.coinTypeB];
       const target = `${packageId}::simple_dex::swap_${isAToB ? 'a_to_b' : 'b_to_a'}`;
-      
-      console.log('Swap transaction details:', {
-        target,
-        typeArgs,
-        poolId: pool.poolId,
-        inputAmount: inputAmount.toString(),
-        isAToB,
-        coinToSwapValue: coinToSwap
-      });
       
       tx.moveCall({
         target,
