@@ -1,19 +1,22 @@
 'use client';
 
 import { PoolTracker } from './pool-tracker';
-import { SUPPORTED_COINS } from '@/config/iota.config';
+import { SUPPORTED_COINS, blitz_PACKAGE_ID, DEFAULT_NETWORK } from '@/config/iota.config';
 
 // Initialize known pools in the browser
 export function initializeKnownPools() {
   if (typeof window === 'undefined') return;
   
-  // Check if we need to clear pools for new package
-  const CURRENT_PACKAGE_ID = '0x620f8a39ec678170db2b2ed8cee5cc6a3d5b4802acd8a8905919c2e7bd5d52bb';
+  // Use the correct package ID from config
+  const CURRENT_PACKAGE_ID = blitz_PACKAGE_ID[DEFAULT_NETWORK];
   const lastPackageId = localStorage.getItem('blitz_last_package_id');
   
   if (lastPackageId !== CURRENT_PACKAGE_ID) {
-    console.log('New package detected, clearing all pools...');
-    // Clear ALL pools since we have a new package
+    console.log('Package ID change detected, clearing all stale pools...', {
+      old: lastPackageId,
+      new: CURRENT_PACKAGE_ID
+    });
+    // Clear ALL pools since we have a new/different package
     PoolTracker.clearPools();
     localStorage.removeItem('pool_cache');
     localStorage.removeItem('blitz_pool_cache');
@@ -33,7 +36,7 @@ export function initializeKnownPools() {
     
     // Dispatch refresh event
     window.dispatchEvent(new Event('pool-cache-refresh'));
-    console.log('All pools cleared for new package deployment');
+    console.log('All stale pools cleared for package:', CURRENT_PACKAGE_ID);
   }
   
   // Check if we have any IOTA/stIOTA pool
