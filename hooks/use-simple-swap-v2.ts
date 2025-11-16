@@ -67,11 +67,7 @@ export function useSimpleSwapV2() {
         throw new Error('Insufficient pool liquidity for this swap amount');
       }
 
-      // Create transaction
-      const tx = new Transaction();
-      const packageId = blitz_PACKAGE_ID.testnet;
-
-      // Get coins of input type
+      // Get coins of input type first
       const coins = await client.getCoins({
         owner: currentAccount.address,
         coinType: params.inputToken.type,
@@ -83,22 +79,29 @@ export function useSimpleSwapV2() {
 
       const totalBalance = coins.data.reduce((sum, coin) => sum + BigInt(coin.balance), BigInt(0));
       
-      // Basic balance check - let the wallet handle gas payment
-      if (totalBalance < inputAmount) {
-        throw new Error(`Insufficient ${params.inputToken.symbol} balance`);
+      // For IOTA, ensure we have enough for swap + gas
+      const gasNeeded = 100000000n; // 0.1 IOTA
+      const minRequired = params.inputToken.type === SUPPORTED_COINS.IOTA.type 
+        ? inputAmount + gasNeeded 
+        : inputAmount;
+        
+      if (totalBalance < minRequired) {
+        throw new Error(`Insufficient ${params.inputToken.symbol} balance. Need ${minRequired.toString()} (including gas)`);
       }
 
-      // Handle coin preparation for swap - simple and reliable approach
+      // Create transaction
+      const tx = new Transaction();
+      const packageId = blitz_PACKAGE_ID.testnet;
+      
+      // Use the simplest possible approach for all coins
       const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
       let coinToSwap;
       
-      // Always split coins instead of using exact amounts to avoid gas conflicts
+      // Always merge and split for consistency
       if (coinRefs.length > 1) {
-        // Merge multiple coins first
         tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
       }
       
-      // Split the exact amount needed - this leaves remaining coins for gas
       [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
 
       // Execute the swap
@@ -111,8 +114,8 @@ export function useSimpleSwapV2() {
         arguments: [tx.object(pool.poolId), coinToSwap],
       });
 
-      // Set appropriate gas budget - conservative amount to ensure availability
-      tx.setGasBudget(50000000); // 0.05 IOTA
+      // Set gas budget that matches our validation
+      tx.setGasBudget(100000000); // 0.1 IOTA - matches gasNeeded
 
       // Execute transaction with proper options
       return new Promise((resolve, reject) => {
