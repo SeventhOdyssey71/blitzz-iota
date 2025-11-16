@@ -6,6 +6,7 @@ import { parseTokenAmount } from '@/lib/utils/format';
 import { PoolService } from '@/lib/services/pool-service';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
+import { toast } from 'sonner';
 
 interface SwapParams {
   inputToken: {
@@ -67,42 +68,47 @@ export function useSimpleSwapV2() {
         throw new Error('Insufficient pool liquidity for this swap amount');
       }
 
-      // Get coins of input type first
-      const coins = await client.getCoins({
-        owner: currentAccount.address,
-        coinType: params.inputToken.type,
-      });
-
-      if (!coins.data || coins.data.length === 0) {
-        throw new Error(`No ${params.inputToken.symbol} balance found`);
-      }
-
-      const totalBalance = coins.data.reduce((sum, coin) => sum + BigInt(coin.balance), BigInt(0));
-      
-      // For IOTA, ensure we have enough for swap + gas (large budget for complex transactions)
-      const gasNeeded = 2000000000n; // 2 IOTA - large gas budget for complex swap transactions
-      const minRequired = params.inputToken.type === SUPPORTED_COINS.IOTA.type 
-        ? inputAmount + gasNeeded 
-        : inputAmount;
-        
-      if (totalBalance < minRequired) {
-        throw new Error(`Insufficient ${params.inputToken.symbol} balance. Need ${minRequired.toString()} (including gas)`);
-      }
-
       // Create transaction
       const tx = new Transaction();
       const packageId = blitz_PACKAGE_ID.testnet;
       
-      // Use the simplest possible approach for all coins
-      const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
       let coinToSwap;
       
-      // Always merge and split for consistency
-      if (coinRefs.length > 1) {
-        tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
+      // Special handling for IOTA to avoid gas coin conflicts
+      if (params.inputToken.type === SUPPORTED_COINS.IOTA.type) {
+        // For IOTA swaps, use tx.gas to access the gas coin directly
+        [coinToSwap] = tx.splitCoins(tx.gas, [inputAmount]);
+      } else {
+        // For non-IOTA tokens, get coins normally
+        const coins = await client.getCoins({
+          owner: currentAccount.address,
+          coinType: params.inputToken.type,
+        });
+
+        if (!coins.data || coins.data.length === 0) {
+          throw new Error(`No ${params.inputToken.symbol} balance found`);
+        }
+
+        const totalBalance = coins.data.reduce((sum, coin) => sum + BigInt(coin.balance), BigInt(0));
+        
+        if (totalBalance < inputAmount) {
+          throw new Error(`Insufficient ${params.inputToken.symbol} balance`);
+        }
+
+        // Handle non-IOTA token coins
+        const coinRefs = coins.data.map(c => tx.object(c.coinObjectId));
+        
+        if (coins.data.length === 1 && BigInt(coins.data[0].balance) === inputAmount) {
+          // Use the coin directly if it matches exactly
+          coinToSwap = coinRefs[0];
+        } else {
+          // Merge coins if multiple, then split exact amount
+          if (coinRefs.length > 1) {
+            tx.mergeCoins(coinRefs[0], coinRefs.slice(1));
+          }
+          [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
+        }
       }
-      
-      [coinToSwap] = tx.splitCoins(coinRefs[0], [inputAmount]);
 
       // Execute the swap
       const typeArgs = [pool.coinTypeA, pool.coinTypeB];
@@ -114,8 +120,8 @@ export function useSimpleSwapV2() {
         arguments: [tx.object(pool.poolId), coinToSwap],
       });
 
-      // Set gas budget that matches our validation and handles transaction complexity
-      tx.setGasBudget(2000000000); // 2 IOTA - large budget to ensure transaction execution
+      // Set gas budget (reduced since we're using tx.gas more efficiently)
+      tx.setGasBudget(100000000); // 0.1 IOTA - should be sufficient with proper gas handling
 
       // Execute transaction with proper options
       return new Promise((resolve, reject) => {
