@@ -185,12 +185,16 @@ export function DCAInterface() {
         poolId: '', // Will be filled by service
       };
 
-      console.log('Creating DCA strategy with params:', params);
+      console.log('Creating DCA strategy with params:');
+      console.table(params);
+      console.log('Full params object:', JSON.stringify(params, null, 2));
 
       // Create the actual DCA strategy using Move contract
+      console.log('🚀 Calling createStrategy...');
       const result = await createStrategy(params);
       
       if (result.success) {
+        console.log('✅ DCA strategy created successfully!');
         toast.success(`DCA strategy "${strategyName}" created successfully!`);
         
         // Reset form on success
@@ -201,11 +205,20 @@ export function DCAInterface() {
         setMaxPrice('');
         setUsePriceRange(false);
       } else {
+        console.error('❌ DCA strategy creation failed:', result.error);
         toast.error(result.error || 'Failed to create DCA strategy');
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to create DCA strategy';
-      console.error('DCA creation error:', error);
+      console.error('❌ DCA creation error:');
+      console.error(error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
       toast.error(errorMsg);
     } finally {
       setIsCreating(false);
