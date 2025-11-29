@@ -6,7 +6,7 @@ module Blitz::dca {
     use iota::transfer;
     use iota::event;
     use iota::clock::{Self, Clock};
-    use Blitz::fixed_swap::{Self, SwapPool};
+    use Blitz::simple_dex::{Self, Pool};
     use std::vector;
 
     const EInvalidInterval: u64 = 1;
@@ -98,7 +98,7 @@ module Blitz::dca {
 
     public entry fun create_dca_strategy<CoinA, CoinB>(
         registry: &mut DCARegistry,
-        pool: &SwapPool<CoinA, CoinB>,
+        pool: &Pool<CoinA, CoinB>,
         source_coin: Coin<CoinA>,
         interval_ms: u64,
         total_orders: u64,
@@ -154,7 +154,7 @@ module Blitz::dca {
 
     public entry fun execute_dca_order<CoinA, CoinB>(
         strategy: &mut DCAStrategy<CoinA, CoinB>,
-        pool: &mut SwapPool<CoinA, CoinB>,
+        pool: &mut Pool<CoinA, CoinB>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -173,7 +173,9 @@ module Blitz::dca {
             strategy.amount_per_order
         };
 
-        let expected_output = fixed_swap::calculate_output_a_to_b(pool, amount_to_swap);
+        // Calculate expected output using simple_dex functions
+        let (reserve_a, reserve_b, _) = simple_dex::get_reserves(pool);
+        let expected_output = simple_dex::calculate_output_amount(amount_to_swap, reserve_a, reserve_b);
         
         // Check if output is within acceptable range
         if (strategy.min_amount_out > 0) {
@@ -192,11 +194,14 @@ module Blitz::dca {
         // Get balance before swap
         let balance_before = balance::value(&strategy.received_balance);
 
-        // Execute swap
-        fixed_swap::swap_a_to_b(pool, coin_to_swap, ctx);
+        // Execute swap  
+        let output_coin = simple_dex::swap_a_to_b(pool, coin_to_swap, ctx);
+        
+        // Add the output to received balance
+        let actual_output = coin::value(&output_coin);
+        balance::join(&mut strategy.received_balance, coin::into_balance(output_coin));
 
-        // The swapped coins are sent directly to the sender, we need to handle this differently
-        // For now, we'll track the expected output
+        // Update strategy state
         strategy.executed_orders = strategy.executed_orders + 1;
         strategy.last_execution_time = current_time;
 
@@ -204,7 +209,7 @@ module Blitz::dca {
             strategy_id: object::id(strategy),
             order_number: strategy.executed_orders,
             amount_in: amount_to_swap,
-            amount_out: expected_output,
+            amount_out: actual_output,
             timestamp: current_time,
         });
 

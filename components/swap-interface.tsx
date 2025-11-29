@@ -21,6 +21,14 @@ import { toast } from 'sonner';
 import { useSimpleSwapV2 } from '@/hooks/use-simple-swap-v2';
 import { TokenDropdown } from '@/components/token-dropdown';
 import { SwapSuccessModal } from '@/components/swap-success-modal';
+import { DCAInterface } from '@/components/dca-interface';
+import { DCAStrategies } from '@/components/dca-strategies';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from '@/components/ui/tabs';
 
 interface Token {
   symbol: string;
@@ -163,6 +171,20 @@ export function SwapInterface() {
 
   return (
     <div className="space-y-3 max-w-[480px] mx-auto">
+      <Tabs defaultValue="swap" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-white/10 rounded-xl">
+          <TabsTrigger value="swap" className="text-white data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
+            Swap
+          </TabsTrigger>
+          <TabsTrigger value="limit" className="text-white data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
+            Limit
+          </TabsTrigger>
+          <TabsTrigger value="dca" className="text-white data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
+            DCA
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="swap" className="space-y-3">
       {/* Main Swap Card */}
       <Card className="bg-black border-gray-800 rounded-2xl shadow-2xl">
         <CardContent className="p-6">
@@ -393,7 +415,22 @@ export function SwapInterface() {
           errorMessage={swapResult.errorMessage}
         />
       )}
-      
+        </TabsContent>
+
+        <TabsContent value="limit" className="space-y-3">
+          <Card className="bg-black/40 border-white/10 rounded-2xl">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-white font-semibold mb-2">Limit Orders</h3>
+              <p className="text-gray-400 text-sm">Coming soon! Set price targets for your trades.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="dca" className="space-y-3">
+          <DCAInterface />
+          <DCAStrategies />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
