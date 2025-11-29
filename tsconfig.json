@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "target": "ES2020",
+    "allowJs": false,
+    "target": "ES2022",
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -20,8 +20,33 @@
     ],
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    // Enhanced strict mode settings for production
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAnyProperties": true,
+    // Additional safety checks
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexAccess": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    // Import/Export checks
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": false,
+    "preserveWatchOutput": true,
+    // Performance optimizations
+    "assumeChangesOnlyAffectDirectDependencies": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/**/*.ts"],
+  "exclude": ["node_modules", "dist", ".next", "build"]
 }
