@@ -218,6 +218,7 @@ export function DCAInterface() {
     }
   };
 
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -272,7 +273,7 @@ export function DCAInterface() {
                 <Button
                   variant={amountMode === 'total' ? 'default' : 'ghost'}
                   size="sm"
-                  className="h-6 px-2 text-xs"
+                  className={`h-6 px-2 text-xs ${amountMode === 'total' ? 'bg-orange-500 text-black' : 'text-white hover:bg-white/10'}`}
                   onClick={() => setAmountMode('total')}
                 >
                   Total
@@ -280,7 +281,7 @@ export function DCAInterface() {
                 <Button
                   variant={amountMode === 'per_order' ? 'default' : 'ghost'}
                   size="sm"
-                  className="h-6 px-2 text-xs"
+                  className={`h-6 px-2 text-xs ${amountMode === 'per_order' ? 'bg-orange-500 text-black' : 'text-white hover:bg-white/10'}`}
                   onClick={() => setAmountMode('per_order')}
                 >
                   Per Order

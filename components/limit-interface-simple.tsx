@@ -331,7 +331,7 @@ export function LimitInterface() {
             <Button
               variant={orderType === 'buy' ? 'default' : 'ghost'}
               size="sm"
-              className="flex-1 h-8"
+              className={`flex-1 h-8 ${orderType === 'buy' ? 'bg-orange-500 text-black' : 'text-white hover:bg-white/10'}`}
               onClick={() => setOrderType('buy')}
             >
               Buy {inputToken.symbol}
@@ -339,7 +339,7 @@ export function LimitInterface() {
             <Button
               variant={orderType === 'sell' ? 'default' : 'ghost'}
               size="sm"
-              className="flex-1 h-8"
+              className={`flex-1 h-8 ${orderType === 'sell' ? 'bg-orange-500 text-black' : 'text-white hover:bg-white/10'}`}
               onClick={() => setOrderType('sell')}
             >
               Sell {inputToken.symbol}
