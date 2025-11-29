@@ -259,13 +259,13 @@ export function DCAInterface() {
           )}
           
           {amountMode === 'total' && orderCountNum > 0 && (
-            <div className="text-xs text-cyan-400 mt-1">
+            <div className="text-sm text-cyan-300 font-medium mt-2">
               {formatTokenAmount(amountPerOrder, 4)} {inputToken.symbol} per order
             </div>
           )}
           
           {amountMode === 'per_order' && orderCountNum > 0 && (
-            <div className="text-xs text-cyan-400 mt-1">
+            <div className="text-sm text-cyan-300 font-medium mt-2">
               Total: {formatTokenAmount(totalAmountCalc, 4)} {inputToken.symbol}
             </div>
           )}
