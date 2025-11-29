@@ -44,9 +44,13 @@ function DCAStrategyCard({
 }: DCAStrategyCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   
-  // Get token info (simplified - in real implementation, extract from strategy type)
-  const sourceToken = Object.values(SUPPORTED_COINS)[0]; // IOTA
-  const targetToken = Object.values(SUPPORTED_COINS)[1]; // stIOTA
+  // Get token info from strategy types
+  const sourceToken = Object.values(SUPPORTED_COINS).find(
+    coin => coin.type === strategy.sourceTokenType
+  ) || SUPPORTED_COINS.IOTA;
+  const targetToken = Object.values(SUPPORTED_COINS).find(
+    coin => coin.type === strategy.targetTokenType
+  ) || SUPPORTED_COINS.stIOTA;
   
   const progress = DCAServiceV2.getProgress(strategy);
   const nextExecution = new Date(strategy.nextExecutionTime);

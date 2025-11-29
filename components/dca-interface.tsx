@@ -26,6 +26,8 @@ import { SUPPORTED_COINS } from '@/config/iota.config';
 import { toast } from 'sonner';
 import { TokenSelector } from '@/components/token-selector';
 import { CoinIcon } from '@/components/coin-icon';
+import { useDCAV2 } from '@/hooks/use-dca-v2';
+import { useSwapCalculation } from '@/hooks/use-swap-calculation';
 
 interface Token {
   symbol: string;
@@ -42,6 +44,9 @@ export function DCAInterface() {
   // Token selection
   const [inputToken, setInputToken] = useState<Token>(SUPPORTED_COINS.IOTA);
   const [outputToken, setOutputToken] = useState<Token>(SUPPORTED_COINS.stIOTA);
+
+  // DCA hook for real transaction handling
+  const { createStrategy } = useDCAV2();
   
   // DCA parameters
   const [totalAmount, setTotalAmount] = useState('');
@@ -70,6 +75,13 @@ export function DCAInterface() {
   const totalAmountNum = parseFloat(totalAmount || '0');
   const orderCountNum = parseInt(orderCount || '1');
   const amountPerOrder = amountMode === 'total' ? totalAmountNum / orderCountNum : totalAmountNum;
+
+  // Real swap calculation for output estimation
+  const swapCalculation = useSwapCalculation({
+    inputAmount: amountPerOrder > 0 ? amountPerOrder.toString() : '0',
+    inputToken,
+    outputToken,
+  });
   const totalAmountCalc = amountMode === 'per_order' ? totalAmountNum * orderCountNum : totalAmountNum;
 
   const getIntervalMs = () => {
@@ -146,9 +158,17 @@ export function DCAInterface() {
       const strategyName = `${inputToken.symbol}→${outputToken.symbol} DCA`;
       const intervalMsValue = getIntervalMs();
       const orderCountValue = parseInt(orderCount);
+      
+      // Calculate amount per order in smallest units
       const amountPerOrderValue = amountMode === 'total' 
         ? Math.floor((parseFloat(totalAmount) * Math.pow(10, inputToken.decimals)) / orderCountValue)
         : Math.floor(parseFloat(totalAmount) * Math.pow(10, inputToken.decimals));
+
+      // Validate minimum amounts
+      if (amountPerOrderValue < 1000) { // Minimum 0.000001 tokens
+        toast.error('Amount per order too small. Increase total amount or reduce order count.');
+        return;
+      }
 
       const params = {
         sourceTokenType: inputToken.type,
@@ -164,19 +184,27 @@ export function DCAInterface() {
         poolId: '', // Will be filled by service
       };
 
-      // Note: This is a placeholder - need to implement useDCAV2 integration
-      console.log('DCA Strategy Parameters:', params);
-      toast.success('DCA strategy parameters prepared! (Integration pending)');
+      console.log('Creating DCA strategy with params:', params);
+
+      // Create the actual DCA strategy using Move contract
+      const result = await createStrategy(params);
       
-      // Reset form
-      setTotalAmount('');
-      setOrderCount('2');
-      setFrequency('1');
-      setMinPrice('');
-      setMaxPrice('');
-      setUsePriceRange(false);
+      if (result.success) {
+        toast.success(`DCA strategy "${strategyName}" created successfully!`);
+        
+        // Reset form on success
+        setTotalAmount('');
+        setOrderCount('2');
+        setFrequency('1');
+        setMinPrice('');
+        setMaxPrice('');
+        setUsePriceRange(false);
+      } else {
+        toast.error(result.error || 'Failed to create DCA strategy');
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to create DCA strategy';
+      console.error('DCA creation error:', error);
       toast.error(errorMsg);
     } finally {
       setIsCreating(false);
@@ -296,13 +324,13 @@ export function DCAInterface() {
           
           {amountMode === 'total' && orderCountNum > 0 && (
             <div className="text-sm text-cyan-300 font-medium mt-2">
-              {formatTokenAmount(amountPerOrder, 4)} {inputToken.symbol} per order
+              {formatTokenAmount(amountPerOrder, 2)} {inputToken.symbol} per order
             </div>
           )}
           
           {amountMode === 'per_order' && orderCountNum > 0 && (
             <div className="text-sm text-cyan-300 font-medium mt-2">
-              Total: {formatTokenAmount(totalAmountCalc, 4)} {inputToken.symbol}
+              Total: {formatTokenAmount(totalAmountCalc, 2)} {inputToken.symbol}
             </div>
           )}
         </CardContent>
@@ -332,7 +360,12 @@ export function DCAInterface() {
           </div>
           
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-gray-500 mono">~</div>
+            <div className="text-2xl font-bold text-white mono">
+              {swapCalculation.outputAmount && parseFloat(swapCalculation.outputAmount) > 0 
+                ? parseFloat(swapCalculation.outputAmount).toFixed(2)
+                : '0.00'
+              }
+            </div>
             <Button
               variant="ghost"
               className="flex items-center gap-2 hover:bg-white/10"
@@ -343,6 +376,12 @@ export function DCAInterface() {
               <ArrowUpDown className="w-4 h-4 text-gray-500 rotate-90" />
             </Button>
           </div>
+          
+          {swapCalculation.outputAmount && outputPrice && parseFloat(swapCalculation.outputAmount) > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              ≈ ${formatTokenAmount(parseFloat(swapCalculation.outputAmount) * outputPrice.price, 2)} per order
+            </div>
+          )}
         </CardContent>
       </Card>
 
