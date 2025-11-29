@@ -5,7 +5,8 @@ import { Settings, BarChart3, ChevronDown, ArrowUpDown, Info } from "lucide-reac
 import { Button } from "@/components/ui/button"
 import { SwapInterface as NewSwapInterface } from "@/components/swap-interface"
 import { LimitInterface } from "@/components/limit-interface-simple"
-import { DCAInterface } from "@/components/dca-interface-simple"
+import { DCAInterface } from "@/components/dca-interface"
+import { DCAStrategies } from "@/components/dca-strategies"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { PoolService } from "@/lib/services/pool-service"
@@ -21,18 +22,18 @@ export default function IotaApp() {
   }, [activeTab]);
 
   return (
-    <div className="w-full min-h-[calc(100vh-200px)] flex items-center justify-center px-6 py-8">
+    <div className="w-full min-h-[calc(100vh-120px)] flex items-start justify-center px-6 pt-16 pb-8">
       <div className="w-full max-w-[480px]">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex items-center justify-between mb-6">
-                <TabsList className="bg-black/50 border border-white/10 p-1 rounded-xl">
-                  <TabsTrigger value="swap" className="data-[state=active]:bg-white/10 data-[state=active]:text-cyan-400 data-[state=active]:border data-[state=active]:border-cyan-500/30 text-gray-400 font-medium transition-all rounded-lg">
+                <TabsList className="bg-gray-900/80 border border-gray-700 p-1 rounded-xl">
+                  <TabsTrigger value="swap" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-400 font-medium transition-all rounded-lg">
                     Swap
                   </TabsTrigger>
-                  <TabsTrigger value="limit" className="data-[state=active]:bg-white/10 data-[state=active]:text-cyan-400 data-[state=active]:border data-[state=active]:border-cyan-500/30 text-gray-400 font-medium transition-all rounded-lg">
+                  <TabsTrigger value="limit" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-400 font-medium transition-all rounded-lg">
                     Limit
                   </TabsTrigger>
-                  <TabsTrigger value="dca" className="data-[state=active]:bg-white/10 data-[state=active]:text-cyan-400 data-[state=active]:border data-[state=active]:border-cyan-500/30 text-gray-400 font-medium transition-all rounded-lg">
+                  <TabsTrigger value="dca" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-400 font-medium transition-all rounded-lg">
                     DCA
                   </TabsTrigger>
                 </TabsList>
@@ -60,6 +61,7 @@ export default function IotaApp() {
 
                 <TabsContent value="dca" className="space-y-4 mt-0">
                   <DCAInterface />
+                  <DCAStrategies />
                 </TabsContent>
               </Tabs>
       </div>
