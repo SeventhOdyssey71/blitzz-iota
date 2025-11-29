@@ -256,7 +256,7 @@ module Blitz::dca {
         assert!(amount_to_swap >= MIN_ORDER_SIZE, EInvalidAmount);
 
         // Calculate expected output using simple_dex functions with slippage protection
-        let (reserve_a, reserve_b, _) = simple_dex::get_reserves(pool);
+        let (reserve_a, reserve_b) = simple_dex::get_reserves(pool);
         let expected_output = simple_dex::calculate_output_amount(amount_to_swap, reserve_a, reserve_b);
         
         // Enhanced slippage protection
