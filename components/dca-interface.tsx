@@ -66,6 +66,19 @@ export function DCAInterface() {
   // Loading state
   const [isCreating, setIsCreating] = useState(false);
 
+  // Helper function to convert from smallest units to human-readable format
+  const formatOutputAmount = (outputAmount: string, decimals: number): number => {
+    if (!outputAmount || parseFloat(outputAmount) <= 0) return 0;
+    const result = parseFloat(outputAmount) / Math.pow(10, decimals);
+    console.log('🔢 Output amount conversion:', {
+      raw: outputAmount,
+      decimals,
+      divisor: Math.pow(10, decimals),
+      result
+    });
+    return result;
+  };
+
   // Fetch token prices and balances
   const { price: inputPrice } = useTokenPrice(inputToken.symbol);
   const { price: outputPrice } = useTokenPrice(outputToken.symbol);
@@ -375,10 +388,7 @@ export function DCAInterface() {
           
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold text-white mono">
-              {swapCalculation.outputAmount && parseFloat(swapCalculation.outputAmount) > 0 
-                ? parseFloat(swapCalculation.outputAmount).toFixed(2)
-                : '0.00'
-              }
+              {formatOutputAmount(swapCalculation.outputAmount, outputToken.decimals).toFixed(2)}
             </div>
             <Button
               variant="ghost"
@@ -391,9 +401,9 @@ export function DCAInterface() {
             </Button>
           </div>
           
-          {swapCalculation.outputAmount && outputPrice && parseFloat(swapCalculation.outputAmount) > 0 && (
+          {swapCalculation.outputAmount && outputPrice && formatOutputAmount(swapCalculation.outputAmount, outputToken.decimals) > 0 && (
             <div className="text-xs text-gray-500 mt-1">
-              ≈ ${formatTokenAmount(parseFloat(swapCalculation.outputAmount) * outputPrice.price, 2)} per order
+              ≈ ${formatTokenAmount(formatOutputAmount(swapCalculation.outputAmount, outputToken.decimals) * outputPrice.price, 2)} per order
             </div>
           )}
         </CardContent>
