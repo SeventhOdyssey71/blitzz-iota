@@ -13,6 +13,10 @@ module Blitz::limit_order {
     const EUnauthorized: u64 = 3;
     const EInvalidAmount: u64 = 4;
     const EOrderNotFound: u64 = 5;
+    const EInvalidExpiry: u64 = 6;
+    const EInsufficientBalance: u64 = 7;
+    const EOrderBookFull: u64 = 8;
+    const EInvalidFeeRate: u64 = 9;
 
     public struct OrderBook<phantom CoinA, phantom CoinB> has key {
         id: UID,
@@ -72,6 +76,9 @@ module Blitz::limit_order {
         fee_rate: u64,
         ctx: &mut TxContext
     ) {
+        // Validate fee rate
+        assert!(fee_rate <= MAX_FEE_RATE, EInvalidFeeRate);
+        
         let order_book = OrderBook<CoinA, CoinB> {
             id: object::new(ctx),
             buy_orders: vector::empty(),
@@ -84,6 +91,14 @@ module Blitz::limit_order {
         transfer::share_object(order_book);
     }
 
+    // Constants for validation
+    const MIN_ORDER_SIZE: u64 = 1000; // Minimum order size to prevent spam
+    const MAX_EXPIRY_DURATION: u64 = 7776000000; // 90 days in milliseconds
+    const MIN_EXPIRY_DURATION: u64 = 60000; // 1 minute in milliseconds
+    const PRICE_PRECISION: u64 = 1000000; // 6 decimal places
+    const MAX_ORDERS_PER_SIDE: u64 = 1000; // Maximum orders per buy/sell side
+    const MAX_FEE_RATE: u64 = 1000; // Maximum fee rate: 10% (1000 basis points)
+
     public entry fun place_buy_order<CoinA, CoinB>(
         order_book: &mut OrderBook<CoinA, CoinB>,
         coin_b: Coin<CoinB>,
@@ -93,16 +108,30 @@ module Blitz::limit_order {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
+        // Input validation
         assert!(price > 0, EInvalidPrice);
-        assert!(amount > 0, EInvalidAmount);
+        assert!(amount >= MIN_ORDER_SIZE, EInvalidAmount);
+        assert!(expire_duration >= MIN_EXPIRY_DURATION && expire_duration <= MAX_EXPIRY_DURATION, EInvalidExpiry);
         
         let order_id = object::new(ctx);
         let owner = tx_context::sender(ctx);
         let current_time = clock::timestamp_ms(clock);
         let expire_at = current_time + expire_duration;
 
-        let required_coin_b = (amount * price) / 1000000;
-        assert!(coin::value(&coin_b) >= required_coin_b, EInvalidAmount);
+        // Calculate required coin B amount with overflow protection
+        let required_coin_b = (amount * price) / PRICE_PRECISION;
+        let coin_b_value = coin::value(&coin_b);
+        assert!(coin_b_value >= required_coin_b, EInvalidAmount);
+        
+        // Split exact amount needed, return change if any
+        let payment_coin = if (coin_b_value == required_coin_b) {
+            coin_b
+        } else {
+            let change = coin::split(&mut coin_b, required_coin_b, ctx);
+            // Return excess to sender
+            transfer::public_transfer(coin_b, owner);
+            change
+        };
 
         let order = LimitOrder<CoinA, CoinB> {
             id: object::uid_to_inner(&order_id),
@@ -112,7 +141,7 @@ module Blitz::limit_order {
             amount,
             filled_amount: 0,
             coin_a_balance: balance::zero(),
-            coin_b_balance: coin::into_balance(coin_b),
+            coin_b_balance: coin::into_balance(payment_coin),
             expire_at,
             created_at: current_time,
         };
@@ -140,14 +169,28 @@ module Blitz::limit_order {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
+        // Input validation
         assert!(price > 0, EInvalidPrice);
-        assert!(amount > 0, EInvalidAmount);
-        assert!(coin::value(&coin_a) >= amount, EInvalidAmount);
+        assert!(amount >= MIN_ORDER_SIZE, EInvalidAmount);
+        assert!(expire_duration >= MIN_EXPIRY_DURATION && expire_duration <= MAX_EXPIRY_DURATION, EInvalidExpiry);
+        
+        let coin_a_value = coin::value(&coin_a);
+        assert!(coin_a_value >= amount, EInvalidAmount);
         
         let order_id = object::new(ctx);
         let owner = tx_context::sender(ctx);
         let current_time = clock::timestamp_ms(clock);
         let expire_at = current_time + expire_duration;
+        
+        // Split exact amount needed, return change if any
+        let payment_coin = if (coin_a_value == amount) {
+            coin_a
+        } else {
+            let change = coin::split(&mut coin_a, amount, ctx);
+            // Return excess to sender
+            transfer::public_transfer(coin_a, owner);
+            change
+        };
 
         let order = LimitOrder<CoinA, CoinB> {
             id: object::uid_to_inner(&order_id),
@@ -156,7 +199,7 @@ module Blitz::limit_order {
             price,
             amount,
             filled_amount: 0,
-            coin_a_balance: coin::into_balance(coin_a),
+            coin_a_balance: coin::into_balance(payment_coin),
             coin_b_balance: balance::zero(),
             expire_at,
             created_at: current_time,
@@ -238,6 +281,8 @@ module Blitz::limit_order {
         };
 
         if (new_order.filled_amount < new_order.amount && new_order.expire_at > current_time) {
+            // Check order book capacity before adding new order
+            assert!(vector::length(same_side_orders) < MAX_ORDERS_PER_SIDE, EOrderBookFull);
             insert_order(same_side_orders, new_order);
         } else {
             finalize_order(new_order, ctx);
@@ -251,12 +296,13 @@ module Blitz::limit_order {
         fee_rate: u64,
         collected_fees_a: &mut Balance<CoinA>,
         collected_fees_b: &mut Balance<CoinB>,
-        ctx: &mut TxContext
+        _ctx: &mut TxContext
     ) {
         let execution_price = maker_order.price;
-        let coin_b_amount = (amount * execution_price) / 1000000;
+        // Use proper price precision constant
+        let coin_b_amount = (amount * execution_price) / PRICE_PRECISION;
 
-        // Calculate fees
+        // Calculate fees in basis points (e.g., 30 = 0.3%)
         let fee_a = (amount * fee_rate) / 10000;
         let fee_b = (coin_b_amount * fee_rate) / 10000;
         
