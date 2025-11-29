@@ -331,7 +331,7 @@ export function LimitInterface() {
             <Button
               variant={orderType === 'buy' ? 'default' : 'ghost'}
               size="sm"
-              className={`flex-1 h-8 ${orderType === 'buy' ? 'bg-orange-500 text-black' : 'text-white hover:bg-white/10'}`}
+              className={`flex-1 h-8 ${orderType === 'buy' ? 'bg-blue-500 text-white' : 'text-white hover:bg-white/10'}`}
               onClick={() => setOrderType('buy')}
             >
               Buy {inputToken.symbol}
@@ -339,7 +339,7 @@ export function LimitInterface() {
             <Button
               variant={orderType === 'sell' ? 'default' : 'ghost'}
               size="sm"
-              className={`flex-1 h-8 ${orderType === 'sell' ? 'bg-orange-500 text-black' : 'text-white hover:bg-white/10'}`}
+              className={`flex-1 h-8 ${orderType === 'sell' ? 'bg-blue-500 text-white' : 'text-white hover:bg-white/10'}`}
               onClick={() => setOrderType('sell')}
             >
               Sell {inputToken.symbol}
@@ -351,7 +351,7 @@ export function LimitInterface() {
       {/* Create Limit Order Button */}
       {isConnected ? (
         <Button
-          className="w-full bg-orange-500 hover:bg-orange-400 text-black py-4 rounded-xl font-semibold text-lg"
+          className="w-full bg-blue-500 hover:bg-blue-400 text-white py-4 rounded-xl font-semibold text-lg"
           onClick={handleCreateLimitOrder}
           disabled={isCreating || !amount || !price || parseFloat(amount) <= 0 || parseFloat(price) <= 0}
         >
@@ -366,7 +366,7 @@ export function LimitInterface() {
         </Button>
       ) : (
         <Button
-          className="w-full bg-orange-500 hover:bg-orange-400 text-black py-4 rounded-xl font-semibold text-lg"
+          className="w-full bg-blue-500 hover:bg-blue-400 text-white py-4 rounded-xl font-semibold text-lg"
           onClick={() => toast.error('Please connect your wallet')}
         >
           Connect Wallet
