@@ -69,14 +69,7 @@ export function DCAInterface() {
   // Helper function to convert from smallest units to human-readable format
   const formatOutputAmount = (outputAmount: string, decimals: number): number => {
     if (!outputAmount || parseFloat(outputAmount) <= 0) return 0;
-    const result = parseFloat(outputAmount) / Math.pow(10, decimals);
-    console.log('🔢 Output amount conversion:', {
-      raw: outputAmount,
-      decimals,
-      divisor: Math.pow(10, decimals),
-      result
-    });
-    return result;
+    return parseFloat(outputAmount) / Math.pow(10, decimals);
   };
 
   // Fetch token prices and balances
@@ -198,12 +191,7 @@ export function DCAInterface() {
         poolId: '', // Will be filled by service
       };
 
-      console.log('Creating DCA strategy with params:');
-      console.table(params);
-      console.log('Full params object:', JSON.stringify(params, null, 2));
-
-      // Create the actual DCA strategy using Move contract
-      console.log('🚀 Calling createStrategy...');
+      console.log('🚀 Creating DCA strategy:', params.name);
       const result = await createStrategy(params);
       
       if (result.success) {
@@ -223,15 +211,7 @@ export function DCAInterface() {
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to create DCA strategy';
-      console.error('❌ DCA creation error:');
-      console.error(error);
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-      }
+      console.error('❌ DCA creation error:', error instanceof Error ? error.message : String(error));
       toast.error(errorMsg);
     } finally {
       setIsCreating(false);

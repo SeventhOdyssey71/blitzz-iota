@@ -74,30 +74,19 @@ export function useDCAV2(): UseDCAV2Result {
   // Create strategy mutation
   const createStrategyMutation = useMutation({
     mutationFn: async (params: CreateDCAV2Params) => {
-      console.log('🔍 useDCAV2: Starting DCA strategy creation');
-      console.log('📝 Params received:', JSON.stringify(params, null, 2));
-      
       if (!currentAccount) throw new Error('Wallet not connected');
-      console.log('✅ Wallet connected:', currentAccount.address);
 
       // Find pool
-      console.log('🏊 Finding pool for token pair:', {
-        sourceToken: params.sourceTokenType,
-        targetToken: params.targetTokenType
-      });
       const pool = await PoolService.findPool(params.sourceTokenType, params.targetTokenType);
       if (!pool) throw new Error('No pool found for this token pair');
-      console.log('✅ Pool found:', pool.poolId);
 
       // Create transaction
-      console.log('📜 Creating DCA transaction...');
       const tx = await DCAServiceV2.createDCAStrategy(client, {
         ...params,
         poolId: pool.poolId,
       });
 
       tx.setGasBudget(200000000); // 0.2 IOTA for strategy creation
-      console.log('💰 Gas budget set to 0.2 IOTA');
 
       return new Promise<{ success: boolean; error?: string }>((resolve) => {
         signAndExecuteTransaction(
@@ -111,26 +100,23 @@ export function useDCAV2(): UseDCAV2Result {
           },
           {
             onSuccess: (result) => {
-              console.log('📋 Transaction result received:', result);
-              
               // Check transaction status
               const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
-              console.log('📊 Transaction status:', status);
               
               if (status === 'failure' || status === 'failed') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Transaction failed on chain';
-                console.error('❌ Transaction failed with status:', status, errorMsg);
+                console.error('❌ DCA transaction failed:', errorMsg);
                 resolve({ success: false, error: errorMsg });
                 return;
               }
 
-              console.log('✅ DCA strategy transaction successful!');
+              console.log('✅ DCA strategy created successfully');
               toast.success(`DCA strategy "${params.name}" created successfully!`);
               queryClient.invalidateQueries({ queryKey: ['dca-strategies-v2'] });
               resolve({ success: true });
             },
             onError: (error) => {
-              console.error('❌ Transaction execution error:', error);
+              console.error('❌ Transaction error:', error?.message);
               const errorMsg = error?.message || 'Failed to create DCA strategy';
               toast.error(errorMsg);
               resolve({ success: false, error: errorMsg });

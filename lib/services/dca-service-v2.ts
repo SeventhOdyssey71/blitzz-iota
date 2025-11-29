@@ -78,7 +78,7 @@ export interface DCARegistryInfo {
 
 export class DCAServiceV2 {
   private static readonly REGISTRY_OBJECT_ID = process.env.NEXT_PUBLIC_DCA_REGISTRY_ID || '';
-  private static readonly MODULE_NAME = 'dca_v2';
+  private static readonly MODULE_NAME = 'dca'; // Use deployed dca module
 
   // ==================== STRATEGY MANAGEMENT ====================
 
