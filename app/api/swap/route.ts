@@ -12,6 +12,7 @@ import {
   createPoolNotFoundError
 } from '@/lib/errors';
 import { validateSwapRequest, validators } from '@/lib/validation';
+import { withTradingSecurity } from '@/lib/middleware/security';
 
 // Initialize IOTA client for real chain interaction
 const client = new IotaClient({ url: getFullnodeUrl('testnet') });
@@ -114,7 +115,7 @@ function createErrorResponse(error: AppError): NextResponse {
   return NextResponse.json(response, { status: error.statusCode });
 }
 
-export async function POST(request: NextRequest) {
+const handleSwapRequest = async (request: NextRequest) => {
   try {
     // Parse and validate request body
     let body: any;
@@ -292,4 +293,7 @@ export async function POST(request: NextRequest) {
     
     return createErrorResponse(appError);
   }
-}
+};
+
+// Apply security middleware to the handler
+export const POST = withTradingSecurity(handleSwapRequest);
