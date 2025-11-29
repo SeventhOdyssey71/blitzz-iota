@@ -216,9 +216,12 @@ module Blitz::simple_dex {
         balance::join(&mut pool.reserve_b, coin::into_balance(coin_b));
         let coin_a = coin::take(&mut pool.reserve_a, amount_out, ctx);
         
-        // Record fees and volume
-        pool.fees_b = pool.fees_b + fee_amount;
-        pool.total_volume_b = pool.total_volume_b + amount_in;
+        // Record fees and volume using packed data
+        let (current_fees_a, current_fees_b) = unpack_u64_pair(pool.fee_data);
+        let (current_volume_a, current_volume_b) = unpack_u64_pair(pool.volume_data);
+        
+        pool.fee_data = pack_u64_pair(current_fees_a, current_fees_b + fee_amount);
+        pool.volume_data = pack_u64_pair(current_volume_a, current_volume_b + amount_in);
         
         transfer::public_transfer(coin_a, tx_context::sender(ctx));
     }
