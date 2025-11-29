@@ -56,6 +56,8 @@ export interface CreateDCAV2Params {
   maxSlippageBps: number;
   name: string;
   poolId: string;
+  sourceDecimals?: number;
+  targetDecimals?: number;
 }
 
 export interface DCAExecutionEvent {
@@ -77,8 +79,62 @@ export interface DCARegistryInfo {
 }
 
 export class DCAServiceV2 {
-  private static readonly REGISTRY_OBJECT_ID = process.env.NEXT_PUBLIC_DCA_REGISTRY_ID || '0x1'; // Temporary placeholder - needs to be set after registry deployment
+  private static readonly REGISTRY_OBJECT_ID = process.env.NEXT_PUBLIC_DCA_REGISTRY_ID || ''; // Must be set to actual registry object ID
   private static readonly MODULE_NAME = 'dca'; // Use deployed dca module
+  
+  // Utility functions for decimal handling  
+  private static parseTokenAmount(amount: string, decimals: number): string {
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      throw new Error('Invalid amount');
+    }
+    return Math.floor(amountNum * Math.pow(10, decimals)).toString();
+  }
+  
+  private static validateDCAParams(params: CreateDCAV2Params): void {
+    if (!params.sourceTokenType || !params.targetTokenType) {
+      throw new Error('Token types are required');
+    }
+    if (params.sourceTokenType === params.targetTokenType) {
+      throw new Error('Source and target tokens must be different');
+    }
+    if (params.intervalMs < 300000 || params.intervalMs > 2592000000) { // 5 min to 30 days
+      throw new Error('Interval must be between 5 minutes and 30 days');
+    }
+    if (params.totalOrders < 1 || params.totalOrders > 365) {
+      throw new Error('Total orders must be between 1 and 365');
+    }
+    const totalAmount = parseFloat(params.totalAmount);
+    if (isNaN(totalAmount) || totalAmount <= 0) {
+      throw new Error('Total amount must be a positive number');
+    }
+  }
+
+  // ==================== REGISTRY MANAGEMENT ====================
+
+  static async createDCARegistry(
+    client: IotaClient
+  ): Promise<Transaction> {
+    const tx = new Transaction();
+    const packageId = blitz_PACKAGE_ID.testnet;
+
+    console.log('🏗️ Creating DCA Registry with details:', {
+      packageId,
+      module: this.MODULE_NAME,
+      target: `${packageId}::${this.MODULE_NAME}::create_dca_registry`
+    });
+
+    // Create the DCA registry first
+    tx.moveCall({
+      target: `${packageId}::${this.MODULE_NAME}::create_dca_registry`,
+      arguments: [], // No arguments needed
+    });
+
+    tx.setGasBudget(100000000); // 0.1 IOTA for registry creation
+
+    console.log('🏗️ Creating DCA Registry with package:', packageId);
+    return tx;
+  }
 
   // ==================== STRATEGY MANAGEMENT ====================
 
@@ -86,8 +142,75 @@ export class DCAServiceV2 {
     client: IotaClient,
     params: CreateDCAV2Params
   ): Promise<Transaction> {
+    // Validate parameters first
+    this.validateDCAParams(params);
+    
     const tx = new Transaction();
     const packageId = blitz_PACKAGE_ID.testnet;
+
+    // Get token decimals (default to 9 for IOTA, 6 for others)
+    const sourceDecimals = params.sourceDecimals ?? (params.sourceTokenType === '0x2::iota::IOTA' ? 9 : 6);
+    
+    // Parse amount with proper decimals
+    const parsedTotalAmount = this.parseTokenAmount(params.totalAmount, sourceDecimals);
+    const parsedMinAmountOut = params.minPrice ? this.parseTokenAmount(params.minPrice, 6) : '0';
+    const parsedMaxAmountOut = params.maxPrice ? this.parseTokenAmount(params.maxPrice, 6) : '0';
+
+    // Debug logging
+    console.log('🔧 DCA Transaction Debug:', {
+      packageId,
+      module: this.MODULE_NAME,
+      poolId: params.poolId,
+      sourceTokenType: params.sourceTokenType,
+      targetTokenType: params.targetTokenType,
+      rawTotalAmount: params.totalAmount,
+      parsedTotalAmount,
+      sourceDecimals,
+      intervalMs: params.intervalMs,
+      totalOrders: params.totalOrders,
+      parsedMinAmountOut,
+      parsedMaxAmountOut
+    });
+
+    // For DCA, we need to split coins from gas budget for the total amount
+    const sourceCoin = params.sourceTokenType === '0x2::iota::IOTA' 
+      ? tx.splitCoins(tx.gas, [parsedTotalAmount])
+      : tx.gas; // TODO: Handle other source tokens
+
+    // Use simplified approach (no registry) to avoid complexity
+    console.log('🎯 Using simplified DCA strategy creation (no registry)');
+    
+    tx.moveCall({
+      target: `${packageId}::${this.MODULE_NAME}::create_dca_strategy_simple`,
+      arguments: [
+        tx.object(params.poolId), // pool
+        sourceCoin, // source_coin with proper amount
+        tx.pure.u64(params.intervalMs), // interval_ms
+        tx.pure.u64(params.totalOrders), // total_orders  
+        tx.pure.u64(parsedMinAmountOut), // min_amount_out
+        tx.pure.u64(parsedMaxAmountOut), // max_amount_out
+        tx.object('0x6'), // clock
+      ],
+      typeArguments: [params.sourceTokenType, params.targetTokenType],
+    });
+
+    tx.setGasBudget(200000000); // 0.2 IOTA
+
+    return tx;
+  }
+
+  // Keep the old version for backward compatibility if needed
+  static async createDCAStrategyWithRegistry(
+    client: IotaClient,
+    params: CreateDCAV2Params
+  ): Promise<Transaction> {
+    const tx = new Transaction();
+    const packageId = blitz_PACKAGE_ID.testnet;
+
+    // Check if we have a valid registry
+    if (!this.REGISTRY_OBJECT_ID) {
+      throw new Error(`DCA Registry not configured. Please set NEXT_PUBLIC_DCA_REGISTRY_ID environment variable with a deployed registry object ID, or deploy a new registry using createDCARegistry() first.`);
+    }
 
     // For DCA, we need to split coins from gas budget for the total amount
     const sourceCoin = params.sourceTokenType === '0x2::iota::IOTA' 
@@ -98,7 +221,7 @@ export class DCAServiceV2 {
     tx.moveCall({
       target: `${packageId}::${this.MODULE_NAME}::create_dca_strategy`,
       arguments: [
-        tx.object(this.REGISTRY_OBJECT_ID), // registry
+        tx.object(this.REGISTRY_OBJECT_ID), // registry - must be a shared object, not package
         tx.object(params.poolId), // pool
         sourceCoin, // source_coin with the specified amount
         tx.pure.u64(params.intervalMs), // interval_ms
