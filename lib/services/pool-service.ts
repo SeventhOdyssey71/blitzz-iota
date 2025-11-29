@@ -1,7 +1,10 @@
 'use client';
 
 import { getSafeIotaClient } from '@/lib/iota/safe-client';
-import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
+import { IOTA_CONFIG, getPoolId, getTokenByType, MODULE_NAMES } from '@/config/iota.config';
+import { log, measurePerformance } from '@/lib/logging';
+import { poolCache, withCache } from '@/lib/cache';
+import { NetworkError, PoolError, ErrorCode, createPoolNotFoundError } from '@/lib/errors';
 
 export interface PoolInfo {
   poolId: string;
@@ -24,139 +27,165 @@ export interface SwapQuote {
 }
 
 export class PoolService {
-  private static pools: Map<string, PoolInfo> = new Map();
-  private static lastUpdate = 0;
-  private static readonly CACHE_DURATION = 5000; // 5 seconds
+  private static instance: PoolService | null = null;
+  private readonly client;
+  private readonly packageId: string;
 
-  static clearCache() {
-    this.pools.clear();
-    this.lastUpdate = 0;
+  private constructor() {
+    this.client = getSafeIotaClient();
+    this.packageId = IOTA_CONFIG.packages.core;
+    
+    if (!this.client) {
+      throw new NetworkError('Failed to initialize IOTA client');
+    }
+    
+    if (!this.packageId || this.packageId === '0x0') {
+      throw new Error('Core package ID not configured. Please deploy contracts first.');
+    }
   }
 
-  static async findPool(
-    coinTypeA: string,
-    coinTypeB: string,
-    network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'
-  ): Promise<PoolInfo | null> {
-    const client = getSafeIotaClient();
-    const packageId = blitz_PACKAGE_ID[network];
-
-    if (!client || !packageId) {
-      return null;
+  static getInstance(): PoolService {
+    if (!PoolService.instance) {
+      PoolService.instance = new PoolService();
     }
+    return PoolService.instance;
+  }
 
-    // Check cache first
-    const cacheKey = `${coinTypeA}-${coinTypeB}`;
-    const reverseCacheKey = `${coinTypeB}-${coinTypeA}`;
+  async findPool(coinTypeA: string, coinTypeB: string): Promise<PoolInfo | null> {
+    const timer = measurePerformance('PoolService.findPool');
     
-    if (Date.now() - this.lastUpdate < this.CACHE_DURATION) {
-      const cached = this.pools.get(cacheKey) || this.pools.get(reverseCacheKey);
-      if (cached) {
-        return cached;
-      }
-    }
-
     try {
-      // Search for pools by querying recent transactions
-      const txns = await client.queryTransactionBlocks({
-        filter: {
-          MoveFunction: {
-            package: packageId,
-            module: 'simple_dex',
-            function: 'create_pool'
-          }
-        },
-        order: 'descending',
-        limit: 50,
-        options: {
-          showEffects: true,
-          showObjectChanges: true
-        }
+      // Get token information
+      const tokenA = getTokenByType(coinTypeA);
+      const tokenB = getTokenByType(coinTypeB);
+      
+      if (!tokenA || !tokenB) {
+        throw createPoolNotFoundError(coinTypeA, coinTypeB);
+      }
+
+      // Get pool ID from configuration
+      const poolId = getPoolId(tokenA.symbol, tokenB.symbol);
+      
+      if (!poolId || poolId === '0x0') {
+        log.warn('Pool not found in configuration', { 
+          tokenA: tokenA.symbol, 
+          tokenB: tokenB.symbol 
+        });
+        return null;
+      }
+
+      // Use cache for pool info
+      const cacheKey = `pool:${poolId}`;
+      return await withCache(
+        poolCache,
+        cacheKey,
+        () => this.fetchPoolInfo(poolId, coinTypeA, coinTypeB),
+        30000 // 30 second TTL for pool data
+      );
+
+    } catch (error) {
+      log.error('Failed to find pool', { coinTypeA, coinTypeB }, error instanceof Error ? error : undefined);
+      throw error;
+    } finally {
+      timer.end();
+    }
+  }
+
+  private async fetchPoolInfo(poolId: string, coinTypeA: string, coinTypeB: string): Promise<PoolInfo> {
+    try {
+      const poolObject = await this.client!.getObject({
+        id: poolId,
+        options: { showContent: true },
       });
 
-      for (const tx of txns?.data || []) {
-        if (tx.objectChanges) {
-          const pools = tx.objectChanges.filter(change => 
-            change.type === 'created' && 
-            change.objectType?.includes('::simple_dex::Pool')
-          );
-          
-          for (const poolChange of pools) {
-            const poolId = (poolChange as any).objectId || (poolChange as any).id;
-            
-            try {
-              const poolObject = await client.getObject({
-                id: poolId,
-                options: {
-                  showContent: true,
-                  showType: true,
-                },
-              });
-
-              if (poolObject?.data?.content?.dataType === 'moveObject') {
-                const fields = poolObject.data.content.fields as any;
-                const poolType = poolObject.data.type;
-                
-                // Extract coin types from the pool type
-                const typeMatch = poolType?.match(/Pool<(.+), (.+)>/);
-                if (typeMatch) {
-                  const poolCoinTypeA = typeMatch[1].trim();
-                  const poolCoinTypeB = typeMatch[2].trim();
-                  
-                  // Check if this matches our requested pair
-                  const isMatch = (
-                    (poolCoinTypeA === coinTypeA && poolCoinTypeB === coinTypeB) ||
-                    (poolCoinTypeA === coinTypeB && poolCoinTypeB === coinTypeA)
-                  );
-
-                  if (isMatch) {
-                    const poolInfo: PoolInfo = {
-                      poolId,
-                      coinTypeA: poolCoinTypeA,
-                      coinTypeB: poolCoinTypeB,
-                      reserveA: BigInt(fields.reserve_a?.fields?.value || fields.reserve_a || '0'),
-                      reserveB: BigInt(fields.reserve_b?.fields?.value || fields.reserve_b || '0'),
-                      lpSupply: BigInt(fields.lp_supply || 0),
-                      feePercentage: 18, // 1.8% from contract
-                      totalVolumeA: BigInt(0), // Initialize with zero for now
-                      totalVolumeB: BigInt(0),
-                      feesA: BigInt(0),
-                      feesB: BigInt(0),
-                    };
-
-                    // Cache the pool
-                    this.pools.set(`${poolCoinTypeA}-${poolCoinTypeB}`, poolInfo);
-                    this.lastUpdate = Date.now();
-
-                    return poolInfo;
-                  }
-                }
-              }
-            } catch (err) {
-              continue;
-            }
-          }
-        }
+      if (!poolObject.data?.content || poolObject.data.content.dataType !== 'moveObject') {
+        throw new PoolError(ErrorCode.POOL_NOT_FOUND, `Pool object not found: ${poolId}`);
       }
-    } catch (error) {
-      console.error('Error searching for pools:', error);
-    }
 
-    return null;
+      const fields = poolObject.data.content.fields as any;
+      
+      // Validate pool structure
+      if (!fields.reserve_a || !fields.reserve_b || !fields.lp_supply) {
+        throw new PoolError(ErrorCode.INVALID_CONTRACT_STATE, 'Invalid pool structure');
+      }
+
+      const reserveA = BigInt(fields.reserve_a?.fields?.value || fields.reserve_a || '0');
+      const reserveB = BigInt(fields.reserve_b?.fields?.value || fields.reserve_b || '0');
+      const lpSupply = BigInt(fields.lp_supply || '0');
+
+      // Extract fee and volume data from packed fields
+      const feeData = fields.fee_data || '0';
+      const volumeData = fields.volume_data || '0';
+
+      const poolInfo: PoolInfo = {
+        poolId,
+        coinTypeA,
+        coinTypeB,
+        reserveA,
+        reserveB,
+        lpSupply,
+        feePercentage: IOTA_CONFIG.fees.swap, // 1.8%
+        totalVolumeA: this.unpackHighU64(BigInt(volumeData)),
+        totalVolumeB: this.unpackLowU64(BigInt(volumeData)),
+        feesA: this.unpackHighU64(BigInt(feeData)),
+        feesB: this.unpackLowU64(BigInt(feeData)),
+      };
+
+      log.debug('Pool info fetched', { 
+        poolId, 
+        reserveA: reserveA.toString(), 
+        reserveB: reserveB.toString(),
+        lpSupply: lpSupply.toString()
+      });
+
+      return poolInfo;
+      
+    } catch (error) {
+      if (error instanceof PoolError) {
+        throw error;
+      }
+      
+      log.error('Failed to fetch pool info', { poolId }, error instanceof Error ? error : undefined);
+      throw new NetworkError(`Failed to fetch pool info: ${poolId}`);
+    }
   }
 
-  static calculateSwapQuote(
+  // Utility methods for packed data
+  private unpackHighU64(packed: bigint): bigint {
+    return packed >> 64n;
+  }
+
+  private unpackLowU64(packed: bigint): bigint {
+    return packed & 0xFFFFFFFFFFFFFFFFn;
+  }
+
+  calculateSwapQuote(
     pool: PoolInfo,
     inputAmount: bigint,
     isAToB: boolean,
     slippageTolerance: number = 0.5
   ): SwapQuote {
+    if (inputAmount <= 0n) {
+      throw new Error('Input amount must be greater than zero');
+    }
+
     const FEE_DENOMINATOR = BigInt(1000);
     const FEE_NUMERATOR = BigInt(pool.feePercentage);
     
     const reserveIn = isAToB ? pool.reserveA : pool.reserveB;
     const reserveOut = isAToB ? pool.reserveB : pool.reserveA;
     
+    // Validate reserves
+    if (reserveIn <= 0n || reserveOut <= 0n) {
+      throw new PoolError(ErrorCode.INSUFFICIENT_LIQUIDITY, 'Pool has no liquidity');
+    }
+
+    // Prevent excessive price impact
+    const maxInputPercent = reserveIn / 10n; // Max 10% of reserve
+    if (inputAmount > maxInputPercent) {
+      throw new Error('Input amount too large, would cause excessive price impact');
+    }
+
     // Calculate fee
     const feeAmount = (inputAmount * FEE_NUMERATOR) / FEE_DENOMINATOR;
     const inputAfterFee = inputAmount - feeAmount;
@@ -164,32 +193,89 @@ export class PoolService {
     // Calculate output using constant product formula
     const outputAmount = (inputAfterFee * reserveOut) / (reserveIn + inputAfterFee);
     
+    if (outputAmount <= 0n) {
+      throw new PoolError(ErrorCode.INSUFFICIENT_LIQUIDITY, 'Insufficient output amount');
+    }
+
     // Calculate price impact
-    const spotPriceBefore = Number(reserveOut) / Number(reserveIn);
-    const executionPrice = Number(outputAmount) / Number(inputAmount);
-    const priceImpact = Math.abs((spotPriceBefore - executionPrice) / spotPriceBefore) * 100;
+    const priceImpact = Number(inputAmount) / Number(reserveIn) * 100;
     
+    // Validate price impact
+    if (priceImpact > 5) {
+      throw new Error(`Price impact too high: ${priceImpact.toFixed(2)}%`);
+    }
+
     // Calculate minimum received with slippage
-    const slippageMultiplier = BigInt(Math.floor((100 - slippageTolerance) * 10));
-    const minimumReceived = (outputAmount * slippageMultiplier) / BigInt(1000);
+    const slippageMultiplier = BigInt(Math.floor((100 - slippageTolerance) * 100));
+    const minimumReceived = (outputAmount * slippageMultiplier) / BigInt(10000);
     
     return { outputAmount, priceImpact, minimumReceived };
   }
 
-  static async getAllPools(network: 'mainnet' | 'testnet' | 'devnet' = 'testnet'): Promise<PoolInfo[]> {
-    const coinTypes = Object.values(SUPPORTED_COINS).map(coin => coin.type);
-    const pools: PoolInfo[] = [];
+  async getAllPools(): Promise<PoolInfo[]> {
+    const timer = measurePerformance('PoolService.getAllPools');
     
-    // Check all possible pairs
-    for (let i = 0; i < coinTypes.length; i++) {
-      for (let j = i + 1; j < coinTypes.length; j++) {
-        const pool = await this.findPool(coinTypes[i], coinTypes[j], network);
-        if (pool) {
-          pools.push(pool);
+    try {
+      const pools: PoolInfo[] = [];
+      const tokens = Object.values(IOTA_CONFIG.tokens);
+      
+      // Check all configured pool pairs
+      for (let i = 0; i < tokens.length; i++) {
+        for (let j = i + 1; j < tokens.length; j++) {
+          try {
+            const pool = await this.findPool(tokens[i].type, tokens[j].type);
+            if (pool) {
+              pools.push(pool);
+            }
+          } catch (error) {
+            // Continue with other pools if one fails
+            log.warn('Failed to fetch pool', { 
+              tokenA: tokens[i].symbol, 
+              tokenB: tokens[j].symbol 
+            });
+          }
         }
       }
+      
+      log.info('Fetched all pools', { count: pools.length });
+      return pools;
+      
+    } catch (error) {
+      log.error('Failed to fetch all pools', {}, error instanceof Error ? error : undefined);
+      throw error;
+    } finally {
+      timer.end();
     }
-    
-    return pools;
+  }
+
+  async createPool(
+    coinTypeA: string,
+    coinTypeB: string,
+    amountA: bigint,
+    amountB: bigint
+  ) {
+    // This would be implemented when pool creation is needed
+    // For now, pools are pre-configured
+    throw new Error('Pool creation not implemented. Use pre-configured pools.');
+  }
+
+  // Static convenience methods
+  static getInstance = () => PoolService.getInstance();
+  
+  static async findPool(coinTypeA: string, coinTypeB: string): Promise<PoolInfo | null> {
+    return PoolService.getInstance().findPool(coinTypeA, coinTypeB);
+  }
+  
+  static calculateSwapQuote(
+    pool: PoolInfo,
+    inputAmount: bigint,
+    isAToB: boolean,
+    slippageTolerance?: number
+  ): SwapQuote {
+    return PoolService.getInstance().calculateSwapQuote(pool, inputAmount, isAToB, slippageTolerance);
+  }
+  
+  static async getAllPools(): Promise<PoolInfo[]> {
+    return PoolService.getInstance().getAllPools();
   }
 }

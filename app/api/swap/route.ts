@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { IotaClient, getFullnodeUrl } from '@iota/iota-sdk/client';
-import { SUPPORTED_COINS } from '@/config/iota.config';
+import { IOTA_CONFIG, getTokenByType, MODULE_NAMES } from '@/config/iota.config';
 import { 
   AppError, 
   ErrorCode, 
@@ -13,73 +12,11 @@ import {
 } from '@/lib/errors';
 import { validateSwapRequest, validators } from '@/lib/validation';
 import { withTradingSecurity } from '@/lib/middleware/security';
+import { PoolService } from '@/lib/services/pool-service';
+import { log, measurePerformance } from '@/lib/logging';
 
-// Initialize IOTA client for real chain interaction
-const client = new IotaClient({ url: getFullnodeUrl('testnet') });
-
-// Real pool registry for production use
-interface PoolInfo {
-  id: string;
-  coinTypeA: string;
-  coinTypeB: string;
-  feeRate: number;
-}
-
-// Production pool registry - replace with actual deployed pools
-const POOL_REGISTRY: PoolInfo[] = [
-  {
-    id: process.env.NEXT_PUBLIC_IOTA_STIOTA_POOL_ID || '',
-    coinTypeA: SUPPORTED_COINS.IOTA.type,
-    coinTypeB: SUPPORTED_COINS.stIOTA.type,
-    feeRate: 18, // 1.8% as configured in simple_dex.move
-  },
-  // Add more pools as they are deployed
-];
-
-async function getPoolReserves(poolId: string, coinTypeA: string, coinTypeB: string) {
-  try {
-    const pool = await client.getObject({
-      id: poolId,
-      options: { showContent: true },
-    });
-
-    if (pool.data?.content?.dataType === 'moveObject') {
-      const fields = pool.data.content.fields as any;
-      return {
-        reserveA: BigInt(fields.reserve_a?.fields?.value || '0'),
-        reserveB: BigInt(fields.reserve_b?.fields?.value || '0'),
-        lpSupply: BigInt(fields.lp_supply || '0'),
-        feeData: fields.fee_data || '0',
-        volumeData: fields.volume_data || '0',
-      };
-    }
-    throw new Error('Invalid pool object');
-  } catch (error) {
-    console.error('Failed to fetch pool reserves:', error);
-    throw error;
-  }
-}
-
-function findPool(tokenA: string, tokenB: string): PoolInfo | null {
-  return POOL_REGISTRY.find(pool => 
-    (pool.coinTypeA === tokenA && pool.coinTypeB === tokenB) ||
-    (pool.coinTypeA === tokenB && pool.coinTypeB === tokenA)
-  ) || null;
-}
-
-function calculateSwapOutput(
-  amountIn: bigint, 
-  reserveIn: bigint, 
-  reserveOut: bigint, 
-  feeRate: number
-): bigint {
-  if (reserveIn === 0n || reserveOut === 0n) return 0n;
-  
-  const feeAmount = (amountIn * BigInt(feeRate)) / 1000n;
-  const amountInAfterFee = amountIn - feeAmount;
-  
-  return (amountInAfterFee * reserveOut) / (reserveIn + amountInAfterFee);
-}
+// Production-ready pool service instance
+const poolService = PoolService.getInstance();
 
 // Standardized API response format
 interface ApiResponse<T = any> {
@@ -137,144 +74,162 @@ const handleSwapRequest = async (request: NextRequest) => {
 
     switch (action) {
       case 'estimate': {
-        // Validate swap parameters
-        const validation = validateSwapRequest(params);
-        if (!validation.isValid) {
-          throw validation.errors[0]; // Return first validation error
-        }
-
-        const { inputToken, outputToken, inputAmount } = validation.data!;
+        const timer = measurePerformance('SwapAPI.estimate');
         
-        // Find real pool from registry
-        const pool = findPool(inputToken, outputToken);
-        if (!pool || !pool.id) {
-          throw createPoolNotFoundError(inputToken, outputToken);
-        }
-
-        // Get real reserves from blockchain with timeout
-        let reserves;
         try {
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Request timeout')), 10000)
-          );
-          
-          reserves = await Promise.race([
-            getPoolReserves(pool.id, pool.coinTypeA, pool.coinTypeB),
-            timeoutPromise
-          ]);
-        } catch (error) {
-          if (error instanceof Error && error.message === 'Request timeout') {
-            throw new NetworkError('Request timeout while fetching pool reserves');
+          // Validate swap parameters
+          const validation = validateSwapRequest(params);
+          if (!validation.isValid) {
+            throw validation.errors[0];
           }
-          throw new NetworkError('Failed to fetch pool reserves from blockchain');
-        }
-        
-        // Determine swap direction
-        const isReverse = pool.coinTypeA !== inputToken;
-        const reserveIn = isReverse ? reserves.reserveB : reserves.reserveA;
-        const reserveOut = isReverse ? reserves.reserveA : reserves.reserveB;
-        
-        if (reserveIn === 0n || reserveOut === 0n) {
-          throw new PoolError(
-            ErrorCode.INSUFFICIENT_LIQUIDITY,
-            'Pool has no liquidity',
-            { poolId: pool.id, reserveIn: reserveIn.toString(), reserveOut: reserveOut.toString() }
+
+          const { inputToken, outputToken, inputAmount, slippage } = validation.data!;
+          
+          // Get token information
+          const inputTokenInfo = getTokenByType(inputToken);
+          const outputTokenInfo = getTokenByType(outputToken);
+          
+          if (!inputTokenInfo || !outputTokenInfo) {
+            throw createPoolNotFoundError(inputToken, outputToken);
+          }
+
+          log.debug('Processing swap estimate', { 
+            inputToken: inputTokenInfo.symbol,
+            outputToken: outputTokenInfo.symbol,
+            inputAmount 
+          });
+
+          // Find pool using production-ready service
+          const pool = await poolService.findPool(inputToken, outputToken);
+          if (!pool) {
+            throw createPoolNotFoundError(inputToken, outputToken);
+          }
+
+          // Convert input amount
+          const amountIn = BigInt(inputAmount);
+          if (amountIn <= 0n) {
+            throw new ValidationError('Input amount must be greater than zero');
+          }
+
+          // Determine swap direction
+          const isAToB = pool.coinTypeA === inputToken;
+          
+          // Calculate swap quote using production service
+          const quote = poolService.calculateSwapQuote(
+            pool,
+            amountIn,
+            isAToB,
+            slippage || IOTA_CONFIG.defaults.slippage
           );
+
+          log.business('Swap estimate calculated', {
+            inputToken: inputTokenInfo.symbol,
+            outputToken: outputTokenInfo.symbol,
+            inputAmount: amountIn.toString(),
+            outputAmount: quote.outputAmount.toString(),
+            priceImpact: quote.priceImpact,
+          });
+
+          return createSuccessResponse({
+            outputAmount: quote.outputAmount.toString(),
+            priceImpact: quote.priceImpact,
+            minimumReceived: quote.minimumReceived.toString(),
+            route: [inputToken, outputToken],
+            poolId: pool.poolId,
+            reserves: {
+              in: (isAToB ? pool.reserveA : pool.reserveB).toString(),
+              out: (isAToB ? pool.reserveB : pool.reserveA).toString(),
+            },
+            fee: pool.feePercentage,
+            slippageTolerance: slippage || IOTA_CONFIG.defaults.slippage,
+          });
+          
+        } finally {
+          timer.end();
         }
-
-        // Validate input amount doesn't exceed reserves
-        const amountIn = BigInt(inputAmount);
-        if (amountIn <= 0n) {
-          throw new ValidationError('Input amount must be greater than zero');
-        }
-
-        // Calculate maximum possible input (90% of reserve to prevent extreme price impact)
-        const maxInput = (reserveIn * 90n) / 100n;
-        if (amountIn > maxInput) {
-          throw new ValidationError(
-            'Input amount too large, would cause excessive price impact',
-            { inputAmount, maxAllowed: maxInput.toString() }
-          );
-        }
-
-        const outputAmount = calculateSwapOutput(amountIn, reserveIn, reserveOut, pool.feeRate);
-
-        // Calculate price impact
-        const priceImpact = Number(amountIn) / Number(reserveIn) * 100;
-
-        // Warn if price impact is high
-        if (priceImpact > 5) {
-          throw new ValidationError(
-            `Price impact too high: ${priceImpact.toFixed(2)}%. Maximum allowed: 5%`,
-            { priceImpact, maxAllowed: 5 }
-          );
-        }
-
-        return createSuccessResponse({
-          outputAmount: outputAmount.toString(),
-          priceImpact: Math.min(priceImpact, 100),
-          route: [inputToken, outputToken],
-          poolId: pool.id,
-          reserves: {
-            in: reserveIn.toString(),
-            out: reserveOut.toString(),
-          },
-          fee: pool.feeRate,
-          minimumReceived: (outputAmount * 995n / 1000n).toString(), // 0.5% slippage tolerance
-        });
       }
 
       case 'execute': {
-        // Validate execute parameters
-        const executeValidation = validators.swap.validate({
-          inputToken: params.inputToken,
-          outputToken: params.outputToken,
-          inputAmount: params.inputAmount,
-        });
+        const timer = measurePerformance('SwapAPI.execute');
         
-        if (!executeValidation.isValid) {
-          throw executeValidation.errors[0];
-        }
-
-        const { inputToken, outputToken, inputAmount } = executeValidation.data!;
-        const { minOutputAmount } = params;
-        
-        // Validate minOutputAmount if provided
-        if (minOutputAmount && (!minOutputAmount || BigInt(minOutputAmount) <= 0n)) {
-          throw new ValidationError('Minimum output amount must be greater than zero');
-        }
-        
-        const pool = findPool(inputToken, outputToken);
-        if (!pool || !pool.id) {
-          throw createPoolNotFoundError(inputToken, outputToken);
-        }
-
-        // Verify pool is still valid by checking reserves
         try {
-          const reserves = await getPoolReserves(pool.id, pool.coinTypeA, pool.coinTypeB);
-          if (reserves.reserveA === 0n || reserves.reserveB === 0n) {
+          // Validate execute parameters
+          const executeValidation = validators.swap.validate({
+            inputToken: params.inputToken,
+            outputToken: params.outputToken,
+            inputAmount: params.inputAmount,
+          });
+          
+          if (!executeValidation.isValid) {
+            throw executeValidation.errors[0];
+          }
+
+          const { inputToken, outputToken, inputAmount } = executeValidation.data!;
+          const { minOutputAmount } = params;
+          
+          // Get token information
+          const inputTokenInfo = getTokenByType(inputToken);
+          const outputTokenInfo = getTokenByType(outputToken);
+          
+          if (!inputTokenInfo || !outputTokenInfo) {
+            throw createPoolNotFoundError(inputToken, outputToken);
+          }
+          
+          // Validate minOutputAmount if provided
+          if (minOutputAmount && BigInt(minOutputAmount) <= 0n) {
+            throw new ValidationError('Minimum output amount must be greater than zero');
+          }
+          
+          // Find pool
+          const pool = await poolService.findPool(inputToken, outputToken);
+          if (!pool) {
+            throw createPoolNotFoundError(inputToken, outputToken);
+          }
+
+          // Verify pool has liquidity
+          if (pool.reserveA <= 0n || pool.reserveB <= 0n) {
             throw new PoolError(
               ErrorCode.INSUFFICIENT_LIQUIDITY,
               'Pool has no liquidity for execution'
             );
           }
-        } catch (error) {
-          throw new NetworkError('Failed to verify pool state before execution');
-        }
 
-        // Return transaction parameters for frontend to build and execute
-        return createSuccessResponse({
-          transactionParams: {
-            target: `simple_dex::swap_${pool.coinTypeA === inputToken ? 'a_to_b' : 'b_to_a'}_internal`,
-            poolId: pool.id,
-            coinTypeA: pool.coinTypeA,
-            coinTypeB: pool.coinTypeB,
+          // Determine swap direction and function
+          const isAToB = pool.coinTypeA === inputToken;
+          const swapFunction = isAToB ? 'swap_a_to_b' : 'swap_b_to_a';
+
+          log.business('Swap execution prepared', {
+            inputToken: inputTokenInfo.symbol,
+            outputToken: outputTokenInfo.symbol,
             inputAmount,
-            minOutputAmount: minOutputAmount || '0',
-            isReverse: pool.coinTypeA !== inputToken,
-          },
-          message: 'Transaction parameters prepared successfully',
-        });
+            poolId: pool.poolId,
+            swapFunction,
+          });
+
+          // Return transaction parameters for frontend to build and execute
+          return createSuccessResponse({
+            transactionParams: {
+              target: `${IOTA_CONFIG.packages.core}::${MODULE_NAMES.DEX}::${swapFunction}`,
+              poolId: pool.poolId,
+              coinTypeA: pool.coinTypeA,
+              coinTypeB: pool.coinTypeB,
+              inputAmount,
+              minOutputAmount: minOutputAmount || '0',
+              isReverse: !isAToB,
+              moduleCall: {
+                packageId: IOTA_CONFIG.packages.core,
+                module: MODULE_NAMES.DEX,
+                function: swapFunction,
+                typeArguments: [pool.coinTypeA, pool.coinTypeB],
+              },
+            },
+            message: 'Transaction parameters prepared successfully',
+            estimatedGas: '10000000', // Estimated gas for swap
+          });
+          
+        } finally {
+          timer.end();
+        }
       }
 
       default:
