@@ -224,37 +224,50 @@ export async function getMultipleTokenPrices(symbols: string[]): Promise<Record<
   }
 }
 
-// Calculate swap output amount
+// Calculate swap output amount using real DEX formula
 export function calculateSwapOutput(
   inputAmount: number,
   inputPrice: number,
   outputPrice: number,
-  slippage: number = 0.5
+  slippage: number = 0.5,
+  reserveIn: number = 1000000, // Default reserve for calculation
+  reserveOut: number = 1000000
 ): {
   outputAmount: number;
   priceImpact: number;
   minimumReceived: number;
   route: string[];
 } {
-  // Simple direct swap calculation
-  const inputValue = inputAmount * inputPrice;
-  const outputAmount = inputValue / outputPrice;
+  // Convert input amount to proper scale
+  const amountIn = BigInt(Math.floor(inputAmount * Math.pow(10, 9))); // IOTA decimals
+  const reserveInBig = BigInt(Math.floor(reserveIn));
+  const reserveOutBig = BigInt(Math.floor(reserveOut));
   
-  // Apply a small fee (0.3%)
-  const feeAmount = outputAmount * 0.003;
-  const outputAfterFee = outputAmount - feeAmount;
+  // Use real DEX formula from smart contract: calculate_output_amount
+  // Fee: 1.8% (18/1000)
+  const FEE_NUMERATOR = 18n;
+  const FEE_DENOMINATOR = 1000n;
+  
+  // Calculate fee and amount after fee
+  const feeAmount = (amountIn * FEE_NUMERATOR) / FEE_DENOMINATOR;
+  const amountInAfterFee = amountIn - feeAmount;
+  
+  // Constant product formula: (amount_in_after_fee * reserve_out) / (reserve_in + amount_in_after_fee)
+  const outputAmountBig = (amountInAfterFee * reserveOutBig) / (reserveInBig + amountInAfterFee);
+  const outputAmount = Number(outputAmountBig) / Math.pow(10, 9);
+  
+  // Calculate real price impact
+  const inputValue = Number(amountIn) / Math.pow(10, 9);
+  const priceImpact = (inputValue / Number(reserveInBig)) * 100;
   
   // Calculate minimum received with slippage
-  const minimumReceived = outputAfterFee * (1 - slippage / 100);
-  
-  // Mock price impact (would be calculated based on liquidity in real scenario)
-  const priceImpact = Math.min((inputValue / 100000) * 0.1, 5); // Max 5% impact
+  const minimumReceived = outputAmount * (1 - slippage / 100);
   
   return {
-    outputAmount: outputAfterFee,
-    priceImpact,
+    outputAmount,
+    priceImpact: Math.min(priceImpact, 100), // Cap at 100%
     minimumReceived,
-    route: ['Direct'],
+    route: ['DEX Pool'],
   };
 }
 
