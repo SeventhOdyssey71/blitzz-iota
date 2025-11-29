@@ -118,9 +118,34 @@ export class DexContract {
     coinTypeA: string,
     coinTypeB: string
   ): Promise<string | null> {
-    // In a real implementation, this would query available pools
-    // and return the one with best liquidity/rates
-    // For now, return a mock pool ID
-    return '0x1234...'; // Mock pool ID
+    try {
+      // Query for pools with these coin types
+      // This would typically involve querying dynamic fields or events
+      // from the deployed package to find available pools
+      const pools = await this.client.queryEvents({
+        query: {
+          MoveEventType: `${this.packageId}::dex::PoolCreated`
+        },
+        limit: 50
+      });
+
+      // Find pools matching the coin types
+      for (const event of pools.data) {
+        if (event.parsedJson) {
+          const poolData = event.parsedJson as any;
+          // Check if this pool matches our coin types (in either direction)
+          if ((poolData.coin_type_a === coinTypeA && poolData.coin_type_b === coinTypeB) ||
+              (poolData.coin_type_a === coinTypeB && poolData.coin_type_b === coinTypeA)) {
+            return poolData.pool_id;
+          }
+        }
+      }
+
+      // No pools found
+      return null;
+    } catch (error) {
+      console.error('Failed to find pools:', error);
+      return null;
+    }
   }
 }
