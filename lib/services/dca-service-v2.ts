@@ -118,11 +118,6 @@ export class DCAServiceV2 {
     const tx = new Transaction();
     const packageId = blitz_PACKAGE_ID.testnet;
 
-    console.log('🏗️ Creating DCA Registry with details:', {
-      packageId,
-      module: this.MODULE_NAME,
-      target: `${packageId}::${this.MODULE_NAME}::create_dca_registry`
-    });
 
     // Create the DCA registry first
     tx.moveCall({
@@ -132,7 +127,6 @@ export class DCAServiceV2 {
 
     tx.setGasBudget(100000000); // 0.1 IOTA for registry creation
 
-    console.log('🏗️ Creating DCA Registry with package:', packageId);
     return tx;
   }
 
@@ -156,21 +150,6 @@ export class DCAServiceV2 {
     const parsedMinAmountOut = params.minPrice ? this.parseTokenAmount(params.minPrice, 6) : '0';
     const parsedMaxAmountOut = params.maxPrice ? this.parseTokenAmount(params.maxPrice, 6) : '0';
 
-    // Debug logging
-    console.log('🔧 DCA Transaction Debug:', {
-      packageId,
-      module: this.MODULE_NAME,
-      poolId: params.poolId,
-      sourceTokenType: params.sourceTokenType,
-      targetTokenType: params.targetTokenType,
-      rawTotalAmount: params.totalAmount,
-      parsedTotalAmount,
-      sourceDecimals,
-      intervalMs: params.intervalMs,
-      totalOrders: params.totalOrders,
-      parsedMinAmountOut,
-      parsedMaxAmountOut
-    });
 
     // For DCA, we need to split coins from gas budget for the total amount
     const sourceCoin = params.sourceTokenType === '0x2::iota::IOTA' 
@@ -178,7 +157,6 @@ export class DCAServiceV2 {
       : tx.gas; // TODO: Handle other source tokens
 
     // Use simplified approach (no registry) to avoid complexity
-    console.log('🎯 Using simplified DCA strategy creation (no registry)');
     
     tx.moveCall({
       target: `${packageId}::${this.MODULE_NAME}::create_dca_strategy_simple`,
