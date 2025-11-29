@@ -77,7 +77,7 @@ export interface DCARegistryInfo {
 }
 
 export class DCAServiceV2 {
-  private static readonly REGISTRY_OBJECT_ID = process.env.NEXT_PUBLIC_DCA_REGISTRY_ID || '';
+  private static readonly REGISTRY_OBJECT_ID = process.env.NEXT_PUBLIC_DCA_REGISTRY_ID || '0x1'; // Temporary placeholder - needs to be set after registry deployment
   private static readonly MODULE_NAME = 'dca'; // Use deployed dca module
 
   // ==================== STRATEGY MANAGEMENT ====================
@@ -89,29 +89,22 @@ export class DCAServiceV2 {
     const tx = new Transaction();
     const packageId = blitz_PACKAGE_ID.testnet;
 
-    // Prepare optional price parameters
-    const minPriceArg = params.minPrice 
-      ? tx.pure.option('u64', parseInt(params.minPrice))
-      : tx.pure.option('u64', null);
-      
-    const maxPriceArg = params.maxPrice 
-      ? tx.pure.option('u64', parseInt(params.maxPrice))
-      : tx.pure.option('u64', null);
+    // For DCA, we need to split coins from gas budget for the total amount
+    const sourceCoin = params.sourceTokenType === '0x2::iota::IOTA' 
+      ? tx.splitCoins(tx.gas, [parseInt(params.totalAmount)])
+      : tx.gas; // For now, only support IOTA
 
-    // Create the enhanced DCA strategy
+    // Create the DCA strategy - match actual contract function signature
     tx.moveCall({
       target: `${packageId}::${this.MODULE_NAME}::create_dca_strategy`,
       arguments: [
         tx.object(this.REGISTRY_OBJECT_ID), // registry
         tx.object(params.poolId), // pool
-        tx.gas, // source_coin (for IOTA)
-        tx.pure.u64(params.amountPerOrder), // amount_per_order
+        sourceCoin, // source_coin with the specified amount
         tx.pure.u64(params.intervalMs), // interval_ms
         tx.pure.u64(params.totalOrders), // total_orders
-        minPriceArg, // min_price: Option<u64>
-        maxPriceArg, // max_price: Option<u64>
-        tx.pure.u64(params.maxSlippageBps), // max_slippage_bps
-        tx.pure.vector('u8', Array.from(new TextEncoder().encode(params.name))), // name
+        tx.pure.u64(0), // min_amount_out (minimum output amount)
+        tx.pure.u64(0), // max_amount_out (maximum output amount, 0 = no limit)
         tx.object('0x6'), // clock
       ],
       typeArguments: [params.sourceTokenType, params.targetTokenType],
