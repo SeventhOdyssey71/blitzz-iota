@@ -77,7 +77,7 @@ export function useDCA(): UseDCAResult {
       // Create the transaction
       const tx = await DCAService.createDCAStrategy(client, {
         ...params,
-        poolId: pool.id,
+        poolId: pool.poolId,
       });
 
       // Set gas budget
@@ -96,9 +96,9 @@ export function useDCA(): UseDCAResult {
             onSuccess: (result) => {
               // Extract strategy ID from events or created objects
               let strategyId = '';
-              if (result.effects?.created) {
-                const created = result.effects.created.find(obj => 
-                  obj.reference.objectId !== result.effects?.gasObject?.reference?.objectId
+              if ((result.effects as any)?.created) {
+                const created = (result.effects as any).created.find((obj: any) => 
+                  obj.reference.objectId !== (result.effects as any)?.gasObject?.reference?.objectId
                 );
                 if (created) {
                   strategyId = created.reference.objectId;
@@ -146,7 +146,7 @@ export function useDCA(): UseDCAResult {
       const tx = await DCAService.executeDCAOrder(
         client,
         strategyId,
-        pool.id,
+        pool.poolId,
         sourceTokenType,
         targetTokenType
       );

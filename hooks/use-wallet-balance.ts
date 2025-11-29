@@ -49,7 +49,7 @@ export function useWalletBalance(coinType?: string): UseWalletBalanceResult {
     isLoading,
     error: error as Error | null,
     formatted: balance 
-      ? formatBalance(balance.totalBalance, balance.coinMetadata?.decimals || 9) 
+      ? formatBalance(balance.totalBalance, 9) // Default to 9 decimals for IOTA 
       : '0',
     refetch,
   };

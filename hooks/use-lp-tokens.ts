@@ -54,7 +54,7 @@ export function useLPTokens(): UseLPTokensResult {
       }
     },
     {
-      enabled: !!currentAccount?.address && packageId !== '0x0',
+      enabled: !!currentAccount?.address && !!packageId,
       staleTime: 30000, // 30 seconds
       gcTime: 300000, // 5 minutes
       refetchInterval: 60000, // 1 minute

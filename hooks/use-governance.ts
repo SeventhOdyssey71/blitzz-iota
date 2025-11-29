@@ -59,9 +59,9 @@ export function useGovernance() {
         arguments: [
           tx.object(params.daoId),
           tx.object('USER_GOVERNANCE_CAP'), // User's governance capability
-          tx.pure(params.title),
-          tx.pure(params.description),
-          tx.pure(JSON.stringify(params.actions)),
+          tx.pure.string(params.title),
+          tx.pure.string(params.description),
+          tx.pure.string(JSON.stringify(params.actions)),
           tx.object('0x6'), // Clock object
         ],
       });
@@ -80,7 +80,8 @@ export function useGovernance() {
           },
           {
             onSuccess: (result) => {
-              if (result.effects?.status !== 'success') {
+              const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
+              if (status === 'failure' || status === 'failed') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Failed to create proposal';
                 toast.error('Proposal creation failed', { description: errorMsg });
                 resolve({ success: false, error: errorMsg });
@@ -156,7 +157,8 @@ export function useGovernance() {
           },
           {
             onSuccess: (result) => {
-              if (result.effects?.status !== 'success') {
+              const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
+              if (status === 'failure' || status === 'failed') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Failed to cast vote';
                 toast.error('Voting failed', { description: errorMsg });
                 resolve({ success: false, error: errorMsg });
@@ -232,7 +234,8 @@ export function useGovernance() {
           },
           {
             onSuccess: (result) => {
-              if (result.effects?.status !== 'success') {
+              const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
+              if (status === 'failure' || status === 'failed') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Failed to execute proposal';
                 toast.error('Proposal execution failed', { description: errorMsg });
                 resolve({ success: false, error: errorMsg });

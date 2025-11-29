@@ -77,11 +77,12 @@ export function DCAInterface() {
   const amountPerOrder = amountMode === 'total' ? totalAmountNum / orderCountNum : totalAmountNum;
 
   // Real swap calculation for output estimation
-  const swapCalculation = useSwapCalculation({
-    inputAmount: amountPerOrder > 0 ? amountPerOrder.toString() : '0',
+  const swapCalculation = useSwapCalculation(
     inputToken,
     outputToken,
-  });
+    amountPerOrder > 0 ? amountPerOrder.toString() : '0',
+    1.0 // 1% slippage for estimation
+  );
   const totalAmountCalc = amountMode === 'per_order' ? totalAmountNum * orderCountNum : totalAmountNum;
 
   const getIntervalMs = () => {

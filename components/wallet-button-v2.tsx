@@ -73,6 +73,12 @@ export function WalletButtonV2() {
           Connect Wallet
         </Button>
         <ConnectModal
+          trigger={
+            <Button 
+              onClick={() => setShowConnectModal(true)}
+              className="hidden"
+            />
+          }
           open={showConnectModal}
           onOpenChange={(open) => setShowConnectModal(open)}
         />
@@ -94,11 +100,11 @@ export function WalletButtonV2() {
           <p className="text-xs text-gray-500 mt-1 break-all">
             {currentAccount.address}
           </p>
-          {currentWallet?.name && (
+          {((currentWallet && 'name' in currentWallet && currentWallet.name) ? (
             <p className="text-xs text-gray-500 mt-1">
-              via {currentWallet.name}
+              via {String(currentWallet.name)}
             </p>
-          )}
+          ) : null) as React.ReactNode}
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={copyAddress}>

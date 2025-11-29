@@ -14,7 +14,7 @@ interface UseDCAV2Result {
   error: string | null;
   
   // Strategy management
-  createStrategy: (params: CreateDCAV2Params) => Promise<{ success: boolean; error?: string; strategyId?: string }>;
+  createStrategy: (params: CreateDCAV2Params) => Promise<{ success: boolean; error?: string }>;
   executeOrder: (strategy: DCAStrategyV2) => Promise<{ success: boolean; error?: string }>;
   pauseStrategy: (strategy: DCAStrategyV2, reason: string) => Promise<{ success: boolean; error?: string }>;
   resumeStrategy: (strategy: DCAStrategyV2) => Promise<{ success: boolean; error?: string }>;
@@ -83,12 +83,12 @@ export function useDCAV2(): UseDCAV2Result {
       // Create transaction
       const tx = await DCAServiceV2.createDCAStrategy(client, {
         ...params,
-        poolId: pool.id,
+        poolId: pool.poolId,
       });
 
       tx.setGasBudget(200000000); // 0.2 IOTA for strategy creation
 
-      return new Promise<{ success: boolean; strategyId?: string }>((resolve) => {
+      return new Promise<{ success: boolean; error?: string }>((resolve) => {
         signAndExecuteTransaction(
           {
             transaction: tx,
@@ -100,20 +100,18 @@ export function useDCAV2(): UseDCAV2Result {
           },
           {
             onSuccess: (result) => {
-              // Extract strategy ID from created objects
-              let strategyId = '';
-              if (result.effects?.created) {
-                const created = result.effects.created.find(obj => 
-                  obj.reference.objectId !== result.effects?.gasObject?.reference?.objectId
-                );
-                if (created) {
-                  strategyId = created.reference.objectId;
-                }
+              // Check transaction status
+              const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
+              
+              if (status === 'failure' || status === 'failed') {
+                const errorMsg = (result.effects as any)?.status?.error || 'Transaction failed on chain';
+                resolve({ success: false, error: errorMsg });
+                return;
               }
 
               toast.success(`DCA strategy "${params.name}" created successfully!`);
               queryClient.invalidateQueries({ queryKey: ['dca-strategies-v2'] });
-              resolve({ success: true, strategyId });
+              resolve({ success: true });
             },
             onError: (error) => {
               const errorMsg = error?.message || 'Failed to create DCA strategy';
@@ -137,7 +135,7 @@ export function useDCAV2(): UseDCAV2Result {
       const tx = await DCAServiceV2.executeDCAOrder(
         client,
         strategy.id,
-        pool.id,
+        pool.poolId,
         strategy.sourceTokenType,
         strategy.targetTokenType
       );
@@ -171,7 +169,7 @@ export function useDCAV2(): UseDCAV2Result {
   });
 
   // Strategy management functions
-  const createStrategy = async (params: CreateDCAV2Params): Promise<{ success: boolean; error?: string; strategyId?: string }> => {
+  const createStrategy = async (params: CreateDCAV2Params): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsExecuting(true);
       const result = await createStrategyMutation.mutateAsync(params);

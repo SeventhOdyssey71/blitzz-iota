@@ -21,7 +21,9 @@ export function getIotaClient(network: keyof typeof IOTA_NETWORKS = DEFAULT_NETW
 
 export function setNetwork(network: keyof typeof IOTA_NETWORKS) {
   // Clear the cached client for the network to force a new connection
-  delete clients[network];
+  if (clients) {
+    delete clients[network];
+  }
 }
 
 export async function getBalance(address: string, coinType?: string) {

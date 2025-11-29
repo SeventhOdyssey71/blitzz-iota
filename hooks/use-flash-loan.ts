@@ -76,7 +76,8 @@ export function useFlashLoan() {
           },
           {
             onSuccess: (result) => {
-              if (result.effects?.status !== 'success') {
+              const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
+              if (status === 'failure' || status === 'failed') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Flash loan transaction failed';
                 toast.error('Flash loan failed', { description: errorMsg });
                 resolve({ success: false, error: errorMsg });

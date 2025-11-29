@@ -1,5 +1,6 @@
-import { IotaClient, Transaction } from '@iota/dapp-kit';
-import { Iota_PACKAGE_ID } from '@/config/iota.config';
+import { IotaClient } from '@iota/iota-sdk/client';
+import { Transaction } from '@iota/iota-sdk/transactions';
+import { blitz_PACKAGE_ID } from '@/config/iota.config';
 
 export class DexContract {
   private client: IotaClient;
@@ -7,7 +8,7 @@ export class DexContract {
 
   constructor(client: IotaClient, network: 'mainnet' | 'testnet' | 'devnet' = 'testnet') {
     this.client = client;
-    this.packageId = Iota_PACKAGE_ID[network];
+    this.packageId = blitz_PACKAGE_ID[network];
   }
 
   async createPool(

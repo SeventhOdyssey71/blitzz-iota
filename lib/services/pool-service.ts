@@ -11,6 +11,10 @@ export interface PoolInfo {
   reserveB: bigint;
   lpSupply: bigint;
   feePercentage: number;
+  totalVolumeA?: bigint;
+  totalVolumeB?: bigint;
+  feesA?: bigint;
+  feesB?: bigint;
 }
 
 export interface SwapQuote {
@@ -37,7 +41,7 @@ export class PoolService {
     const client = getSafeIotaClient();
     const packageId = blitz_PACKAGE_ID[network];
 
-    if (!client || packageId === '0x0') {
+    if (!client || !packageId) {
       return null;
     }
 
@@ -70,7 +74,7 @@ export class PoolService {
         }
       });
 
-      for (const tx of txns.data || []) {
+      for (const tx of txns?.data || []) {
         if (tx.objectChanges) {
           const pools = tx.objectChanges.filter(change => 
             change.type === 'created' && 
@@ -78,7 +82,7 @@ export class PoolService {
           );
           
           for (const poolChange of pools) {
-            const poolId = poolChange.objectId;
+            const poolId = (poolChange as any).objectId || (poolChange as any).id;
             
             try {
               const poolObject = await client.getObject({
@@ -114,6 +118,10 @@ export class PoolService {
                       reserveB: BigInt(fields.reserve_b?.fields?.value || fields.reserve_b || '0'),
                       lpSupply: BigInt(fields.lp_supply || 0),
                       feePercentage: 18, // 1.8% from contract
+                      totalVolumeA: BigInt(0), // Initialize with zero for now
+                      totalVolumeB: BigInt(0),
+                      feesA: BigInt(0),
+                      feesB: BigInt(0),
                     };
 
                     // Cache the pool

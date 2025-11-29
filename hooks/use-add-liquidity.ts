@@ -172,7 +172,8 @@ export function useAddLiquidity() {
           },
           {
             onSuccess: (result) => {
-              if (result.effects?.status !== 'success') {
+              const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
+              if (status === 'failure' || status === 'failed') {
                 const errorMsg = (result.effects as any)?.status?.error || 'Transaction failed';
                 toast.error('Add liquidity failed', { description: errorMsg });
                 resolve({ success: false, error: errorMsg });
