@@ -1,26 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { IotaClient, getFullnodeUrl } from '@iota/iota-sdk/client';
+import { SUPPORTED_COINS } from '@/config/iota.config';
 
-// Mock pool data for demo
-const MOCK_POOLS = {
-  'IOTA-stIOTA': {
-    id: '0xbb039632ab28afa6b123a537acd03c1988e665170c75e06ee81bf996d1426021',
-    reserveA: BigInt('10000000000000'), // 10,000 IOTA
-    reserveB: BigInt('9900000000000'), // 9,900 stIOTA (1.01 exchange rate)
-    fee: 10, // 0.1%
+// Initialize IOTA client for real chain interaction
+const client = new IotaClient({ url: getFullnodeUrl('testnet') });
+
+// Real pool registry for production use
+interface PoolInfo {
+  id: string;
+  coinTypeA: string;
+  coinTypeB: string;
+  feeRate: number;
+}
+
+// Production pool registry - replace with actual deployed pools
+const POOL_REGISTRY: PoolInfo[] = [
+  {
+    id: process.env.NEXT_PUBLIC_IOTA_STIOTA_POOL_ID || '',
+    coinTypeA: SUPPORTED_COINS.IOTA.type,
+    coinTypeB: SUPPORTED_COINS.stIOTA.type,
+    feeRate: 18, // 1.8% as configured in simple_dex.move
   },
-  'IOTA-vUSD': {
-    id: '0x1234567890abcdef',
-    reserveA: BigInt('5000000000000'), // 5,000 IOTA
-    reserveB: BigInt('1500000000'), // 1,500 vUSD (assuming $0.30 per IOTA)
-    fee: 30, // 0.3%
-  },
-  'stIOTA-vUSD': {
-    id: '0xabcdef1234567890',
-    reserveA: BigInt('3000000000000'), // 3,000 stIOTA
-    reserveB: BigInt('900000000'), // 900 vUSD
-    fee: 30, // 0.3%
-  },
-};
+  // Add more pools as they are deployed
+];
+
+async function getPoolReserves(poolId: string, coinTypeA: string, coinTypeB: string) {
+  try {
+    const pool = await client.getObject({
+      id: poolId,
+      options: { showContent: true },
+    });
+
+    if (pool.data?.content?.dataType === 'moveObject') {
+      const fields = pool.data.content.fields as any;
+      return {
+        reserveA: BigInt(fields.reserve_a?.fields?.value || '0'),
+        reserveB: BigInt(fields.reserve_b?.fields?.value || '0'),
+        lpSupply: BigInt(fields.lp_supply || '0'),
+        feeData: fields.fee_data || '0',
+        volumeData: fields.volume_data || '0',
+      };
+    }
+    throw new Error('Invalid pool object');
+  } catch (error) {
+    console.error('Failed to fetch pool reserves:', error);
+    throw error;
+  }
+}
+
+function findPool(tokenA: string, tokenB: string): PoolInfo | null {
+  return POOL_REGISTRY.find(pool => 
+    (pool.coinTypeA === tokenA && pool.coinTypeB === tokenB) ||
+    (pool.coinTypeA === tokenB && pool.coinTypeB === tokenA)
+  ) || null;
+}
+
+function calculateSwapOutput(
+  amountIn: bigint, 
+  reserveIn: bigint, 
+  reserveOut: bigint, 
+  feeRate: number
+): bigint {
+  if (reserveIn === 0n || reserveOut === 0n) return 0n;
+  
+  const feeAmount = (amountIn * BigInt(feeRate)) / 1000n;
+  const amountInAfterFee = amountIn - feeAmount;
+  
+  return (amountInAfterFee * reserveOut) / (reserveIn + amountInAfterFee);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,43 +78,64 @@ export async function POST(request: NextRequest) {
       case 'estimate': {
         const { inputToken, outputToken, inputAmount } = params;
         
-        // Find pool
-        const poolKey = `${inputToken}-${outputToken}`;
-        const reverseKey = `${outputToken}-${inputToken}`;
-        const pool = MOCK_POOLS[poolKey as keyof typeof MOCK_POOLS] || 
-                    MOCK_POOLS[reverseKey as keyof typeof MOCK_POOLS];
-
-        if (!pool) {
-          return NextResponse.json({ error: 'No pool found' }, { status: 404 });
+        // Find real pool from registry
+        const pool = findPool(inputToken, outputToken);
+        if (!pool || !pool.id) {
+          return NextResponse.json({ error: 'No pool found for this pair' }, { status: 404 });
         }
 
-        // Calculate output using constant product formula
-        const isReverse = !MOCK_POOLS[poolKey as keyof typeof MOCK_POOLS];
-        const reserveIn = isReverse ? pool.reserveB : pool.reserveA;
-        const reserveOut = isReverse ? pool.reserveA : pool.reserveB;
+        // Get real reserves from blockchain
+        const reserves = await getPoolReserves(pool.id, pool.coinTypeA, pool.coinTypeB);
         
+        // Determine swap direction
+        const isReverse = pool.coinTypeA !== inputToken;
+        const reserveIn = isReverse ? reserves.reserveB : reserves.reserveA;
+        const reserveOut = isReverse ? reserves.reserveA : reserves.reserveB;
+        
+        if (reserveIn === 0n || reserveOut === 0n) {
+          return NextResponse.json({ error: 'Pool has no liquidity' }, { status: 400 });
+        }
+
         const amountIn = BigInt(inputAmount);
-        const amountInWithFee = amountIn * (BigInt(10000) - BigInt(pool.fee)) / BigInt(10000);
-        const outputAmount = (amountInWithFee * reserveOut) / (reserveIn + amountInWithFee);
+        const outputAmount = calculateSwapOutput(amountIn, reserveIn, reserveOut, pool.feeRate);
 
         // Calculate price impact
         const priceImpact = Number(amountIn) / Number(reserveIn) * 100;
 
         return NextResponse.json({
           outputAmount: outputAmount.toString(),
-          priceImpact,
+          priceImpact: Math.min(priceImpact, 100), // Cap at 100%
           route: [inputToken, outputToken],
           poolId: pool.id,
+          reserves: {
+            in: reserveIn.toString(),
+            out: reserveOut.toString(),
+          },
         });
       }
 
       case 'execute': {
-        // In production, this would build and return a transaction
-        // For demo, return success
+        // Return transaction building instructions instead of fake success
+        const { inputToken, outputToken, inputAmount, minOutputAmount, poolId } = params;
+        
+        const pool = findPool(inputToken, outputToken);
+        if (!pool || !pool.id) {
+          return NextResponse.json({ error: 'No pool found' }, { status: 404 });
+        }
+
+        // Return transaction parameters for frontend to build and execute
         return NextResponse.json({
           success: true,
-          transactionId: `0x${Math.random().toString(16).slice(2)}`,
-          message: 'Swap simulation successful',
+          transactionParams: {
+            target: 'simple_dex::swap_a_to_b_internal',
+            poolId: pool.id,
+            coinTypeA: pool.coinTypeA,
+            coinTypeB: pool.coinTypeB,
+            inputAmount,
+            minOutputAmount,
+            isReverse: pool.coinTypeA !== inputToken,
+          },
+          message: 'Transaction parameters prepared',
         });
       }
 
