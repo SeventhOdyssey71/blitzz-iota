@@ -21,18 +21,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useDCA } from '@/hooks/use-dca';
-import { DCAService, DCAStrategy } from '@/lib/services/dca-service';
+import { useDCAV2 } from '@/hooks/use-dca-v2';
+import { DCAServiceV2, DCAStrategyV2 } from '@/lib/services/dca-service-v2';
 import { formatTokenAmount } from '@/lib/utils/format';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 import { CoinIcon } from '@/components/coin-icon';
 
 interface DCAStrategyCardProps {
-  strategy: DCAStrategy;
-  onExecute: (strategyId: string, sourceTokenType: string, targetTokenType: string) => void;
-  onPause: (strategyId: string, sourceTokenType: string, targetTokenType: string) => void;
-  onResume: (strategyId: string, sourceTokenType: string, targetTokenType: string) => void;
-  onCancel: (strategyId: string, sourceTokenType: string, targetTokenType: string) => void;
+  strategy: DCAStrategyV2;
+  onExecute: (strategy: DCAStrategyV2) => void;
+  onPause: (strategy: DCAStrategyV2, reason: string) => void;
+  onResume: (strategy: DCAStrategyV2) => void;
+  onCancel: (strategy: DCAStrategyV2) => void;
 }
 
 function DCAStrategyCard({ 
@@ -48,11 +48,9 @@ function DCAStrategyCard({
   const sourceToken = Object.values(SUPPORTED_COINS)[0]; // IOTA
   const targetToken = Object.values(SUPPORTED_COINS)[1]; // stIOTA
   
-  const progress = DCAService.getProgress(strategy);
-  const nextExecution = DCAService.getNextExecutionTime(strategy);
-  const isExecutable = strategy.isActive && 
-                      strategy.executedOrders < strategy.totalOrders && 
-                      Date.now() >= nextExecution.getTime();
+  const progress = DCAServiceV2.getProgress(strategy);
+  const nextExecution = new Date(strategy.nextExecutionTime);
+  const isExecutable = DCAServiceV2.isReadyForExecution(strategy);
 
   const handleAction = async (
     action: 'execute' | 'pause' | 'resume' | 'cancel'
@@ -61,16 +59,16 @@ function DCAStrategyCard({
     try {
       switch (action) {
         case 'execute':
-          await onExecute(strategy.id, strategy.sourceTokenType, strategy.targetTokenType);
+          await onExecute(strategy);
           break;
         case 'pause':
-          await onPause(strategy.id, strategy.sourceTokenType, strategy.targetTokenType);
+          await onPause(strategy, 'User requested pause');
           break;
         case 'resume':
-          await onResume(strategy.id, strategy.sourceTokenType, strategy.targetTokenType);
+          await onResume(strategy);
           break;
         case 'cancel':
-          await onCancel(strategy.id, strategy.sourceTokenType, strategy.targetTokenType);
+          await onCancel(strategy);
           break;
       }
     } finally {
@@ -172,7 +170,7 @@ function DCAStrategyCard({
           <div>
             <div className="text-gray-400 mb-1">Interval</div>
             <div className="text-white font-medium">
-              {DCAService.formatInterval(strategy.intervalMs)}
+              {DCAServiceV2.formatInterval(strategy.intervalMs)}
             </div>
           </div>
           
@@ -240,7 +238,7 @@ export function DCAStrategies() {
     resumeStrategy, 
     cancelStrategy,
     refetch
-  } = useDCA();
+  } = useDCAV2();
 
   if (isLoading) {
     return (

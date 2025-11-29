@@ -136,12 +136,48 @@ export function DCAInterface() {
       return;
     }
 
+    if (!frequency || parseInt(frequency) <= 0) {
+      toast.error('Please enter valid frequency');
+      return;
+    }
+
     setIsCreating(true);
     try {
-      // TODO: Implement DCA creation
-      toast.success('DCA strategy created successfully!');
+      const strategyName = `${inputToken.symbol}→${outputToken.symbol} DCA`;
+      const intervalMsValue = getIntervalMs();
+      const orderCountValue = parseInt(orderCount);
+      const amountPerOrderValue = amountMode === 'total' 
+        ? Math.floor((parseFloat(totalAmount) * Math.pow(10, inputToken.decimals)) / orderCountValue)
+        : Math.floor(parseFloat(totalAmount) * Math.pow(10, inputToken.decimals));
+
+      const params = {
+        sourceTokenType: inputToken.type,
+        targetTokenType: outputToken.type,
+        totalAmount: Math.floor(parseFloat(totalAmount) * Math.pow(10, inputToken.decimals)).toString(),
+        amountPerOrder: amountPerOrderValue.toString(),
+        intervalMs: intervalMsValue,
+        totalOrders: orderCountValue,
+        minPrice: usePriceRange && minPrice ? Math.floor(parseFloat(minPrice) * 1e9).toString() : undefined,
+        maxPrice: usePriceRange && maxPrice ? Math.floor(parseFloat(maxPrice) * 1e9).toString() : undefined,
+        maxSlippageBps: 500, // 5% max slippage
+        name: strategyName,
+        poolId: '', // Will be filled by service
+      };
+
+      // Note: This is a placeholder - need to implement useDCAV2 integration
+      console.log('DCA Strategy Parameters:', params);
+      toast.success('DCA strategy parameters prepared! (Integration pending)');
+      
+      // Reset form
+      setTotalAmount('');
+      setOrderCount('2');
+      setFrequency('1');
+      setMinPrice('');
+      setMaxPrice('');
+      setUsePriceRange(false);
     } catch (error) {
-      toast.error('Failed to create DCA strategy');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to create DCA strategy';
+      toast.error(errorMsg);
     } finally {
       setIsCreating(false);
     }
