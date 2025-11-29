@@ -127,6 +127,15 @@ export const IOTA_CONFIG = {
     maxLimitOrdersPerUser: 100,
     minPoolLiquidity: BigInt('1000000000'), // 1 IOTA minimum
     maxTransactionAmount: BigInt('1000000000000000000'), // 1B tokens max
+    // DCA specific limits
+    minDCAInterval: 300000, // 5 minutes
+    maxDCAInterval: 2592000000, // 30 days
+    maxDCAOrders: 365, // Max 365 orders per strategy
+    minDCAAmount: BigInt('100000000'), // 0.1 IOTA minimum
+    // Limit Order specific limits
+    minOrderSize: BigInt('100000000'), // 0.1 IOTA minimum
+    maxOrderExpiry: 7776000000, // 90 days
+    minOrderExpiry: 3600000, // 1 hour
   },
 } as const;
 
