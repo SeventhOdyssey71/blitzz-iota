@@ -18,27 +18,34 @@ module Blitz::limit_order {
     const EOrderBookFull: u64 = 8;
     const EInvalidFeeRate: u64 = 9;
 
+    // High-performance order book optimized for gas efficiency
     public struct OrderBook<phantom CoinA, phantom CoinB> has key {
         id: UID,
         buy_orders: vector<LimitOrder<CoinA, CoinB>>,
         sell_orders: vector<LimitOrder<CoinA, CoinB>>,
-        fee_rate: u64, // Fee rate in basis points (e.g., 30 = 0.3%)
+        fee_rate: u64, // Fee rate in basis points
         collected_fees_a: Balance<CoinA>,
         collected_fees_b: Balance<CoinB>,
         admin: address,
+        // Performance optimization: cache best bid/ask
+        best_bid: u64,
+        best_ask: u64,
+        // Volume tracking packed into single word
+        volume_data: u128, // Upper 64: volume_a, Lower 64: volume_b
+        last_update: u64,
     }
 
+    // Optimized limit order struct for gas efficiency  
     public struct LimitOrder<phantom CoinA, phantom CoinB> has store {
         id: ID,
         owner: address,
-        is_buy: bool,
-        price: u64, // Price with 6 decimal precision (1 USDC = 1000000)
-        amount: u64,
+        // Pack order metadata for better storage efficiency
+        order_data: u128, // Upper 64: price, Lower 32: amount, Bit flags: is_buy, etc.
         filled_amount: u64,
         coin_a_balance: Balance<CoinA>,
         coin_b_balance: Balance<CoinB>,
-        expire_at: u64,
-        created_at: u64,
+        // Pack time data efficiently
+        time_data: u128, // Upper 64: expire_at, Lower 64: created_at
     }
 
     public struct OrderPlacedEvent has copy, drop {
@@ -74,6 +81,7 @@ module Blitz::limit_order {
 
     public entry fun create_order_book<CoinA, CoinB>(
         fee_rate: u64,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         // Validate fee rate
@@ -87,6 +95,10 @@ module Blitz::limit_order {
             collected_fees_a: balance::zero(),
             collected_fees_b: balance::zero(),
             admin: tx_context::sender(ctx),
+            best_bid: 0,
+            best_ask: 0,
+            volume_data: pack_u64_pair(0, 0),
+            last_update: clock::timestamp_ms(clock),
         };
         transfer::share_object(order_book);
     }
@@ -98,6 +110,31 @@ module Blitz::limit_order {
     const PRICE_PRECISION: u64 = 1000000; // 6 decimal places
     const MAX_ORDERS_PER_SIDE: u64 = 1000; // Maximum orders per buy/sell side
     const MAX_FEE_RATE: u64 = 1000; // Maximum fee rate: 10% (1000 basis points)
+    
+    // Helper functions for packed data structures
+    fun pack_u64_pair(high: u64, low: u64): u128 {
+        ((high as u128) << 64) | (low as u128)
+    }
+    
+    fun unpack_u64_pair(packed: u128): (u64, u64) {
+        let high = ((packed >> 64) as u64);
+        let low = ((packed & 0xFFFFFFFFFFFFFFFF) as u64);
+        (high, low)
+    }
+    
+    // Pack order data: price (64 bits) + amount (32 bits) + flags (32 bits)
+    fun pack_order_data(price: u64, amount: u64, is_buy: bool): u128 {
+        let flags = if (is_buy) 1u64 else 0u64;
+        let amount_32 = (amount & 0xFFFFFFFF); // Take lower 32 bits of amount
+        ((price as u128) << 64) | ((amount_32 as u128) << 32) | (flags as u128)
+    }
+    
+    fun unpack_order_data(packed: u128): (u64, u64, bool) {
+        let price = ((packed >> 64) as u64);
+        let amount = (((packed >> 32) & 0xFFFFFFFF) as u64);
+        let is_buy = ((packed & 0x1) == 1);
+        (price, amount, is_buy)
+    }
 
     public entry fun place_buy_order<CoinA, CoinB>(
         order_book: &mut OrderBook<CoinA, CoinB>,
