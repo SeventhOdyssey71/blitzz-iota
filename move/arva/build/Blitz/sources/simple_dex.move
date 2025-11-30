@@ -72,6 +72,30 @@ module Blitz::simple_dex {
         (result as u64)
     }
 
+    // Safe price calculation to avoid overflow
+    fun calculate_price(amount_a: u64, amount_b: u64): u64 {
+        if (amount_b == 0) return 0;
+        
+        // Use smaller precision factor to avoid overflow with large amounts
+        let precision = 1000u64; // 3 decimal precision instead of 6
+        
+        // Check if multiplication would overflow
+        let max_safe_amount = 0xFFFFFFFFFFFFFFFFu128 / (precision as u128);
+        
+        if ((amount_a as u128) > max_safe_amount) {
+            // For very large amounts, just return a simplified ratio
+            amount_a / amount_b
+        } else {
+            // Safe multiplication
+            let result = ((amount_a as u128) * (precision as u128)) / (amount_b as u128);
+            if (result > (0xFFFFFFFFFFFFFFFF as u128)) {
+                amount_a / amount_b // Fallback to simple ratio
+            } else {
+                (result as u64)
+            }
+        }
+    }
+
     // High-performance pool struct optimized for gas efficiency
     public struct Pool<phantom CoinA, phantom CoinB> has key {
         id: object::UID,
@@ -115,8 +139,8 @@ module Blitz::simple_dex {
             lp_supply: initial_lp_supply,
             fee_data: pack_u64_pair(0, 0), // fees_a, fees_b
             volume_data: pack_u64_pair(0, 0), // volume_a, volume_b
-            last_price_a: safe_mul_div(amount_a, 1000000, amount_b), // Price with 6 decimals
-            last_price_b: safe_mul_div(amount_b, 1000000, amount_a),
+            last_price_a: calculate_price(amount_a, amount_b), // Price with 6 decimals
+            last_price_b: calculate_price(amount_b, amount_a),
             last_update: clock::timestamp_ms(clock),
         };
         
