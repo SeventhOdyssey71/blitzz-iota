@@ -278,4 +278,9 @@ export class PoolService {
   static async getAllPools(): Promise<PoolInfo[]> {
     return PoolService.getInstance().getAllPools();
   }
+  
+  static clearCache(): void {
+    poolCache.clear();
+    log.debug('Pool cache cleared');
+  }
 }

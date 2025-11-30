@@ -9,14 +9,14 @@ interface CoinIconProps {
 }
 
 export function CoinIcon({ symbol, iconUrl, size = 24, className = '', coinType }: CoinIconProps) {
-  // Map of supported symbols to their specific logo URLs
+  // Map of supported symbols to their local icon URLs
   const supportedIcons: Record<string, string> = {
-    // IOTA - Using pools.finance URL
-    IOTA: 'https://app.pools.finance/assets/coins/iota.svg',
-    // stIOTA - Using pools.finance URL
-    stIOTA: 'https://app.pools.finance/assets/coins/stiota.svg',
-    // vUSD - Using pools.finance URL
-    vUSD: 'https://app.pools.finance/assets/coins/vusd.svg',
+    // IOTA - Local SVG icon
+    IOTA: '/icons/iota.svg',
+    // stIOTA - Local SVG icon
+    stIOTA: '/icons/stiota.svg',
+    // vUSD - Local SVG icon
+    vUSD: '/icons/vusd.svg',
   };
 
   // Always use the specific logo for supported coins

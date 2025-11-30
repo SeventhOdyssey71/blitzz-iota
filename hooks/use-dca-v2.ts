@@ -3,22 +3,25 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '@iota/dapp-kit';
-import { DCAServiceV2, DCAStrategyV2, CreateDCAV2Params, DCAExecutionEvent } from '@/lib/services/dca-service-v2';
+import { DCAService, DCAStrategy, CreateDCAParams, DCAExecutionEvent } from '@/lib/services/dca-service';
 import { PoolService } from '@/lib/services/pool-service';
 import { toast } from 'sonner';
 
 interface UseDCAV2Result {
-  strategies: DCAStrategyV2[];
-  executableStrategies: DCAStrategyV2[];
+  strategies: DCAStrategy[];
+  executableStrategies: DCAStrategy[];
   isLoading: boolean;
   error: string | null;
   
+  // Registry management
+  createRegistry: () => Promise<{ success: boolean; error?: string; registryId?: string }>;
+  
   // Strategy management
-  createStrategy: (params: CreateDCAV2Params) => Promise<{ success: boolean; error?: string }>;
-  executeOrder: (strategy: DCAStrategyV2) => Promise<{ success: boolean; error?: string }>;
-  pauseStrategy: (strategy: DCAStrategyV2, reason: string) => Promise<{ success: boolean; error?: string }>;
-  resumeStrategy: (strategy: DCAStrategyV2) => Promise<{ success: boolean; error?: string }>;
-  cancelStrategy: (strategy: DCAStrategyV2) => Promise<{ success: boolean; error?: string }>;
+  createStrategy: (params: CreateDCAParams) => Promise<{ success: boolean; error?: string }>;
+  executeOrder: (strategy: DCAStrategy) => Promise<{ success: boolean; error?: string }>;
+  pauseStrategy: (strategy: DCAStrategy, reason: string) => Promise<{ success: boolean; error?: string }>;
+  resumeStrategy: (strategy: DCAStrategy) => Promise<{ success: boolean; error?: string }>;
+  cancelStrategy: (strategy: DCAStrategy) => Promise<{ success: boolean; error?: string }>;
   
   // Data queries
   getStrategyEvents: (strategyId: string) => Promise<DCAExecutionEvent[]>;
@@ -45,7 +48,7 @@ export function useDCAV2(): UseDCAV2Result {
     queryKey: ['dca-strategies-v2', currentAccount?.address],
     queryFn: async () => {
       if (!currentAccount?.address) return [];
-      return DCAServiceV2.getUserStrategies(client, currentAccount.address);
+      return DCAService.getUserStrategies(client, currentAccount.address);
     },
     enabled: !!currentAccount?.address,
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -54,7 +57,7 @@ export function useDCAV2(): UseDCAV2Result {
 
   // Calculate executable strategies
   const executableStrategies = strategies.filter(strategy => 
-    DCAServiceV2.isReadyForExecution(strategy)
+    DCAService.isReadyForExecution(strategy)
   );
 
   // Auto-notification for executable strategies
@@ -73,7 +76,7 @@ export function useDCAV2(): UseDCAV2Result {
 
   // Create strategy mutation
   const createStrategyMutation = useMutation({
-    mutationFn: async (params: CreateDCAV2Params) => {
+    mutationFn: async (params: CreateDCAParams) => {
       if (!currentAccount) throw new Error('Wallet not connected');
 
       // Find pool
@@ -81,7 +84,7 @@ export function useDCAV2(): UseDCAV2Result {
       if (!pool) throw new Error('No pool found for this token pair');
 
       // Create transaction
-      const tx = await DCAServiceV2.createDCAStrategy(client, {
+      const tx = await DCAService.createDCAStrategy(client, {
         ...params,
         poolId: pool.poolId,
       });
@@ -129,13 +132,13 @@ export function useDCAV2(): UseDCAV2Result {
 
   // Execute order mutation
   const executeOrderMutation = useMutation({
-    mutationFn: async (strategy: DCAStrategyV2) => {
+    mutationFn: async (strategy: DCAStrategy) => {
       if (!currentAccount) throw new Error('Wallet not connected');
 
       const pool = await PoolService.findPool(strategy.sourceTokenType, strategy.targetTokenType);
       if (!pool) throw new Error('Pool not found');
 
-      const tx = await DCAServiceV2.executeDCAOrder(
+      const tx = await DCAService.executeDCAOrder(
         client,
         strategy.id,
         pool.poolId,
@@ -171,8 +174,152 @@ export function useDCAV2(): UseDCAV2Result {
     },
   });
 
+  // Registry management functions
+  const createRegistry = async (): Promise<{ success: boolean; error?: string; registryId?: string }> => {
+    if (!currentAccount) {
+      return { success: false, error: 'Wallet not connected' };
+    }
+
+    try {
+      setIsExecuting(true);
+
+      const tx = await DCAService.createDCARegistry(client);
+
+      return new Promise((resolve) => {
+        signAndExecuteTransaction(
+          {
+            transaction: tx,
+            options: {
+              showEffects: true,
+              showEvents: true,
+              showObjectChanges: true,
+              showInput: true,
+              showRawInput: true,
+              showBalanceChanges: true,
+            },
+          },
+          {
+            onSuccess: (result) => {
+              const status = (result.effects as any)?.status?.status || (result.effects as any)?.status;
+              
+              if (status === 'failure' || status === 'failed') {
+                const errorMsg = (result.effects as any)?.status?.error || 'Registry creation failed on chain';
+                console.error('❌ Registry creation failed:', errorMsg);
+                resolve({ success: false, error: errorMsg });
+                return;
+              }
+
+              console.log('🎉 Registry transaction succeeded! Parsing result...');
+              
+              // Debug full transaction result
+              console.log('📋 Full transaction result:', {
+                digest: result.digest,
+                effects: result.effects,
+                objectChanges: result.objectChanges,
+                events: result.events
+              });
+
+              // Try to extract registry ID from multiple sources
+              let registryId: string | null = null;
+
+              // Method 1: Try object changes first
+              const objectChanges = result.objectChanges as any[];
+              if (objectChanges && objectChanges.length > 0) {
+                console.log(`📦 Found ${objectChanges.length} object changes:`, objectChanges);
+                
+                const createdObjects = objectChanges.filter((change: any) => change.type === 'created');
+                const registryObject = createdObjects.find((change: any) => {
+                  const objectType = change.objectType || '';
+                  return objectType.includes('DCARegistry') ||
+                         objectType.includes('dca::DCARegistry') ||
+                         objectType.includes('Registry');
+                });
+
+                if (registryObject?.objectId) {
+                  registryId = registryObject.objectId;
+                  console.log('✅ Found registry ID from object changes:', registryId);
+                }
+              }
+
+              // Method 2: Try events if object changes didn't work
+              if (!registryId && result.events) {
+                console.log('🔍 Searching events for registry ID...');
+                console.log('📋 Events:', result.events);
+                
+                // Look for any events that might contain the registry ID
+                // Note: The Move contract doesn't emit events, so this might not work
+              }
+
+              // Method 3: Try effects created objects
+              if (!registryId && result.effects) {
+                const effects = result.effects as any;
+                console.log('🔍 Searching effects for created objects...');
+                console.log('📋 Effects:', effects);
+
+                if (effects.created) {
+                  console.log('📦 Effects created:', effects.created);
+                  // The created array might contain the registry
+                  const firstCreated = effects.created[0];
+                  if (firstCreated?.reference?.objectId) {
+                    registryId = firstCreated.reference.objectId;
+                    console.log('✅ Found registry ID from effects:', registryId);
+                  }
+                }
+              }
+
+              // Method 4: Parse from raw effects if available
+              if (!registryId && result.effects) {
+                try {
+                  const effects = result.effects as any;
+                  // Check if there are any shared object references created
+                  if (effects.sharedObjects && effects.sharedObjects.length > 0) {
+                    registryId = effects.sharedObjects[0].objectId;
+                    console.log('✅ Found registry ID from shared objects:', registryId);
+                  }
+                } catch (e) {
+                  console.log('❓ Could not parse shared objects from effects');
+                }
+              }
+
+              if (registryId) {
+                console.log('✅ DCA Registry created successfully:', registryId);
+                toast.success('DCA Registry created successfully! Copy this ID to your environment:', {
+                  description: `NEXT_PUBLIC_DCA_REGISTRY_ID=${registryId}`,
+                  duration: 15000,
+                });
+                resolve({ success: true, registryId });
+              } else {
+                console.error('❌ Could not extract registry ID from transaction result');
+                console.error('Available data:', {
+                  objectChanges: result.objectChanges,
+                  events: result.events,
+                  effects: result.effects
+                });
+                resolve({ 
+                  success: false, 
+                  error: 'Registry created but ID could not be extracted. Check transaction explorer: ' + result.digest 
+                });
+              }
+            },
+            onError: (error) => {
+              console.error('❌ Registry creation error:', error?.message);
+              const errorMsg = error?.message || 'Failed to create DCA registry';
+              toast.error(errorMsg);
+              resolve({ success: false, error: errorMsg });
+            },
+          }
+        );
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to create registry';
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
   // Strategy management functions
-  const createStrategy = async (params: CreateDCAV2Params): Promise<{ success: boolean; error?: string }> => {
+  const createStrategy = async (params: CreateDCAParams): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsExecuting(true);
       const result = await createStrategyMutation.mutateAsync(params);
@@ -185,7 +332,7 @@ export function useDCAV2(): UseDCAV2Result {
     }
   };
 
-  const executeOrder = async (strategy: DCAStrategyV2): Promise<{ success: boolean; error?: string }> => {
+  const executeOrder = async (strategy: DCAStrategy): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsExecuting(true);
       const success = await executeOrderMutation.mutateAsync(strategy);
@@ -198,7 +345,7 @@ export function useDCAV2(): UseDCAV2Result {
     }
   };
 
-  const pauseStrategy = async (strategy: DCAStrategyV2, reason: string): Promise<{ success: boolean; error?: string }> => {
+  const pauseStrategy = async (strategy: DCAStrategy, reason: string): Promise<{ success: boolean; error?: string }> => {
     if (!currentAccount) {
       return { success: false, error: 'Wallet not connected' };
     }
@@ -206,7 +353,7 @@ export function useDCAV2(): UseDCAV2Result {
     try {
       setIsExecuting(true);
 
-      const tx = await DCAServiceV2.pauseStrategy(
+      const tx = await DCAService.pauseStrategy(
         client,
         strategy.id,
         reason,
@@ -244,7 +391,7 @@ export function useDCAV2(): UseDCAV2Result {
     }
   };
 
-  const resumeStrategy = async (strategy: DCAStrategyV2): Promise<{ success: boolean; error?: string }> => {
+  const resumeStrategy = async (strategy: DCAStrategy): Promise<{ success: boolean; error?: string }> => {
     if (!currentAccount) {
       return { success: false, error: 'Wallet not connected' };
     }
@@ -252,7 +399,7 @@ export function useDCAV2(): UseDCAV2Result {
     try {
       setIsExecuting(true);
 
-      const tx = await DCAServiceV2.resumeStrategy(
+      const tx = await DCAService.resumeStrategy(
         client,
         strategy.id,
         strategy.sourceTokenType,
@@ -289,7 +436,7 @@ export function useDCAV2(): UseDCAV2Result {
     }
   };
 
-  const cancelStrategy = async (strategy: DCAStrategyV2): Promise<{ success: boolean; error?: string }> => {
+  const cancelStrategy = async (strategy: DCAStrategy): Promise<{ success: boolean; error?: string }> => {
     if (!currentAccount) {
       return { success: false, error: 'Wallet not connected' };
     }
@@ -297,7 +444,7 @@ export function useDCAV2(): UseDCAV2Result {
     try {
       setIsExecuting(true);
 
-      const tx = await DCAServiceV2.cancelStrategy(
+      const tx = await DCAService.cancelStrategy(
         client,
         strategy.id,
         strategy.sourceTokenType,
@@ -337,7 +484,7 @@ export function useDCAV2(): UseDCAV2Result {
   // Get strategy execution events
   const getStrategyEvents = async (strategyId: string): Promise<DCAExecutionEvent[]> => {
     try {
-      return await DCAServiceV2.getStrategyEvents(client, strategyId);
+      return await DCAService.getStrategyEvents(client, strategyId);
     } catch (error) {
       console.error('Failed to fetch strategy events:', error);
       return [];
@@ -378,6 +525,7 @@ export function useDCAV2(): UseDCAV2Result {
     isLoading,
     error: error?.message || null,
     
+    createRegistry,
     createStrategy,
     executeOrder,
     pauseStrategy,

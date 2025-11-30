@@ -2,7 +2,7 @@
 
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { IotaClient } from '@iota/iota-sdk/client';
-import { blitz_PACKAGE_ID } from '@/config/iota.config';
+import { IOTA_CONFIG } from '@/config/iota.config';
 
 export interface PoolInfo {
   poolId: string;
@@ -23,7 +23,7 @@ export class AMMContract {
     coinTypeA: string,
     coinTypeB: string
   ) {
-    const packageId = blitz_PACKAGE_ID.testnet;
+    const packageId = IOTA_CONFIG.packages.core;
     
     // Create pool through factory
     tx.moveCall({
@@ -45,7 +45,7 @@ export class AMMContract {
     coinTypeA: string,
     coinTypeB: string
   ) {
-    const packageId = blitz_PACKAGE_ID.testnet;
+    const packageId = IOTA_CONFIG.packages.core;
     
     tx.moveCall({
       target: `${packageId}::simple_dex::add_liquidity`,
@@ -67,7 +67,7 @@ export class AMMContract {
     coinTypeA: string,
     coinTypeB: string
   ) {
-    const packageId = blitz_PACKAGE_ID.testnet;
+    const packageId = IOTA_CONFIG.packages.core;
     
     tx.moveCall({
       target: `${packageId}::simple_dex::swap_a_to_b`,
@@ -88,7 +88,7 @@ export class AMMContract {
     coinTypeA: string,
     coinTypeB: string
   ) {
-    const packageId = blitz_PACKAGE_ID.testnet;
+    const packageId = IOTA_CONFIG.packages.core;
     
     tx.moveCall({
       target: `${packageId}::simple_dex::swap_b_to_a`,
@@ -110,7 +110,7 @@ export class AMMContract {
     coinTypeA: string,
     coinTypeB: string
   ) {
-    const packageId = blitz_PACKAGE_ID.testnet;
+    const packageId = IOTA_CONFIG.packages.core;
     
     tx.moveCall({
       target: `${packageId}::simple_dex::remove_liquidity`,

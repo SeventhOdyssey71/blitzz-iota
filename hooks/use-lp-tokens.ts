@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useCurrentAccount, useIotaClientQuery } from '@iota/dapp-kit';
-import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
+import { IOTA_CONFIG, SUPPORTED_COINS } from '@/config/iota.config';
 
 interface LPToken {
   id: string;
@@ -33,7 +33,7 @@ const getCoinSymbol = (type: string): string => {
 
 export function useLPTokens(): UseLPTokensResult {
   const currentAccount = useCurrentAccount();
-  const packageId = blitz_PACKAGE_ID.testnet;
+  const packageId = IOTA_CONFIG.packages.core;
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { 

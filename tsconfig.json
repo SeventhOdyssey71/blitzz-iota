@@ -32,20 +32,14 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
-    "noImplicitAnyProperties": true,
     // Additional safety checks
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexAccess": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     // Import/Export checks
-    "verbatimModuleSyntax": true,
-    "allowImportingTsExtensions": false,
-    "preserveWatchOutput": true,
     // Performance optimizations
-    "assumeChangesOnlyAffectDirectDependencies": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/**/*.ts"],
   "exclude": ["node_modules", "dist", ".next", "build"]

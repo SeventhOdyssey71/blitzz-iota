@@ -22,17 +22,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useDCAV2 } from '@/hooks/use-dca-v2';
-import { DCAServiceV2, DCAStrategyV2 } from '@/lib/services/dca-service-v2';
+import { DCAService, DCAStrategy } from '@/lib/services/dca-service';
 import { formatTokenAmount } from '@/lib/utils/format';
 import { SUPPORTED_COINS } from '@/config/iota.config';
 import { CoinIcon } from '@/components/coin-icon';
 
 interface DCAStrategyCardProps {
-  strategy: DCAStrategyV2;
-  onExecute: (strategy: DCAStrategyV2) => void;
-  onPause: (strategy: DCAStrategyV2, reason: string) => void;
-  onResume: (strategy: DCAStrategyV2) => void;
-  onCancel: (strategy: DCAStrategyV2) => void;
+  strategy: DCAStrategy;
+  onExecute: (strategy: DCAStrategy) => void;
+  onPause: (strategy: DCAStrategy, reason: string) => void;
+  onResume: (strategy: DCAStrategy) => void;
+  onCancel: (strategy: DCAStrategy) => void;
 }
 
 function DCAStrategyCard({ 
@@ -52,9 +52,9 @@ function DCAStrategyCard({
     coin => coin.type === strategy.targetTokenType
   ) || SUPPORTED_COINS.stIOTA;
   
-  const progress = DCAServiceV2.getProgress(strategy);
+  const progress = DCAService.getProgress(strategy);
   const nextExecution = new Date(strategy.nextExecutionTime);
-  const isExecutable = DCAServiceV2.isReadyForExecution(strategy);
+  const isExecutable = DCAService.isReadyForExecution(strategy);
 
   const handleAction = async (
     action: 'execute' | 'pause' | 'resume' | 'cancel'
@@ -174,7 +174,7 @@ function DCAStrategyCard({
           <div>
             <div className="text-gray-400 mb-1">Interval</div>
             <div className="text-white font-medium">
-              {DCAServiceV2.formatInterval(strategy.intervalMs)}
+              {DCAService.formatInterval(strategy.intervalMs)}
             </div>
           </div>
           

@@ -1,5 +1,5 @@
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { blitz_PACKAGE_ID } from '@/config/iota.config';
+import { IOTA_CONFIG } from '@/config/iota.config';
 
 export class TransactionBuilder {
   static createSwapTransaction(params: {
@@ -9,10 +9,9 @@ export class TransactionBuilder {
     amountIn: bigint;
     minAmountOut: bigint;
     isAToB: boolean;
-    network: 'mainnet' | 'testnet' | 'devnet';
   }) {
     const tx = new Transaction();
-    const packageId = blitz_PACKAGE_ID[params.network];
+    const packageId = IOTA_CONFIG.packages.core;
 
     // For demo purposes, we'll create a simple transfer
     // In production, this would call the actual swap function
@@ -45,10 +44,9 @@ export class TransactionBuilder {
     coinTypeB: string;
     amountA: bigint;
     amountB: bigint;
-    network: 'mainnet' | 'testnet' | 'devnet';
   }) {
     const tx = new Transaction();
-    const packageId = blitz_PACKAGE_ID[params.network];
+    const packageId = IOTA_CONFIG.packages.core;
 
     // Split coins for liquidity
     const [coinA] = tx.splitCoins(tx.gas, [params.amountA]);
@@ -74,10 +72,9 @@ export class TransactionBuilder {
     amountA: bigint;
     amountB: bigint;
     feePercentage: number;
-    network: 'mainnet' | 'testnet' | 'devnet';
   }) {
     const tx = new Transaction();
-    const packageId = blitz_PACKAGE_ID[params.network];
+    const packageId = IOTA_CONFIG.packages.core;
 
     // Split coins for initial liquidity
     const [coinA] = tx.splitCoins(tx.gas, [params.amountA]);

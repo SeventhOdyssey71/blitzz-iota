@@ -5,7 +5,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '
 import { parseTokenAmount } from '@/lib/utils/format';
 import { PoolService } from '@/lib/services/pool-service';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
+import { IOTA_CONFIG, SUPPORTED_COINS } from '@/config/iota.config';
 import { toast } from 'sonner';
 
 interface SwapParams {
@@ -45,7 +45,6 @@ export function useSimpleSwapV2() {
       const pool = await PoolService.findPool(
         params.inputToken.type,
         params.outputToken.type,
-        'testnet'
       );
 
       if (!pool) {
@@ -71,7 +70,7 @@ export function useSimpleSwapV2() {
 
       // Create transaction
       const tx = new Transaction();
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
       
       let coinToSwap;
       

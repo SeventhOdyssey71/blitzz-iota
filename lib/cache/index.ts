@@ -31,7 +31,7 @@ export interface CacheOptions {
 }
 
 // LRU Cache implementation with TTL support
-export class LRUCache<T = any> {
+class LRUCache<T = any> {
   private cache = new Map<string, CacheEntry<T>>();
   private accessOrder = new Map<string, number>();
   private stats = {
@@ -342,6 +342,13 @@ export const analyticsCache = cacheManager.createCache('analytics', {
   enableStats: true,
 });
 
+// DCA cache - strategy and execution data
+export const dcaCache = cacheManager.createCache('dca', {
+  defaultTTL: 600000, // 10 minutes
+  maxSize: 300,
+  enableStats: true,
+});
+
 // Cache key generators
 export const cacheKeys = {
   tokenPrice: (symbol: string) => `price:${symbol}`,
@@ -392,4 +399,4 @@ export const invalidateCache = (cache: LRUCache, pattern: string): number => {
   return count;
 };
 
-export { cacheManager, CacheManager, LRUCache };
+export { cacheManager, LRUCache };

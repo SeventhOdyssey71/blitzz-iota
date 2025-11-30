@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '@iota/dapp-kit';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { toast } from 'sonner';
-import { blitz_PACKAGE_ID } from '@/config/iota.config';
+import { IOTA_CONFIG } from '@/config/iota.config';
 
 interface ProposalAction {
   actionType: number;
@@ -50,7 +50,7 @@ export function useGovernance() {
     setIsLoading(true);
 
     try {
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
       const tx = new Transaction();
 
       // Create proposal
@@ -130,7 +130,7 @@ export function useGovernance() {
     setIsLoading(true);
 
     try {
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
       const tx = new Transaction();
 
       // Cast vote
@@ -208,7 +208,7 @@ export function useGovernance() {
     setIsLoading(true);
 
     try {
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
       const tx = new Transaction();
 
       // Execute proposal
@@ -287,7 +287,7 @@ export function useGovernance() {
     setIsLoading(true);
 
     try {
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
       const tx = new Transaction();
 
       // Create delegation transaction
@@ -338,7 +338,7 @@ export function useGovernance() {
         const ownedObjects = await client.getOwnedObjects({
           owner: currentAccount.address,
           filter: {
-            StructType: `${blitz_PACKAGE_ID.testnet}::governance::GovernanceCap`
+            StructType: `${IOTA_CONFIG.packages.core}::governance::GovernanceCap`
           },
           options: {
             showContent: true,

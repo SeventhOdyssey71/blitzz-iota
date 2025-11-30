@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '@iota/dapp-kit';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { toast } from 'sonner';
-import { blitz_PACKAGE_ID } from '@/config/iota.config';
+import { IOTA_CONFIG } from '@/config/iota.config';
 import { PoolService } from '@/lib/services/pool-service';
 
 interface RemoveLiquidityParams {
@@ -39,7 +39,6 @@ export function useRemoveLiquidityV2() {
       const pool = await PoolService.findPool(
         params.coinTypeA,
         params.coinTypeB,
-        'testnet'
       );
 
       if (!pool?.poolId) {
@@ -52,7 +51,7 @@ export function useRemoveLiquidityV2() {
 
       // Build transaction
       const tx = new Transaction();
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
 
       // Ensure coin types match pool order
       const typeArguments = [pool.coinTypeA, pool.coinTypeB];

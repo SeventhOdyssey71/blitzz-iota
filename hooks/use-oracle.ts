@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useCurrentAccount, useIotaClient } from '@iota/dapp-kit';
-import { blitz_PACKAGE_ID } from '@/config/iota.config';
+import { IOTA_CONFIG } from '@/config/iota.config';
 
 interface PriceData {
   price: string;

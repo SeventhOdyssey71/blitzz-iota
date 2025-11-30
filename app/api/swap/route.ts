@@ -15,8 +15,7 @@ import { withTradingSecurity } from '@/lib/middleware/security';
 import { PoolService } from '@/lib/services/pool-service';
 import { log, measurePerformance } from '@/lib/logging';
 
-// Production-ready pool service instance
-const poolService = PoolService.getInstance();
+// Production-ready pool service - instantiated per request to avoid server-side issues
 
 // Standardized API response format
 interface ApiResponse<T = any> {
@@ -100,6 +99,7 @@ const handleSwapRequest = async (request: NextRequest) => {
           });
 
           // Find pool using production-ready service
+          const poolService = PoolService.getInstance();
           const pool = await poolService.findPool(inputToken, outputToken);
           if (!pool) {
             throw createPoolNotFoundError(inputToken, outputToken);
@@ -181,6 +181,7 @@ const handleSwapRequest = async (request: NextRequest) => {
           }
           
           // Find pool
+          const poolService = PoolService.getInstance();
           const pool = await poolService.findPool(inputToken, outputToken);
           if (!pool) {
             throw createPoolNotFoundError(inputToken, outputToken);

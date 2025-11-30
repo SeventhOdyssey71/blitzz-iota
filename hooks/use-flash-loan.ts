@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '@iota/dapp-kit';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { toast } from 'sonner';
-import { blitz_PACKAGE_ID } from '@/config/iota.config';
+import { IOTA_CONFIG } from '@/config/iota.config';
 
 interface FlashLoanParams {
   poolId: string;
@@ -35,7 +35,7 @@ export function useFlashLoan() {
     setIsLoading(true);
 
     try {
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
       const tx = new Transaction();
 
       // Step 1: Borrow from flash loan pool
@@ -136,21 +136,21 @@ export function useFlashLoan() {
         onBorrowed: (tx, borrowedCoin) => {
           // Step 1: Swap on Pool A
           const [receivedTokens] = tx.moveCall({
-            target: `${blitz_PACKAGE_ID.testnet}::simple_dex::swap_a_to_b`,
+            target: `${IOTA_CONFIG.packages.core}::simple_dex::swap_a_to_b`,
             typeArguments: [tokenIn, tokenOut],
             arguments: [tx.object(poolA), borrowedCoin],
           });
 
           // Step 2: Swap back on Pool B 
           const [finalTokens] = tx.moveCall({
-            target: `${blitz_PACKAGE_ID.testnet}::simple_dex::swap_b_to_a`,
+            target: `${IOTA_CONFIG.packages.core}::simple_dex::swap_b_to_a`,
             typeArguments: [tokenOut, tokenIn],
             arguments: [tx.object(poolB), receivedTokens],
           });
 
           // Step 3: Repay flash loan
           tx.moveCall({
-            target: `${blitz_PACKAGE_ID.testnet}::flash_loan::repay`,
+            target: `${IOTA_CONFIG.packages.core}::flash_loan::repay`,
             typeArguments: [tokenIn],
             arguments: [
               tx.object(flashLoanPoolId),
@@ -179,21 +179,21 @@ export function useFlashLoan() {
         onBorrowed: (tx, borrowedCoin) => {
           // Step 1: Repay borrower's debt to unlock collateral
           const [unlockedCollateral] = tx.moveCall({
-            target: `${blitz_PACKAGE_ID.testnet}::lending::liquidate_position`,
+            target: `${IOTA_CONFIG.packages.core}::lending::liquidate_position`,
             typeArguments: [collateralToken, debtToken],
             arguments: [tx.object(borrowerPosition), borrowedCoin],
           });
 
           // Step 2: Swap collateral to debt token to repay flash loan
           const [swappedTokens] = tx.moveCall({
-            target: `${blitz_PACKAGE_ID.testnet}::simple_dex::swap_a_to_b`,
+            target: `${IOTA_CONFIG.packages.core}::simple_dex::swap_a_to_b`,
             typeArguments: [collateralToken, debtToken],
             arguments: [tx.object('COLLATERAL_TO_DEBT_POOL'), unlockedCollateral],
           });
 
           // Step 3: Repay flash loan
           tx.moveCall({
-            target: `${blitz_PACKAGE_ID.testnet}::flash_loan::repay`,
+            target: `${IOTA_CONFIG.packages.core}::flash_loan::repay`,
             typeArguments: [debtToken],
             arguments: [
               tx.object(flashLoanPoolId),

@@ -5,7 +5,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useIotaClient } from '
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { toast } from 'sonner';
 import { parseTokenAmount, formatBalance } from '@/lib/utils/format';
-import { blitz_PACKAGE_ID, SUPPORTED_COINS } from '@/config/iota.config';
+import { IOTA_CONFIG, SUPPORTED_COINS } from '@/config/iota.config';
 import { PoolService } from '@/lib/services/pool-service';
 
 interface AddLiquidityParams {
@@ -53,7 +53,6 @@ export function useAddLiquidity() {
       const pool = await PoolService.findPool(
         params.tokenA.type,
         params.tokenB.type,
-        'testnet'
       );
 
       // Get coins for both tokens
@@ -97,7 +96,7 @@ export function useAddLiquidity() {
 
       // Build transaction
       const tx = new Transaction();
-      const packageId = blitz_PACKAGE_ID.testnet;
+      const packageId = IOTA_CONFIG.packages.core;
 
       // Prepare coins
       let coinA, coinB;
