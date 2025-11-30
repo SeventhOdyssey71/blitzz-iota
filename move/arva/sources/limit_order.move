@@ -1,25 +1,23 @@
 module Blitz::limit_order {
     use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
-    use iota::object::{Self, UID, ID};
-    use iota::tx_context::{Self, TxContext};
+    use iota::object;
+    use iota::tx_context;
     use iota::transfer;
     use iota::event;
     use iota::clock::{Self, Clock};
     use std::vector;
 
-    const EOrderExpired: u64 = 1;
     const EInvalidPrice: u64 = 2;
     const EUnauthorized: u64 = 3;
     const EInvalidAmount: u64 = 4;
     const EOrderNotFound: u64 = 5;
     const EInvalidExpiry: u64 = 6;
-    const EInsufficientBalance: u64 = 7;
     const EOrderBookFull: u64 = 8;
     const EInvalidFeeRate: u64 = 9;
 
     public struct OrderBook<phantom CoinA, phantom CoinB> has key {
-        id: UID,
+        id: object::UID,
         buy_orders: vector<LimitOrder<CoinA, CoinB>>,
         sell_orders: vector<LimitOrder<CoinA, CoinB>>,
         fee_rate: u64, // Fee rate in basis points (e.g., 30 = 0.3%)
@@ -29,7 +27,7 @@ module Blitz::limit_order {
     }
 
     public struct LimitOrder<phantom CoinA, phantom CoinB> has store {
-        id: ID,
+        id: object::ID,
         owner: address,
         is_buy: bool,
         price: u64, // Price with 6 decimal precision (1 USDC = 1000000)
@@ -42,7 +40,7 @@ module Blitz::limit_order {
     }
 
     public struct OrderPlacedEvent has copy, drop {
-        order_id: ID,
+        order_id: object::ID,
         owner: address,
         is_buy: bool,
         price: u64,
@@ -51,21 +49,21 @@ module Blitz::limit_order {
     }
 
     public struct OrderFilledEvent has copy, drop {
-        order_id: ID,
+        order_id: object::ID,
         filled_amount: u64,
         is_partial: bool,
         execution_price: u64,
     }
 
     public struct OrderCancelledEvent has copy, drop {
-        order_id: ID,
+        order_id: object::ID,
         owner: address,
         remaining_amount: u64,
     }
 
     public struct TradeExecutedEvent has copy, drop {
-        buy_order_id: ID,
-        sell_order_id: ID,
+        buy_order_id: object::ID,
+        sell_order_id: object::ID,
         amount: u64,
         price: u64,
         buyer: address,
@@ -74,7 +72,7 @@ module Blitz::limit_order {
 
     public entry fun create_order_book<CoinA, CoinB>(
         fee_rate: u64,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         // Validate fee rate
         assert!(fee_rate <= MAX_FEE_RATE, EInvalidFeeRate);
@@ -101,12 +99,12 @@ module Blitz::limit_order {
 
     public entry fun place_buy_order<CoinA, CoinB>(
         order_book: &mut OrderBook<CoinA, CoinB>,
-        coin_b: Coin<CoinB>,
+        mut coin_b: Coin<CoinB>,
         price: u64,
         amount: u64,
         expire_duration: u64,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         // Input validation
         assert!(price > 0, EInvalidPrice);
@@ -162,12 +160,12 @@ module Blitz::limit_order {
 
     public entry fun place_sell_order<CoinA, CoinB>(
         order_book: &mut OrderBook<CoinA, CoinB>,
-        coin_a: Coin<CoinA>,
+        mut coin_a: Coin<CoinA>,
         price: u64,
         amount: u64,
         expire_duration: u64,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         // Input validation
         assert!(price > 0, EInvalidPrice);
@@ -223,7 +221,7 @@ module Blitz::limit_order {
         order_book: &mut OrderBook<CoinA, CoinB>,
         mut new_order: LimitOrder<CoinA, CoinB>,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let current_time = clock::timestamp_ms(clock);
         
@@ -296,7 +294,7 @@ module Blitz::limit_order {
         fee_rate: u64,
         collected_fees_a: &mut Balance<CoinA>,
         collected_fees_b: &mut Balance<CoinB>,
-        _ctx: &mut TxContext
+        _ctx: &mut tx_context::TxContext
     ) {
         let execution_price = maker_order.price;
         // Use proper price precision constant
@@ -306,8 +304,8 @@ module Blitz::limit_order {
         let fee_a = (amount * fee_rate) / 10000;
         let fee_b = (coin_b_amount * fee_rate) / 10000;
         
-        let net_amount_a = amount - fee_a;
-        let net_amount_b = coin_b_amount - fee_b;
+        let _net_amount_a = amount - fee_a;
+        let _net_amount_b = coin_b_amount - fee_b;
 
         if (taker_order.is_buy) {
             // Taker buys A with B, Maker sells A for B
@@ -382,7 +380,7 @@ module Blitz::limit_order {
     fun remove_expired_orders<CoinA, CoinB>(
         orders: &mut vector<LimitOrder<CoinA, CoinB>>,
         current_time: u64,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let mut i = 0;
         while (i < vector::length(orders)) {
@@ -398,7 +396,7 @@ module Blitz::limit_order {
 
     fun finalize_order<CoinA, CoinB>(
         order: LimitOrder<CoinA, CoinB>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let LimitOrder {
             id: _,
@@ -434,8 +432,8 @@ module Blitz::limit_order {
 
     public entry fun cancel_order<CoinA, CoinB>(
         order_book: &mut OrderBook<CoinA, CoinB>,
-        order_id: ID,
-        ctx: &mut TxContext
+        order_id: object::ID,
+        ctx: &mut tx_context::TxContext
     ) {
         let sender = tx_context::sender(ctx);
         let mut found = false;
@@ -491,7 +489,7 @@ module Blitz::limit_order {
 
     public entry fun collect_fees<CoinA, CoinB>(
         order_book: &mut OrderBook<CoinA, CoinB>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         assert!(tx_context::sender(ctx) == order_book.admin, EUnauthorized);
 

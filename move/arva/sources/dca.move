@@ -1,8 +1,8 @@
 module Blitz::dca {
     use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
-    use iota::object::{Self, UID, ID};
-    use iota::tx_context::{Self, TxContext};
+    use iota::object;
+    use iota::tx_context;
     use iota::transfer;
     use iota::event;
     use iota::clock::{Self, Clock};
@@ -27,16 +27,16 @@ module Blitz::dca {
     const MIN_ORDER_SIZE: u64 = 1000; // Minimum order size
 
     public struct DCARegistry has key {
-        id: UID,
-        strategies: vector<ID>,
+        id: object::UID,
+        strategies: vector<object::ID>,
         total_strategies: u64,
         admin: address,
     }
 
     public struct DCAStrategy<phantom CoinA, phantom CoinB> has key {
-        id: UID,
+        id: object::UID,
         owner: address,
-        pool_id: ID,
+        pool_id: object::ID,
         source_balance: Balance<CoinA>,
         received_balance: Balance<CoinB>,
         amount_per_order: u64,
@@ -52,7 +52,7 @@ module Blitz::dca {
     }
 
     public struct DCACreatedEvent has copy, drop {
-        strategy_id: ID,
+        strategy_id: object::ID,
         owner: address,
         amount_per_order: u64,
         interval_ms: u64,
@@ -61,7 +61,7 @@ module Blitz::dca {
     }
 
     public struct DCAExecutedEvent has copy, drop {
-        strategy_id: ID,
+        strategy_id: object::ID,
         order_number: u64,
         amount_in: u64,
         amount_out: u64,
@@ -69,32 +69,32 @@ module Blitz::dca {
     }
 
     public struct DCAPausedEvent has copy, drop {
-        strategy_id: ID,
+        strategy_id: object::ID,
         owner: address,
         executed_orders: u64,
     }
 
     public struct DCAResumedEvent has copy, drop {
-        strategy_id: ID,
+        strategy_id: object::ID,
         owner: address,
         remaining_orders: u64,
     }
 
     public struct DCACompletedEvent has copy, drop {
-        strategy_id: ID,
+        strategy_id: object::ID,
         owner: address,
         total_executed: u64,
         total_received: u64,
     }
 
     public struct DCACancelledEvent has copy, drop {
-        strategy_id: ID,
+        strategy_id: object::ID,
         owner: address,
         executed_orders: u64,
         refunded_amount: u64,
     }
 
-    public entry fun create_dca_registry(ctx: &mut TxContext) {
+    public entry fun create_dca_registry(ctx: &mut tx_context::TxContext) {
         let registry = DCARegistry {
             id: object::new(ctx),
             strategies: vector::empty(),
@@ -113,7 +113,7 @@ module Blitz::dca {
         min_amount_out: u64,
         max_amount_out: u64,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         // Enhanced input validation
         assert!(interval_ms >= MIN_INTERVAL_MS && interval_ms <= MAX_INTERVAL_MS, EInvalidInterval);
@@ -173,7 +173,7 @@ module Blitz::dca {
         min_amount_out: u64,
         max_amount_out: u64,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         // Use same enhanced validation as simple version
         assert!(interval_ms >= MIN_INTERVAL_MS && interval_ms <= MAX_INTERVAL_MS, EInvalidInterval);
@@ -230,7 +230,7 @@ module Blitz::dca {
         strategy: &mut DCAStrategy<CoinA, CoinB>,
         pool: &mut Pool<CoinA, CoinB>,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         // Validate strategy state
         assert!(strategy.is_active, EStrategyNotActive);
@@ -311,7 +311,7 @@ module Blitz::dca {
 
     public entry fun pause_strategy<CoinA, CoinB>(
         strategy: &mut DCAStrategy<CoinA, CoinB>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         assert!(tx_context::sender(ctx) == strategy.owner, EUnauthorized);
         assert!(strategy.is_active, EStrategyNotActive);
@@ -328,7 +328,7 @@ module Blitz::dca {
     public entry fun resume_strategy<CoinA, CoinB>(
         strategy: &mut DCAStrategy<CoinA, CoinB>,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         assert!(tx_context::sender(ctx) == strategy.owner, EUnauthorized);
         assert!(!strategy.is_active, EStrategyNotActive);
@@ -347,7 +347,7 @@ module Blitz::dca {
     public entry fun cancel_dca_strategy<CoinA, CoinB>(
         registry: &mut DCARegistry,
         strategy: DCAStrategy<CoinA, CoinB>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         assert!(strategy.owner == tx_context::sender(ctx), EUnauthorized);
         
@@ -377,7 +377,7 @@ module Blitz::dca {
 
     fun finalize_strategy<CoinA, CoinB>(
         strategy: DCAStrategy<CoinA, CoinB>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let DCAStrategy {
             id,

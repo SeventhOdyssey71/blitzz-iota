@@ -4,9 +4,9 @@ module Blitz::simple_dex {
     use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
     use iota::clock::{Self, Clock};
-    use iota::object::{Self, UID};
+    use iota::object;
     use iota::transfer;
-    use iota::tx_context::{Self, TxContext};
+    use iota::tx_context;
 
     // Error codes
     const E_ZERO_AMOUNT: u64 = 0;
@@ -74,7 +74,7 @@ module Blitz::simple_dex {
 
     // High-performance pool struct optimized for gas efficiency
     public struct Pool<phantom CoinA, phantom CoinB> has key {
-        id: UID,
+        id: object::UID,
         reserve_a: Balance<CoinA>,
         reserve_b: Balance<CoinB>,
         lp_supply: u64,
@@ -88,7 +88,7 @@ module Blitz::simple_dex {
     }
 
     public struct LPToken<phantom CoinA, phantom CoinB> has key, store {
-        id: UID,
+        id: object::UID,
         amount: u64,
     }
 
@@ -96,7 +96,7 @@ module Blitz::simple_dex {
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
         clock: &Clock,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let amount_a = coin::value(&coin_a);
         let amount_b = coin::value(&coin_b);
@@ -134,7 +134,7 @@ module Blitz::simple_dex {
     public fun swap_a_to_b_internal<CoinA, CoinB>(
         pool: &mut Pool<CoinA, CoinB>,
         coin_a: Coin<CoinA>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ): Coin<CoinB> {
         let amount_in = coin::value(&coin_a);
         assert!(amount_in > 0, E_ZERO_AMOUNT);
@@ -184,7 +184,7 @@ module Blitz::simple_dex {
     public entry fun swap_a_to_b<CoinA, CoinB>(
         pool: &mut Pool<CoinA, CoinB>,
         coin_a: Coin<CoinA>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let coin_b = swap_a_to_b_internal(pool, coin_a, ctx);
         transfer::public_transfer(coin_b, tx_context::sender(ctx));
@@ -193,7 +193,7 @@ module Blitz::simple_dex {
     public entry fun swap_b_to_a<CoinA, CoinB>(
         pool: &mut Pool<CoinA, CoinB>,
         coin_b: Coin<CoinB>,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let amount_in = coin::value(&coin_b);
         let reserve_a = balance::value(&pool.reserve_a);
@@ -231,7 +231,7 @@ module Blitz::simple_dex {
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
         min_lp_amount: u64,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let amount_a = coin::value(&coin_a);
         let amount_b = coin::value(&coin_b);
@@ -279,7 +279,7 @@ module Blitz::simple_dex {
         lp_token: LPToken<CoinA, CoinB>,
         min_amount_a: u64,
         min_amount_b: u64,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let lp_amount = lp_token.amount;
         let reserve_a = balance::value(&pool.reserve_a);
