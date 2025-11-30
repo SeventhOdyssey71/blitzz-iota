@@ -49,11 +49,8 @@ export function useAddLiquidity() {
       const amountA = parseTokenAmount(params.amountA, params.tokenA.decimals);
       const amountB = parseTokenAmount(params.amountB, params.tokenB.decimals);
       
-      // Find existing pool
-      const pool = await PoolService.findPool(
-        params.tokenA.type,
-        params.tokenB.type,
-      );
+      // Since no pools exist yet, we'll create a new pool
+      const pool = null;
 
       // Get coins for both tokens
       const [coinsA, coinsB] = await Promise.all([
@@ -151,7 +148,7 @@ export function useAddLiquidity() {
         tx.moveCall({
           target: `${packageId}::simple_dex::create_pool`,
           typeArguments: [params.tokenA.type, params.tokenB.type],
-          arguments: [coinA, coinB],
+          arguments: [coinA, coinB, tx.object('0x6')], // 0x6 is the Clock object
         });
       }
 

@@ -223,7 +223,18 @@ export class PoolService {
       for (let i = 0; i < tokens.length; i++) {
         for (let j = i + 1; j < tokens.length; j++) {
           try {
-            const pool = await this.findPool(tokens[i].type, tokens[j].type);
+            const tokenA = tokens[i];
+            const tokenB = tokens[j];
+            
+            // Get pool ID from configuration
+            const poolId = getPoolId(tokenA.symbol, tokenB.symbol);
+            
+            if (!poolId || poolId === '0x0') {
+              continue; // Skip if no pool configured
+            }
+
+            // Fetch pool info directly without using findPool to avoid recursion
+            const pool = await this.fetchPoolInfo(poolId, tokenA.type, tokenB.type);
             if (pool) {
               pools.push(pool);
             }
